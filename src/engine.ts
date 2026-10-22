@@ -9,8 +9,24 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CANDIDATES = [
-  { label: "vendor/hmem", entry: path.join(here, "..", "vendor", "hmem", "src", "index.ts") },
-  { label: "monorepo sibling", entry: path.join(here, "..", "..", "..", "engines", "hmem", "reference", "src", "index.ts") },
+  {
+    label: "vendor/hmem",
+    entry: path.join(here, "..", "vendor", "hmem", "src", "index.ts"),
+  },
+  {
+    label: "monorepo sibling",
+    entry: path.join(
+      here,
+      "..",
+      "..",
+      "..",
+      "engines",
+      "hmem",
+      "reference",
+      "src",
+      "index.ts",
+    ),
+  },
 ];
 
 export interface LoadedEngine {
@@ -25,7 +41,11 @@ export async function loadHMEM(): Promise<LoadedEngine> {
       return { HMEM: mod.HMEM, source: c.label };
     }
   }
-  console.error("H-MEM engine not found. Run the setup step first:\n\n  npm run setup\n");
-  console.error("(It vendors the reference implementation into vendor/hmem via degit.)");
+  console.error(
+    "H-MEM engine not found. Run the setup step first:\n\n  npm run setup\n",
+  );
+  console.error(
+    "(It vendors the reference implementation into vendor/hmem via degit.)",
+  );
   process.exit(1);
 }
