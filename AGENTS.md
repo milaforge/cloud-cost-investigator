@@ -2,105 +2,59 @@
 
 ## Read before work
 
-1. [`docs/RULES.md`](./docs/RULES.md): recorded hackathon requirements,
-   judging criteria, and submission materials. The single JSON block is parseable;
-   examples and unrelated ideas are not project requirements.
-2. [`docs/PROJECT_CONTEXT.md`](./docs/PROJECT_CONTEXT.md): chosen product,
-   scope, interfaces, safety invariants, and acceptance criteria.
-3. [`docs/EXECUTION_PLAN.md`](./docs/EXECUTION_PLAN.md): active milestone,
-   owners, blockers, and evidence of completion.
-4. [`memory.md`](./memory.md): rationale for repository decisions.
+1. [`docs/RULES.md`](./docs/RULES.md): recorded hackathon requirements, judging criteria and submission materials. The single JSON block is parseable; examples and unrelated ideas are not requirements.
+2. [`docs/PROJECT_CONTEXT.md`](./docs/PROJECT_CONTEXT.md): **approved optimization-first product** scope, interfaces, safety invariants, evidence semantics and acceptance criteria.
+3. [`docs/EXECUTION_PLAN.md`](./docs/EXECUTION_PLAN.md): current milestone, owners, blockers and executable completion evidence.
+4. [`memory.md`](./memory.md): rationale for repository decisions and explicit superseded decisions.
 
-Keep these documents aligned when an agreed decision changes. Rules are event
-notes, not independently verified portal requirements. Record discrepancies and
-resolve material scope or submission conflicts with the team; do not silently
-invent requirements. The README and starter code do not override the selected
-track or rubric. Never infer completion from a plan, file, or elapsed day.
+Keep these documents aligned when an agreed decision changes. Rules are locally recorded event notes, not independently verified portal requirements. Resolve discrepancies and material submission conflicts with the team; do not invent requirements. The README and starter code do not override the chosen track or rubric. Never infer completion from a plan, file, or elapsed day.
 
 ## Mission and priorities
 
-Build a functional, robust **Track 02 — The Agent That Can Explain Why** entry:
-explain increased **AWS EC2** costs using billing, utilization, inventory, and
-operational changes, and qualify whether reductions are safe. Deliver a
-read-only investigation report with evidence and a visible decision trace.
-
-- Start with a runnable end-to-end CLI. Reuse the TypeScript/Node.js starter and
-  H-MEM integration; avoid a language migration or framework rewrite without a
-  concrete need and team agreement.
-- Use real Zetaris queries and Meterless store/retrieve operations. Label fixtures,
-  stubs, historical context, and live telemetry accurately. Use an approved model;
-  verify access and demonstrate NVIDIA's contribution rather than assuming it.
-- Implement a single bounded planner → executor → evaluator → replan/finish loop.
-  Dynamic delegation in the rules is an example, not a requirement for many agents.
-- Prioritize sponsor integration and a reliable investigation, then contradiction
-  handling and scenario evaluation, then a trace viewer and polish. Build failure
-  handling and focused tests alongside each slice.
-- Do not add multi-cloud, Kubernetes, automatic remediation, enterprise auth,
-  forecasting, elaborate dashboards, or extra autonomous roles to meet this MVP.
+Build a functional **Track 02 — The Agent That Can Explain Why** entry: discover promising **AWS EC2 off-hours scheduling** opportunities within an engineer-specified account/region, **challenge each proposed shutdown window with current operational evidence**, and issue evidence-backed conditional recommendations, rejections or explicit deferrals. The original EC2 cost-increase/snapshot-comparison workflow was superseded by team decision on 2026-10-23. **Do not require a baseline or previous investigation** to answer the first request.
+- Start with a runnable end-to-end TypeScript/Node.js CLI and existing H-MEM starter. Avoid a rewrite or new framework without concrete need and agreement.
+- **Current evidence comes from direct validated, read-only TypeScript tools/API adapters owned by Zayan.** Mocks are allowed for development but must be labeled and replaced/verified as access permits. Never claim live API integration from fixture tests.
+- **Zetaris is the structured history layer:** an allowlisted history query and a **narrowly approved append-only historical-record write**, restricted to a dedicated non-infrastructure data store. Verify real permissions, functionality and read-after-write; no unrestricted SQL, general writes or model-authored SQL.
+- **Meterless H-MEM is reasoning memory:** timestamped hypotheses, prior rejected windows, unresolved operational risks and provenance. Recall may prioritize new tool calls but never substitute for fresh facts. Prove real store/retrieve.
+- Use an approved model; verify access and demonstrate actual NVIDIA contribution rather than assuming it. Keep one bounded planner → executor → evaluator → replan/finish loop; additional autonomous roles are not required.
+- Prioritize a single **scenario B contradiction-first** slice, focused failure tests and sponsor proof, then A/C/D evaluation, detailed CLI report and demo. Cut polish before safety or provenance.
+- Do not add multi-cloud, Kubernetes, downsizing, automated remediation, enterprise auth, forecasting, elaborate dashboards or extra agent roles to meet the MVP.
 
 ## Current milestone and completion discipline
 
-At the Day 2 kickoff (2026-10-23), use the **Day 2** section and kickoff gates in
-[`docs/EXECUTION_PLAN.md`](./docs/EXECUTION_PLAN.md). This is a dated checkpoint,
-not a permanent instruction to remain on Day 2. Advance the active milestone only
-when its gate has executable evidence, carrying unfinished prerequisites forward.
+At the Day 2 kickoff (2026-10-23), use the **Day 2 section and gates** in [`docs/EXECUTION_PLAN.md`](./docs/EXECUTION_PLAN.md), carrying unfinished Day 1 prerequisites forward. This is a dated checkpoint, not a permanent instruction to remain on Day 2. Advance the active milestone only after executable evidence is recorded.
 
 For each nontrivial task:
-
-1. Identify the current acceptance gate, owner, and smallest useful slice.
-2. Trace existing behavior and invariants before editing. Preserve concurrent work.
+1. Identify the active gate, owner and smallest useful slice.
+2. Trace existing behavior/invariants before editing and preserve concurrent work.
 3. Implement and run the smallest relevant proof, including the failure path.
-4. Update the execution checklist only for verified work. Record the command,
-   result, integration mode, and any blocker with owner and next action.
-5. Report changes, affected files, checks run, limitations, and remaining work.
+4. Update the execution checklist **only for verified work**, with command, result, integration mode, owner, blocker and next action.
+5. Report changes, affected files, checks run, limitations and remaining work.
 
-Keep decision rationale in `memory.md`; keep task status and integration proof in
-`docs/EXECUTION_PLAN.md`. Do not duplicate a second progress tracker.
+Keep rationale in `memory.md`; keep task status and integration proof in `docs/EXECUTION_PLAN.md`. Do not create another progress tracker.
 
 ## Non-negotiable invariants
 
-- AWS and Zetaris access is read-only. Expose only validated, allowlisted tools;
-  never pass model-authored SQL to an unrestricted query function.
-- Validate external data and model/tool outputs at runtime; TypeScript interfaces
-  alone do not validate them. Preserve account/region/resource scope, UTC periods,
-  units, coverage, provenance, and evidence IDs through the report.
-- Keep `ok`, `no_match`, `partial`, `unavailable`, and `error` distinct. Missing
-  data is unknown, not zero or proof that jobs/dependencies do not exist.
-- Low average CPU or a dev tag does not establish safety. Check peaks, jobs,
-  dependencies, and other relevant operational constraints; defer when unknown.
-- Compute savings deterministically, with explicit billing, schedule, currency,
-  commitment, and retained-resource assumptions. Unsupported estimates are `null`.
-- Treat memory as timestamped historical context, not current telemetry. Every
-  factual finding cites evidence actually retrieved for the investigation.
-- Bound model/tool calls, timeouts, retries, query sizes, and total runtime. Fail
-  with an explicit partial/uncertain result rather than looping or fabricating.
-- Never modify infrastructure. Any future remediation requires human approval.
-- Never commit or expose credentials, sensitive AWS exports, or raw provider
-  responses containing secrets in logs, screenshots, fixtures, or reports.
+- **AWS is entirely read-only**; no stopping, resizing or other infrastructure writes. Current-evidence tools are read-only. The sole permitted non-infrastructure exception is narrowly authorized, append-only Zetaris investigation-history persistence with schema/permission validation. Do not expose generic Zetaris SQL or unrestricted write tools to the model.
+- Runtime-validate external data and model/tool output; TypeScript interfaces alone do not validate data. Preserve account/region/resource scope, UTC observation windows, collection times, units, coverage, source modes, provenance and evidence IDs.
+- Keep `ok`, `no_match`, `partial`, `unavailable` and `error` distinct. Missing data is unknown, not zero or proof that jobs/dependencies do not exist.
+- Low average CPU or a `dev` tag does not establish scheduling safety. Challenge each candidate with peaks, jobs, dependencies and other relevant operational constraints; defer if critical evidence or authority is unknown.
+- Compute savings deterministically only with adequate billing, schedule, currency, pricing/commitment and retained-resource assumptions; unsupported estimates are `null`.
+- Zetaris historical records and H-MEM memory are **timestamped historical context**, not current telemetry. Every factual current conclusion cites evidence actually retrieved through direct tools **during the investigation**. Historical context IDs must be labeled separately.
+- Bound model/tool calls, retries, timeouts, query sizes and total runtime. When exhausted or unavailable, return an explicit partial/uncertain result rather than looping or fabricating safety claims.
+- Never modify infrastructure. Any eventual remediation needs human review/approval.
+- Never commit or expose credentials, sensitive AWS exports, raw provider responses containing secrets, or private endpoints in logs, screenshots, fixtures or reports.
 
 ## Definition of a finished entry
 
-The release checklist in the execution plan is authoritative for tracking:
-
-- Reproducible A/B/C scenarios, including a genuine evidence-driven rejection of
-  an initial hypothesis in B, and a missing-source/failure path.
-- Real Zetaris and Meterless integration evidence, an approved model call, accurate
-  Cursor/NVIDIA usage documentation, valid citations, and measured evaluation.
-- A fresh-checkout run, project-specific setup/usage/dependencies in the README,
-  slide deck, sponsor explanation, and a **1–4 minute** demo.
-- Freeze on October 26; submit before **2026-10-27 23:45 UTC**, subject to portal
-  verification. A working CLI with a readable trace is sufficient for the surface.
+The release checklist in `docs/EXECUTION_PLAN.md` is authoritative. It must include:
+- Reproducible **A/B/C** safety scenarios with a real evidence-driven initial-hypothesis rejection in **B**, **D** second-run history/memory proof, and missing-source/failure handling.
+- Genuine direct-evidence tool provenance, Zetaris history query/authorized append, Meterless H-MEM store/retrieve, an approved model call, valid citations and measured evaluation. Sponsor integrations must be genuine and accurately labeled; mocks are not substitute proofs.
+- A clean-checkout CLI run, project-specific README/setup, accurate Cursor/NVIDIA documentation, slides, sponsor explanation and a **1–4 minute** demo.
+- Target freeze Oct 26; submit before **2026-10-27 23:45 UTC** according to recorded event notes, subject to portal verification. A readable CLI and trace are sufficient; a dashboard is optional and deprioritized.
 
 ## Engineering practices
 
-Prefer the smallest safe, reversible change and installed dependencies. Ask before
-adding production dependencies. Follow existing package-manager conventions;
-prefer pnpm or uv when compatible. Work in the current branch/worktree. Run
-relevant available checks and distinguish pre-existing failures from new failures.
-Do not access unrelated sensitive files, modify secrets, perform destructive
-operations, or commit/push without authorization. Do not put “Codex” in commit
-or PR titles.
+Prefer the smallest safe reversible change and installed dependencies; ask before adding production dependencies. Follow existing package-manager conventions; prefer pnpm or uv when compatible. Work in the current branch/worktree. Run relevant checks and distinguish pre-existing failures from new failures. Do not access unrelated sensitive files, modify secrets, perform destructive operations, or commit/push without authorization. Do not put “Codex” in commit or PR titles.
 
-Use `security-review` for security-sensitive changes, `architecture-review` for
-structural design changes, `context7-docs` for current library/API documentation,
-and `codegraph-navigation` for source discovery when the repository is indexed.
+Use `security-review` for security-sensitive changes, `architecture-review` for structural design changes, `context7-docs` for current library/API docs, and `codegraph-navigation` when a repository index is available.
