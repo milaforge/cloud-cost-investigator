@@ -1,5 +1,7 @@
 import type { Action, MetricsData, ToolArgs, ToolName } from '../contracts.ts';
+import { historicalPriority } from './history.ts';
 import type { PlannerState } from './run.ts';
+
 export type { PlannerState } from './run.ts';
 export interface Planner {
   readonly mode: 'scripted' | 'live';
@@ -87,6 +89,12 @@ export class ScriptedPlanner implements Planner {
           'Observed low average and peak CPU suggest this window; challenge it before any decision.',
       };
     }
+    const priority = historicalPriority(state.historical_hints);
+    if (priority && !attempted(priority))
+      return tool(
+        priority,
+        'Historical unresolved checks prioritize this fresh query; prior verdicts are not current evidence.',
+      );
     if (!attempted('get_ec2_operations'))
       return tool(
         'get_ec2_operations',

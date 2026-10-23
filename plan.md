@@ -110,3 +110,11 @@ Record exact commands, outcomes, integration modes, and blockers only in `docs/E
 - Measure compared-to-baseline safety, citation integrity, durations and call counts; finish README, slides and 1–4 minute demo.
 
 Stop after a verified thin slice; do not build dashboards, downsizing, a new stack, or extra autonomous roles to demonstrate the MVP.
+
+## Warm slice implementation checkpoint (2026-10-23)
+
+Scenario D now connects the existing Zetaris and H-MEM adapters to the CLI.
+Scoped historical context changes fresh query priority; newly retrieved evidence
+still controls every verdict. The configured two-run sponsor proof and focused
+failure tests are recorded in `docs/EXECUTION_PLAN.md`. Live AWS, warm model
+planning and broader scenario evaluation remain separate gates.

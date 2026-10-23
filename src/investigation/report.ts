@@ -1,23 +1,23 @@
 import {
+  type Action,
   array,
+  type CandidateReport,
   exact,
+  type Hypothesis,
+  type InvestigationReport,
   identifier,
   integer,
   member,
+  type Observation,
+  type Schedule,
+  type ToolAction,
+  type TraceEntry,
   textValue,
   utc,
   validateAction,
   validateObservation,
   validateRequest,
   validateSchedule,
-  type Action,
-  type CandidateReport,
-  type Hypothesis,
-  type InvestigationReport,
-  type Observation,
-  type Schedule,
-  type ToolAction,
-  type TraceEntry,
 } from '../contracts.ts';
 
 const strings = (value: unknown) => array(value, 100).map((v) => textValue(v));
@@ -215,13 +215,30 @@ export function validateReport(value: unknown): InvestigationReport {
     'limitations',
   ]);
   const historical_context = {
-    zetaris: member(h.zetaris, ['not_configured']),
-    hmem: member(h.hmem, ['not_configured']),
+    zetaris: member(h.zetaris, [
+      'not_configured',
+      'not_queried',
+      'ok',
+      'unavailable',
+    ]),
+    hmem: member(h.hmem, [
+      'not_configured',
+      'not_queried',
+      'ok',
+      'unavailable',
+    ]),
     context_ids: ids(h.context_ids),
     limitations: strings(h.limitations),
   };
-  if (historical_context.context_ids.length)
-    throw new Error('History is not configured');
+  for (const id of historical_context.context_ids) {
+    const service = id.startsWith('zetaris:')
+      ? 'zetaris'
+      : id.startsWith('hmem:')
+        ? 'hmem'
+        : null;
+    if (!service || historical_context[service] !== 'ok' || registry.has(id))
+      throw new Error('Invalid historical context citation');
+  }
   const cited = (citations: string[], instance?: string) => {
     for (const id of citations) {
       const e = registry.get(id);
@@ -564,7 +581,7 @@ export function renderReport(value: InvestigationReport): string {
   }
   lines.push(
     '',
-    'Historical context: Zetaris not configured; H-MEM not configured; no historical records used.',
+    `Historical context: Zetaris ${r.historical_context.zetaris.replace('_', ' ')}; H-MEM ${r.historical_context.hmem.replace('_', ' ')}; historical IDs ${citations(r.historical_context.context_ids)}.`,
   );
   for (const v of r.historical_context.limitations)
     lines.push(`History limitation: ${v}`);

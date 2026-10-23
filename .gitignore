@@ -30,3 +30,6 @@ pnpm-debug.log*
 *.swo
 .DS_Store
 Thumbs.db
+
+# Local investigation reasoning memory
+.cci-memory/

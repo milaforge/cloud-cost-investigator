@@ -26,6 +26,35 @@ The Oct 23 MVP discovery approved four shared-engine flows: A supported off-hour
 
 **Earlier inspection had not verified:** live API calls for any of the five direct categories; historical read and append via Zetaris; H-MEM project round-trip; approved model call; CLI test execution. New executed evidence is recorded below. Team-reported prior Zetaris data availability does not verify the newly planned direct adapters. Never mark any of these complete from a written plan.
 
+### Warm investigation proof — 2026-10-23
+
+- **Gate/owner:** Day 2 scenario D, Milad. Implemented scoped recall and compact
+  post-evaluation persistence using the existing Zetaris and local H-MEM adapters.
+  Fresh inventory/billing selects the instance; history cannot select a verdict.
+- **Executed configured proof:** `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm`
+  passed outside the network sandbox. Run 1 recalled zero records, checked
+  operations first, stored H-MEM and verified Zetaris append by exact readback.
+  Run 2 recalled one record from each service, checked dependencies before
+  operations, and again verified both stores. Both CLI exits were 0 and both
+  rejected the window using fresh **mock** operational evidence. Planner mode
+  was **scripted**; H-MEM used the actual vendored local reference; Zetaris used
+  the configured remote service. Probe directories were removed; synthetic
+  Zetaris history rows are intentionally retained. Multiple successful proof
+  invocations each retained two rows under a separate synthetic account.
+- **Automated proof:** `npm test` passed **78/78**; `npm run typecheck`,
+  `npm run lint` and `git diff --check` passed. Added tests cover both-store warm
+  ordering, either source unavailable, future context exclusion, disabled append,
+  stale rejection versus cleared/missing fresh evidence, historical citation
+  forgery, and model-adapter hint propagation with mocked model HTTP.
+- **Formatting boundary:** `npm run format:check` still reports pre-existing
+  table formatting in this document and `docs/ZETARIS_HISTORY.md`; no unrelated
+  table reformat was included. Changed TypeScript files pass focused Biome checks.
+- **Remaining gate/next action:** Zayan verifies real AWS adapters; Milad/user
+  verifies warm behavior with an approved real model and measures broader A/C/D
+  outcomes. Effective dedicated-user permissions remain a deployment check.
+  Single-writer limits remain. The combined sponsor/release gate stays open.
+  This checkpoint supersedes earlier statements that warm CLI use is unimplemented.
+
 ### Verification and blocker log
 
 Append after actual execution. Include date, command, result, `mock`/`fixture`/`live`/`stub` integration mode, owner and next action; sanitize secrets, account details and provider payloads. The following row records only a documentation event, **not a test**.

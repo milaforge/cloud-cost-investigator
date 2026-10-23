@@ -1,12 +1,12 @@
-import { loadProjectEnv } from './src/config.ts';
-import { OpenAICompatiblePlanner } from './src/investigation/model.ts';
 import { pathToFileURL } from 'node:url';
-import { validateRequest, type InvestigationRequest } from './src/contracts.ts';
-import { runInvestigation } from './src/investigation/run.ts';
+import { loadProjectEnv } from './src/config.ts';
+import { type InvestigationRequest, validateRequest } from './src/contracts.ts';
 import { MockProvider } from './src/investigation/mock.ts';
+import { OpenAICompatiblePlanner } from './src/investigation/model.ts';
 import { NvidiaPlanner } from './src/investigation/nvidia.ts';
 import { ScriptedPlanner } from './src/investigation/planner.ts';
 import { renderReport, validateReport } from './src/investigation/report.ts';
+import { runInvestigation } from './src/investigation/run.ts';
 
 export const HELP = `Cloud Cost Investigator
 
@@ -26,7 +26,8 @@ Current evidence always comes from labeled synthetic mocks; AWS is never called.
 The CLI loads .env without overriding shell variables. The model planner uses
 LLM_BASE_URL, LLM_MODEL and optional LLM_API_KEY (or legacy NVIDIA settings).
 Current evidence remains mock; model failure never falls back to
-scripted planning. Zetaris history and H-MEM are not configured in this slice.
+scripted planning. Set HMEM_PERSIST_DIR for local reasoning memory and
+ZETARIS_HISTORY_TABLE for history reads; appends require ZETARIS_HISTORY_ALLOW_APPEND=true.
 Exit status: 0 complete, 2 partial, 1 failed or invalid invocation.
 `;
 
@@ -118,6 +119,10 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       await runInvestigation(options.request, {
         provider: new MockProvider(options.scenario),
         planner,
+        history: {
+          hmem_directory: process.env.HMEM_PERSIST_DIR || undefined,
+          zetaris: !!process.env.ZETARIS_HISTORY_TABLE,
+        },
       }),
     );
     process.stdout.write(

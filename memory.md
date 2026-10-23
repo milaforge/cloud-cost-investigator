@@ -117,3 +117,25 @@
 - Same-origin public UI source verified `/api/auth/login`, the username/password JSON body and idToken/orgId response handling. Reuse that route rather than inventing generic Basic Auth or a legacy REST login. Password configuration must never silently fall back to an old administrator bearer token; orgId may be discovered from login or pinned to an expected value. No token persistence or hidden login/write retry.
 - A compact v1 structured history table keeps scope, original UTC window, verdict, source mode and bounded scheduling/evidence/missing-check data. It differs from H-MEM's narrative reasoning summary; neither supplies current facts. Validate the dedicated history schema before data access and return separately labeled historical context IDs. App SQL is fixed read/append only; environment targets are restricted to CCI_HISTORY and values are encoded as UTF-8 hex to avoid quote/backslash mode ambiguity. No model SQL or infrastructure changes.
 - Appends require explicit enablement and exact readback, with no automatic retries after an uncertain INSERT. Stable run/candidate IDs allow an exact existing record to be reused by a single writer; the pre-read is not an atomic lock and does not establish concurrent idempotency on Iceberg. Provisioning SQL runs separately as admin; the app never creates tables or grants itself access. Adapter/probe availability does not imply automatic CLI persistence or warm-history planning.
+
+## Warm investigation ownership (2026-10-23)
+
+- `InvestigationHistory` coordinates the existing validated adapters after fresh
+  inventory/billing selects a candidate. Zetaris reads are bounded and filtered
+  by account/region/instance; H-MEM remains scoped local reference persistence.
+  Neither service is required on the first run. Explicit directory/table
+  configuration enables recall; only the existing append opt-in enables SQL DML.
+- Planner hints contain historical IDs, timestamps, source modes and allowlisted
+  query priorities, excluding raw historical text and old evidence citations.
+  The newest recalled context prioritizes a previously unqueried dependency
+  check; otherwise operations comes first. This uses existing missing-check
+  summaries rather than adding another persistent schema or model role.
+- Fresh metrics still establish the proposed window; the deterministic evaluator
+  and report validator still require newly retrieved current conflicts. History
+  IDs remain separate from evidence IDs. Future-dated records are excluded.
+- Read statuses and persistence outcomes are independent. A failed append is
+  disclosed without retry or changing the current verdict; local store failure
+  cannot seed later recall on the same engine. Both services share the remaining
+  investigation deadline. Single-writer constraints remain in force.
+- This supersedes earlier notes saying CLI warm planning is not implemented.
+  Runtime proof and remaining integration gates belong to EXECUTION_PLAN.md.

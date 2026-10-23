@@ -3,16 +3,16 @@ import { loadProjectEnv } from '../config.ts';
 import {
   array,
   exact,
+  type InvestigationReport,
   identifier,
   integer,
   member,
+  type Scope,
   textValue,
   utc,
+  validateSchedule,
   validateScope,
   validateWindow,
-  validateSchedule,
-  type Scope,
-  type InvestigationReport,
 } from '../contracts.ts';
 import { validateReport } from '../investigation/report.ts';
 import { parseZetarisTable, queryZetaris } from './zetaris.ts';
@@ -190,10 +190,11 @@ async function readRows(
   recordId: string | undefined,
   limit: number,
   signal: AbortSignal,
+  instanceId?: string,
 ): Promise<HistoricalRecord[]> {
   const result = parseZetarisTable(
     await queryZetaris(
-      `SELECT ${COLUMNS.map((c) => `\`${c}\``).join(', ')} FROM ${table} WHERE account_id = ${literal(scope.account_id)} AND region = ${literal(scope.region)}${recordId ? ` AND record_id = ${literal(recordId)}` : ''} ORDER BY recorded_at_utc DESC, record_id ASC LIMIT ${limit}`,
+      `SELECT ${COLUMNS.map((c) => `\`${c}\``).join(', ')} FROM ${table} WHERE account_id = ${literal(scope.account_id)} AND region = ${literal(scope.region)}${recordId ? ` AND record_id = ${literal(recordId)}` : ''}${instanceId ? ` AND instance_id = ${literal(instanceId)}` : ''} ORDER BY recorded_at_utc DESC, record_id ASC LIMIT ${limit}`,
       signal,
     ),
   );
@@ -209,7 +210,8 @@ async function readRows(
     if (
       record.account_id !== scope.account_id ||
       record.region !== scope.region ||
-      (recordId && record.record_id !== recordId)
+      (recordId && record.record_id !== recordId) ||
+      (instanceId && record.instance_id !== instanceId)
     )
       throw new Error('zetaris_history_scope_mismatch');
     return context(record);
@@ -219,24 +221,34 @@ async function readRows(
 export async function readZetarisHistory(
   scopeInput: Scope,
   limit = 10,
+  parentSignal?: AbortSignal,
+  instanceId?: string,
 ): Promise<HistoricalRecord[]> {
   const scope = validateScope(exact(scopeInput, ['account_id', 'region']));
   integer(limit, 1, 20);
+  if (instanceId !== undefined) identifier(instanceId);
   const table = target(),
-    signal = AbortSignal.timeout(20_000);
+    signal = AbortSignal.any([
+      AbortSignal.timeout(20_000),
+      ...(parentSignal ? [parentSignal] : []),
+    ]);
   await verifySchema(table, signal);
-  return readRows(table, scope, undefined, limit, signal);
+  return readRows(table, scope, undefined, limit, signal, instanceId);
 }
 
 /** Single-writer MVP: no automatic retries; reuses an identical ID only after exact readback. */
 export async function appendZetarisHistory(
   input: HistoryRecord,
+  parentSignal?: AbortSignal,
 ): Promise<HistoricalRecord> {
   const record = validateRecord(input),
     table = target();
   if (process.env.ZETARIS_HISTORY_ALLOW_APPEND !== 'true')
     throw new Error('zetaris_history_append_disabled');
-  const signal = AbortSignal.timeout(30_000);
+  const signal = AbortSignal.any([
+    AbortSignal.timeout(30_000),
+    ...(parentSignal ? [parentSignal] : []),
+  ]);
   await verifySchema(table, signal);
   const scope = { account_id: record.account_id, region: record.region };
   const existing = await readRows(table, scope, record.record_id, 2, signal);

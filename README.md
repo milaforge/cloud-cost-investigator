@@ -92,9 +92,10 @@ npm run probe:hmem
 
 This performs a genuine **local Meterless H-MEM reference** store → disk persistence → new engine instance → retrieval, using a compact summary of an executed mock B investigation. It uses and removes its own temporary directory. Summaries carry scope, timestamp, hypothesis, decision reason, unresolved risks and provenance; historical IDs never become current evidence. The adapter supports caller-owned persistent directories, isolated per account/region, and validates stored data on read and write. The reference uses local deterministic embeddings and single-writer JSON persistence. This proof does **not** establish a hosted service or warm-run query-priority behavior.
 
-The investigation CLI itself does not automatically save/recall historical context yet;
-both history services remain labeled `not_configured` there. A separate Zetaris
-history adapter now provides validated, account/region-scoped reads and explicitly
+The CLI recalls history after fresh inventory/billing selects an instance, then persists
+a validated summary after evaluation. Set `HMEM_PERSIST_DIR=.cci-memory` for local
+reasoning memory. Setting `ZETARIS_HISTORY_TABLE` enables scoped history reads;
+appends still require the explicit opt-in below. The Zetaris adapter provides validated, account/region-scoped reads and explicitly
 enabled append/read-back, restricted to the `CCI_HISTORY` lakehouse. No generic SQL
 or credentials are exposed to the planner.
 
@@ -126,9 +127,28 @@ catalog metadata when no table is configured). The round-trip probe writes one
 synthetic mock-B history record and verifies a scoped readback; it retains that
 labeled record. The user reported a successful real Zetaris round-trip on
 2026-10-23 with mock investigation evidence; effective least-privilege permissions
-and automatic CLI history use remain unverified.
+remain a deployment responsibility. Warm CLI history use is now independently verified
+with the configured Zetaris service and local H-MEM reference over mock AWS evidence.
 The adapter is an MVP with one writer, not an atomic uniqueness guarantee under
 concurrent writers. Failed or ambiguous inserts are never automatically retried.
+
+Run the configured integration proof explicitly:
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm
+```
+
+It runs the CLI twice under a unique synthetic account, retains two labeled mock
+history records in Zetaris, and removes its temporary H-MEM directory. Run 1
+checks operations first and records the unqueried dependency check. Run 2 recalls
+both stores and checks dependencies before operations. Both verdicts cite fresh
+mock evidence. The scripted planner follows this priority deterministically;
+the model planner receives the same bounded hints and instruction, with its
+actual action visible in the trace. Historical text and old evidence IDs are
+excluded from planner hints. A cleared or unavailable fresh job source cannot
+inherit the old rejection. Source read statuses and write outcomes are reported
+separately; unavailable history never substitutes for operational evidence.
+Do not run concurrent writers against the same local memory directory.
 
 ## Verify
 
@@ -168,4 +188,4 @@ No integration command was added to normal tests or build hooks.
 
 The original notebook remains available with `npm run notebook -- ...`. Its `.notebook/` state is independent of investigation memory. Avoid `npm run setup` unless intentionally refreshing the vendored starter; it downloads an upstream copy.
 
-Product scope, rationale and executed milestone evidence live in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md), [memory.md](memory.md), and [EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md). AWS live adapters, authorized Zetaris history, warm history/memory planning, event-model approval, A/C/D evaluation and submission assets remain separate gates.
+Product scope, rationale and executed milestone evidence live in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md), [memory.md](memory.md), and [EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md). AWS live adapters, effective least-privilege deployment permissions, event-model approval, broader A/C/D evaluation and submission assets remain separate gates.

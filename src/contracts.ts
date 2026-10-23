@@ -134,8 +134,8 @@ export interface InvestigationReport {
   evidence: Observation[];
   trace: TraceEntry[];
   historical_context: {
-    zetaris: 'not_configured';
-    hmem: 'not_configured';
+    zetaris: 'not_configured' | 'not_queried' | 'ok' | 'unavailable';
+    hmem: 'not_configured' | 'not_queried' | 'ok' | 'unavailable';
     context_ids: string[];
     limitations: string[];
   };

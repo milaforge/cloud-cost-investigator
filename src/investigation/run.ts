@@ -3,33 +3,40 @@ import {
   type Action,
   type BillingData,
   type CandidateReport,
+  type DependenciesData,
   type InventoryData,
   type InvestigationReport,
   type InvestigationRequest,
   type MetricsData,
   type Observation,
   type OperationsData,
-  type DependenciesData,
   type ToolAction,
   type TraceEntry,
   validateAction,
   validateObservation,
   validateRequest,
 } from '../contracts.ts';
-import { validateReport } from './report.ts';
-import type { Planner } from './planner.ts';
+import {
+  type HistoryHint,
+  type HistoryOptions,
+  InvestigationHistory,
+} from './history.ts';
 import type { CurrentEvidenceProvider } from './mock.ts';
+import type { Planner } from './planner.ts';
+import { validateReport } from './report.ts';
 
 export interface PlannerState {
   request: InvestigationRequest;
   candidate_id: string | null;
   proposed_window: CandidateReport['proposed_window'];
+  historical_hints?: HistoryHint[];
   observations: Observation[];
   trace: TraceEntry[];
 }
 export interface RunOptions {
   planner: Planner;
   provider: CurrentEvidenceProvider;
+  history?: HistoryOptions;
   limits?: {
     tool_timeout_ms?: number;
     planner_timeout_ms?: number;
@@ -99,6 +106,11 @@ export async function runInvestigation(
   );
   const maxCandidate = limit(options.limits?.candidate_attempts, 6, 6);
   const maxPlanner = limit(options.limits?.planner_calls, 9, 9); // 2 discovery + 7 per candidate
+  const history = new InvestigationHistory(options.history ?? {}, {
+    account_id: request.account_id,
+    region: request.region,
+  });
+  let historicalHints: HistoryHint[] = [];
   const evidence: Observation[] = [];
   const trace: TraceEntry[] = [];
   const gaps: string[] = [];
@@ -150,6 +162,7 @@ export async function runInvestigation(
               proposed_window: structuredClone(
                 candidate?.proposed_window ?? null,
               ),
+              historical_hints: structuredClone(historicalHints),
               observations: structuredClone(evidence),
               trace: structuredClone(trace),
             },
@@ -332,6 +345,16 @@ export async function runInvestigation(
           break;
         }
         const selected = eligible[0];
+        historicalHints = await history.recall(
+          selected.instance_id,
+          started_at,
+          AbortSignal.timeout(remaining(total)),
+        );
+        if (historicalHints.length)
+          add(
+            'evaluator',
+            'Historical context prioritizes fresh checks only; current evidence still controls the verdict.',
+          );
         candidate = {
           instance_id: selected.instance_id,
           selection_reason:
@@ -432,7 +455,10 @@ export async function runInvestigation(
       'Keep the proposed window rejected; review the cited conflict with the resource owner.',
     ];
     candidate.missing_checks = [
-      'Other shutdown windows and unqueried sources have not been evaluated.',
+      'Other shutdown windows have not been evaluated.',
+      ...(['get_ec2_operations', 'get_ec2_dependencies'] as const)
+        .filter((tool) => !find(tool))
+        .map((tool) => `${tool}: not queried; requires fresh verification`),
     ];
   }
   if (Date.now() >= start + total && stopReason !== 'hypothesis_contradicted')
@@ -458,14 +484,7 @@ export async function runInvestigation(
     candidates: candidate ? [candidate] : [],
     evidence,
     trace,
-    historical_context: {
-      zetaris: 'not_configured',
-      hmem: 'not_configured',
-      context_ids: [],
-      limitations: [
-        'No historical services were read or written. First-run current evidence does not depend on history.',
-      ],
-    },
+    historical_context: history.result,
     budget: {
       discovery_attempts: discoveryAttempts,
       candidate_attempts: candidateAttempts,
@@ -484,5 +503,9 @@ export async function runInvestigation(
     ],
     stop_reason: stopReason,
   };
+  validateReport(report);
+  await history.persist(report, AbortSignal.timeout(remaining(total)));
+  report.finished_at = new Date().toISOString();
+  report.budget.elapsed_ms = Date.now() - start;
   return validateReport(report);
 }

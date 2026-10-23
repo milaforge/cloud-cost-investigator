@@ -19,7 +19,8 @@
     "probe:zetaris": "node --import tsx scripts/probe-zetaris.ts",
     "test:integration": "node --import tsx --test --test-isolation=none tests/integration/*.test.ts",
     "probe:zetaris:history": "node --import tsx scripts/probe-zetaris.ts --history",
-    "probe:zetaris:roundtrip": "node --import tsx scripts/probe-zetaris-history-roundtrip.ts"
+    "probe:zetaris:roundtrip": "node --import tsx scripts/probe-zetaris-history-roundtrip.ts",
+    "probe:warm": "node --import tsx scripts/probe-warm.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",

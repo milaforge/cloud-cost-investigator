@@ -10,6 +10,9 @@ async function cli(...args: string[]) {
   const originalOut = process.stdout.write;
   const originalErr = process.stderr.write;
   const originalKey = process.env.NVIDIA_API_KEY;
+  const historyKeys = ['HMEM_PERSIST_DIR', 'ZETARIS_HISTORY_TABLE'];
+  const historyValues = historyKeys.map((key) => process.env[key]);
+  for (const key of historyKeys) process.env[key] = '';
   process.stdout.write = ((chunk: string | Uint8Array) => {
     stdout += chunk.toString();
     return true;
@@ -22,6 +25,10 @@ async function cli(...args: string[]) {
   try {
     return { status: await main(args), stdout, stderr };
   } finally {
+    historyKeys.forEach((key, i) => {
+      if (historyValues[i] === undefined) delete process.env[key];
+      else process.env[key] = historyValues[i];
+    });
     process.stdout.write = originalOut;
     process.stderr.write = originalErr;
     if (originalKey === undefined) delete process.env.NVIDIA_API_KEY;
