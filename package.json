@@ -1,15 +1,25 @@
 {
-  "name": "agentathon-starter",
+  "name": "cloud-cost-investigator",
   "version": "0.1.0",
-  "description": "Meterless hackathon starter: a research notebook agent with real H-MEM memory. Zero API keys required.",
+  "description": "Read-only, evidence-driven EC2 off-hours scheduling investigation CLI.",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "setup": "npx --yes degit meterless/meterless/engines/hmem/reference vendor/hmem && cd vendor/hmem && npm install --no-audit --no-fund",
-    "notebook": "tsx notebook.ts"
+    "notebook": "tsx notebook.ts",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
   },
   "devDependencies": {
-    "tsx": "^4.19.0"
+    "@biomejs/biome": "^2.6.2",
+    "@types/node": "^24.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

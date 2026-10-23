@@ -36,6 +36,22 @@
 - Event rules were aligned from local notes only. Portal requirements and
   sponsor/model availability still need independent verification.
 
+## Development linting and formatting (2026-10-23)
+
+- Lint remediation keeps the ASCII control-character rejection regex intact,
+  with a documented suppression on that declaration only. Non-null assertions
+  are replaced by checked lookups, stable narrowed locals and test assertions.
+  The dynamic loader reuses the vendored H-MEM constructor type instead of
+  `any`; no extra runtime import or dependency is needed.
+
+- Use Biome as one development-only dependency for TypeScript/JavaScript and
+  JSON linting and formatting, keeping npm and its existing lockfile.
+- Respect Git ignore rules and exclude the upstream `vendor` tree and generated
+  npm lockfile. Recommended lint rules stay enabled; existing findings are
+  reported rather than hidden or fixed as part of tool installation.
+- Keep checks (`lint`, `format:check`) separate from explicit writes (`lint:fix`,
+  `format`) so validation does not rewrite concurrent work.
+
 ## Approved optimization-first MVP and architecture (2026-10-23)
 
 **Team-confirmed product change:** The former primary user question, “why did EC2 costs increase between two periods?”, is **superseded** by “suggest safe EC2 optimization opportunities.” This is a deliberate product-scope change under Track 02, not a claim that the previous workflow has been implemented. No baseline, two billing snapshots, or previous run is a prerequisite. Billing still supports spend prioritization and qualified savings.

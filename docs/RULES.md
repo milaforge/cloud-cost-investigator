@@ -243,9 +243,7 @@ provided.
     "guidance": "Get a working end-to-end system early.",
     "stages": [
       {
-        "days": [
-          1
-        ],
+        "days": [1],
         "name": "Scope and skeleton",
         "tasks": [
           "Confirm the track, user, and expected output.",
@@ -255,10 +253,7 @@ provided.
         ]
       },
       {
-        "days": [
-          2,
-          3
-        ],
+        "days": [2, 3],
         "name": "Agent behavior",
         "tasks": [
           "Add evaluation, critique, or review steps.",
@@ -268,9 +263,7 @@ provided.
         ]
       },
       {
-        "days": [
-          4
-        ],
+        "days": [4],
         "name": "Data and tools",
         "tasks": [
           "Add datasets, tools, and retrieval.",
@@ -278,9 +271,7 @@ provided.
         ]
       },
       {
-        "days": [
-          5
-        ],
+        "days": [5],
         "name": "Hardening",
         "tasks": [
           "Complete documentation and the README.",
@@ -290,9 +281,7 @@ provided.
         ]
       },
       {
-        "days": [
-          6
-        ],
+        "days": [6],
         "name": "Final checks and submission",
         "tasks": [
           "Complete all submission materials.",
