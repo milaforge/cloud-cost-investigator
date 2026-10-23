@@ -1,4 +1,4 @@
-// Runtime contracts for the first, single-candidate investigation slice.
+// Runtime-validated current-evidence and investigation contracts.
 export const TOOL_NAMES = [
   'list_ec2_instances',
   'get_ec2_billing',
@@ -28,7 +28,7 @@ export interface Scope {
 }
 export interface InvestigationRequest extends Scope {
   window: Window;
-  max_candidates: 1;
+  max_candidates: number;
 }
 export interface ToolArgs extends Scope {
   window: Window;
@@ -54,7 +54,11 @@ export interface InventoryData {
   instances: { instance_id: string; state: 'running' | 'stopped' }[];
 }
 export interface BillingData {
-  costs: { instance_id: string; compute_cost: number }[];
+  costs: {
+    instance_id: string;
+    compute_cost: number;
+    pricing?: ComputePricing;
+  }[];
   currency: string;
   commitment_coverage_known: boolean;
 }
@@ -64,10 +68,36 @@ export interface MetricsData {
   suggested_window: Schedule;
   aggregation_minutes: number;
 }
+export interface SchedulingClearance {
+  window: Schedule;
+  valid_window: Window;
+  owner_confirmed: boolean;
+  calendar_reviewed: boolean;
+  recovery_verified: boolean;
+  excluded_dates: string[];
+  overhead_minutes: number;
+}
+export interface ComputePricing {
+  hourly_compute_rate: number;
+  purchase_option: 'on_demand' | 'commitment' | 'unknown';
+  retained_costs_excluded: boolean;
+  billing_granularity_minutes: number;
+  valid_window: Window;
+}
+export interface SavingsCalculation {
+  currency: string;
+  period: Window;
+  eligible_days: number;
+  avoided_hours: number;
+  hourly_compute_rate: number;
+  evidence_ids: string[];
+}
 export interface OperationsData {
+  scheduling_clearance?: SchedulingClearance;
   jobs: { job_id: string; critical: boolean; window: Schedule }[];
 }
 export interface DependenciesData {
+  scheduling_clearance?: SchedulingClearance;
   requires_continuous_operation: boolean;
 }
 export type ToolData =
@@ -92,7 +122,7 @@ export interface Observation {
 }
 export interface Hypothesis {
   window: Schedule;
-  state: 'proposed' | 'contradicted' | 'unresolved';
+  state: 'proposed' | 'contradicted' | 'unresolved' | 'supported';
   evidence_ids: string[];
   reason: string;
 }
@@ -109,7 +139,10 @@ export interface CandidateReport {
   selection_reason: string;
   selection_evidence_ids: string[];
   proposed_window: Schedule | null;
-  verdict: 'not_recommended' | 'needs_verification';
+  verdict:
+    | 'not_recommended'
+    | 'needs_verification'
+    | 'conditional_recommendation';
   explanation: string;
   supporting_evidence_ids: string[];
   contradicting_evidence_ids: string[];
@@ -118,7 +151,8 @@ export interface CandidateReport {
   missing_checks: string[];
   assumptions: string[];
   next_human_actions: string[];
-  estimated_monthly_savings: null;
+  estimated_monthly_savings: number | null;
+  savings_calculation: SavingsCalculation | null;
 }
 export interface InvestigationReport {
   investigation_id: string;
@@ -129,7 +163,11 @@ export interface InvestigationReport {
   completion_status: 'complete' | 'partial' | 'failed';
   integration_mode: Mode;
   planner: { mode: 'scripted' | 'live'; model: string | null };
-  discovery: { discovered_count: number; candidate_limit: 1; gaps: string[] };
+  discovery: {
+    discovered_count: number;
+    candidate_limit: number;
+    gaps: string[];
+  };
   candidates: CandidateReport[];
   evidence: Observation[];
   trace: TraceEntry[];
@@ -258,7 +296,7 @@ export function validateRequest(value: unknown): InvestigationRequest {
   return {
     ...validateScope(o),
     window: validateWindow(o.window),
-    max_candidates: integer(o.max_candidates, 1, 1) as 1,
+    max_candidates: integer(o.max_candidates, 1, 3),
   };
 }
 export function validateAction(value: unknown): Action {
@@ -406,10 +444,13 @@ export function validateObservation(
         const currency = textValue(d.currency, 3);
         if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Invalid currency');
         const costs = array(d.costs).map((v) => {
-          const c = exact(v, ['instance_id', 'compute_cost']);
+          const c = exact(v, ['instance_id', 'compute_cost', 'pricing']);
           return {
             instance_id: identifier(c.instance_id),
             compute_cost: numberValue(c.compute_cost, 0, 1e12),
+            ...(c.pricing === undefined
+              ? {}
+              : { pricing: validatePricing(c.pricing) }),
           };
         });
         if (new Set(costs.map((c) => c.instance_id)).size !== costs.length)
@@ -438,8 +479,13 @@ export function validateObservation(
           throw new Error('Peak below average');
         break;
       case 'get_ec2_operations':
-        exact(d, ['jobs']);
+        exact(d, ['jobs', 'scheduling_clearance']);
         data = {
+          ...(d.scheduling_clearance === undefined
+            ? {}
+            : {
+                scheduling_clearance: validateClearance(d.scheduling_clearance),
+              }),
           jobs: array(d.jobs).map((v) => {
             const j = exact(v, ['job_id', 'critical', 'window']);
             return {
@@ -451,9 +497,14 @@ export function validateObservation(
         };
         break;
       case 'get_ec2_dependencies':
-        exact(d, ['requires_continuous_operation']);
+        exact(d, ['requires_continuous_operation', 'scheduling_clearance']);
         data = {
           requires_continuous_operation: bool(d.requires_continuous_operation),
+          ...(d.scheduling_clearance === undefined
+            ? {}
+            : {
+                scheduling_clearance: validateClearance(d.scheduling_clearance),
+              }),
         };
         break;
     }
@@ -484,5 +535,59 @@ export function validateObservation(
     units,
     evidence_id: identifier(o.evidence_id),
     data,
+  };
+}
+
+function validatePricing(value: unknown): ComputePricing {
+  const p = exact(value, [
+    'hourly_compute_rate',
+    'purchase_option',
+    'retained_costs_excluded',
+    'billing_granularity_minutes',
+    'valid_window',
+  ]);
+  return {
+    hourly_compute_rate: numberValue(p.hourly_compute_rate, 0, 1e6),
+    purchase_option: member(p.purchase_option, [
+      'on_demand',
+      'commitment',
+      'unknown',
+    ]),
+    retained_costs_excluded: bool(p.retained_costs_excluded),
+    billing_granularity_minutes: integer(p.billing_granularity_minutes, 1, 60),
+    valid_window: validateWindow(p.valid_window),
+  };
+}
+function validateClearance(value: unknown): SchedulingClearance {
+  const c = exact(value, [
+    'window',
+    'valid_window',
+    'owner_confirmed',
+    'calendar_reviewed',
+    'recovery_verified',
+    'excluded_dates',
+    'overhead_minutes',
+  ]);
+  const valid_window = validateWindow(c.valid_window);
+  const excluded_dates = array(c.excluded_dates, 90).map((v) => {
+    const date = textValue(v, 10);
+    utc(`${date}T00:00:00Z`);
+    if (
+      Date.parse(`${date}T00:00:00Z`) < Date.parse(valid_window.from) ||
+      Date.parse(`${date}T00:00:00Z`) >= Date.parse(valid_window.to)
+    )
+      throw new Error('Exception outside clearance');
+    return date;
+  });
+  if (new Set(excluded_dates).size !== excluded_dates.length)
+    throw new Error('Duplicate calendar exception');
+  return {
+    window: validateSchedule(c.window),
+    valid_window,
+    owner_confirmed: bool(c.owner_confirmed),
+    calendar_reviewed: bool(c.calendar_reviewed),
+    recovery_verified: bool(c.recovery_verified),
+    excluded_dates: excluded_dates.sort(),
+    overhead_minutes: integer(c.overhead_minutes, 0, 1440),
   };
 }

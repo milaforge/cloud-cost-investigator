@@ -85,7 +85,10 @@ export class InvestigationHistory {
         }
         this.result.zetaris = 'ok';
       } catch {
-        this.result.zetaris = 'unavailable';
+        if (this.result.zetaris !== 'ok') this.result.zetaris = 'unavailable';
+        this.result.limitations.push(
+          'A candidate Zetaris recall failed; no historical evidence used for that candidate.',
+        );
       }
     }
     if (this.options.hmem_directory) {
@@ -107,7 +110,10 @@ export class InvestigationHistory {
         }
         this.result.hmem = 'ok';
       } catch {
-        this.result.hmem = 'unavailable';
+        if (this.result.hmem !== 'ok') this.result.hmem = 'unavailable';
+        this.result.limitations.push(
+          'A candidate H-MEM recall failed; no memory hints used for that candidate.',
+        );
       }
     }
     hints.sort(
@@ -115,7 +121,12 @@ export class InvestigationHistory {
         Date.parse(b.recorded_at) - Date.parse(a.recorded_at) ||
         a.context_id.localeCompare(b.context_id),
     );
-    this.result.context_ids = [...new Set(hints.map((h) => h.context_id))];
+    this.result.context_ids = [
+      ...new Set([
+        ...this.result.context_ids,
+        ...hints.map((h) => h.context_id),
+      ]),
+    ];
     for (const h of hints)
       this.result.limitations.push(
         `${h.context_id}: historical ${h.source_mode}, recorded ${h.recorded_at}; prioritize ${h.priority}.`,
@@ -127,41 +138,48 @@ export class InvestigationHistory {
     report: InvestigationReport,
     signal: AbortSignal,
   ): Promise<void> {
-    if (!report.candidates.length) return;
-    if (
-      this.options.zetaris &&
-      process.env.ZETARIS_HISTORY_ALLOW_APPEND === 'true'
+    for (
+      let candidateIndex = 0;
+      candidateIndex < report.candidates.length;
+      candidateIndex++
     ) {
-      try {
-        signal.throwIfAborted();
-        const saved = await appendZetarisHistory(
-          historyRecordFromReport(report),
-          signal,
-        );
+      if (
+        this.options.zetaris &&
+        process.env.ZETARIS_HISTORY_ALLOW_APPEND === 'true'
+      ) {
+        try {
+          signal.throwIfAborted();
+          const saved = await appendZetarisHistory(
+            historyRecordFromReport(report, candidateIndex),
+            signal,
+          );
+          this.result.limitations.push(
+            `Zetaris append verified by exact readback: ${saved.context_id} (new history, not recalled context).`,
+          );
+        } catch {
+          this.result.limitations.push(
+            'Zetaris append failed or is unverified; no retry was attempted.',
+          );
+        }
+      } else if (this.options.zetaris) {
         this.result.limitations.push(
-          `Zetaris append verified by exact readback: ${saved.context_id} (new history, not recalled context).`,
-        );
-      } catch {
-        this.result.limitations.push(
-          'Zetaris append failed or is unverified; no retry was attempted.',
+          'Zetaris append disabled; no historical record written.',
         );
       }
-    } else if (this.options.zetaris) {
-      this.result.limitations.push(
-        'Zetaris append disabled; no historical record written.',
-      );
-    }
-    if (this.memory) {
-      try {
-        signal.throwIfAborted();
-        const saved = this.memory.store(reasoningSummaryFromReport(report));
-        this.result.limitations.push(
-          `H-MEM summary stored: ${saved.context_id} (new history, not recalled context).`,
-        );
-      } catch {
-        this.result.limitations.push(
-          'H-MEM store failed; reopen before further use.',
-        );
+      if (this.memory) {
+        try {
+          signal.throwIfAborted();
+          const saved = this.memory.store(
+            reasoningSummaryFromReport(report, candidateIndex),
+          );
+          this.result.limitations.push(
+            `H-MEM summary stored: ${saved.context_id} (new history, not recalled context).`,
+          );
+        } catch {
+          this.result.limitations.push(
+            'H-MEM store failed; reopen before further use.',
+          );
+        }
       }
     }
   }

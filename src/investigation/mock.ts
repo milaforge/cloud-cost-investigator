@@ -1,3 +1,4 @@
+import { estimatePeriod } from './policy.ts';
 import {
   validateAction,
   type Mode,
@@ -10,6 +11,7 @@ export interface CurrentEvidenceProvider {
   call(action: ToolAction, signal: AbortSignal): Promise<unknown>;
 }
 
+export type MockScenario = 'A' | 'B' | 'C' | 'mixed' | 'clear' | 'missing';
 let evidenceSequence = 0;
 
 /** Synthetic direct-source observations; this provider never contacts AWS. */
@@ -17,7 +19,7 @@ export class MockProvider implements CurrentEvidenceProvider {
   readonly mode = 'mock' as const;
 
   constructor(
-    private readonly scenario: 'B' | 'clear' | 'missing' = 'B',
+    private readonly scenario: MockScenario = 'B',
     private readonly clock: () => number = Date.now,
   ) {}
 
@@ -48,12 +50,41 @@ export class MockProvider implements CurrentEvidenceProvider {
       data: null,
     };
 
+    const scenario =
+      this.scenario === 'mixed'
+        ? args.instance_id === 'i-mock-primary'
+          ? 'A'
+          : args.instance_id === 'i-mock-secondary'
+            ? 'B'
+            : 'C'
+        : this.scenario;
+    const period = estimatePeriod({
+      account_id: args.account_id,
+      region: args.region,
+      window: args.window,
+      max_candidates: 1,
+    });
+    const clearance = {
+      window: { start_hour_utc: 0, end_hour_utc: 6 },
+      valid_window: period,
+      owner_confirmed: true,
+      calendar_reviewed: true,
+      recovery_verified: true,
+      excluded_dates: [period.from.slice(0, 10)],
+      overhead_minutes: 30,
+    };
     switch (tool) {
       case 'list_ec2_instances':
         observation.data = {
           instances: [
             { instance_id: 'i-mock-primary', state: 'running' },
             { instance_id: 'i-mock-secondary', state: 'running' },
+            ...(this.scenario === 'mixed'
+              ? [
+                  { instance_id: 'i-mock-third', state: 'running' as const },
+                  { instance_id: 'i-mock-fourth', state: 'running' as const },
+                ]
+              : []),
           ],
         };
         break;
@@ -61,12 +92,33 @@ export class MockProvider implements CurrentEvidenceProvider {
         observation.units = 'currency';
         observation.data = {
           costs: [
-            { instance_id: 'i-mock-primary', compute_cost: 480 },
+            {
+              instance_id: 'i-mock-primary',
+              compute_cost: 480,
+              ...(this.scenario === 'A' || this.scenario === 'mixed'
+                ? {
+                    pricing: {
+                      hourly_compute_rate: 0.5,
+                      purchase_option: 'on_demand' as const,
+                      retained_costs_excluded: true,
+                      billing_granularity_minutes: 60,
+                      valid_window: period,
+                    },
+                  }
+                : {}),
+            },
             { instance_id: 'i-mock-secondary', compute_cost: 80 },
+            ...(this.scenario === 'mixed'
+              ? [
+                  { instance_id: 'i-mock-third', compute_cost: 40 },
+                  { instance_id: 'i-mock-fourth', compute_cost: 10 },
+                ]
+              : []),
           ],
           currency: 'USD',
           // A ranking input only; no claim that these charges are avoidable.
-          commitment_coverage_known: false,
+          commitment_coverage_known:
+            this.scenario === 'A' || this.scenario === 'mixed',
         };
         break;
       case 'get_ec2_metrics':
@@ -81,13 +133,20 @@ export class MockProvider implements CurrentEvidenceProvider {
       case 'get_ec2_operations':
         observation.units = 'UTC-hours';
         // Simplified daily UTC fixture semantics, not a real AWS scheduling API.
-        if (this.scenario === 'missing') {
+        if (scenario === 'missing') {
           observation.status = 'unavailable';
           observation.coverage = { complete: false, authoritative: false };
           observation.missing_fields = ['job_schedule'];
-        } else if (this.scenario === 'clear') {
+        } else if (
+          scenario === 'clear' ||
+          scenario === 'C' ||
+          scenario === 'A'
+        ) {
           observation.status = 'no_match';
-          observation.data = { jobs: [] };
+          observation.data = {
+            jobs: [],
+            ...(scenario === 'A' ? { scheduling_clearance: clearance } : {}),
+          };
         } else {
           observation.data = {
             jobs: [
@@ -102,7 +161,10 @@ export class MockProvider implements CurrentEvidenceProvider {
         break;
       case 'get_ec2_dependencies':
         observation.units = 'boolean';
-        observation.data = { requires_continuous_operation: false };
+        observation.data = {
+          requires_continuous_operation: scenario === 'C',
+          ...(scenario === 'A' ? { scheduling_clearance: clearance } : {}),
+        };
         break;
     }
 

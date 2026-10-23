@@ -116,5 +116,27 @@ Stop after a verified thin slice; do not build dashboards, downsizing, a new sta
 Scenario D now connects the existing Zetaris and H-MEM adapters to the CLI.
 Scoped historical context changes fresh query priority; newly retrieved evidence
 still controls every verdict. The configured two-run sponsor proof and focused
-failure tests are recorded in `docs/EXECUTION_PLAN.md`. Live AWS, warm model
-planning and broader scenario evaluation remain separate gates.
+failure tests are recorded in `docs/EXECUTION_PLAN.md`. Live AWS and warm model
+planning remain separate gates. The broader A/C and multi-candidate implementation
+is described below; measured baseline evaluation remains separate.
+
+## Broader scenario implementation (2026-10-23)
+
+A conditional recommendation requires positive matching owner/calendar/recovery
+clearance from both operations and dependencies, complete authoritative data,
+adequate utilization coverage, no overlapping jobs and no continuous-operation
+constraint. C rejects a proposed window based on a fresh continuous-operation
+dependency; missing evidence remains a separate deferral path.
+
+Discover up to three candidates in descending positive matching compute spend,
+ties by instance ID. Share discovery, keep candidate evidence isolated and retain
+one aggregate deadline. Unsupported candidates are explicitly deferred without
+losing earlier results. Persist one scoped historical summary per candidate.
+
+Savings use the month following the observation window, reviewed excluded dates,
+per-window overhead, billing granularity and an explicit marginal on-demand USD
+compute rate. Commitments, other currencies, retained-cost ambiguity or expired
+pricing keep the estimate null. No rate is derived from total spend. All new
+scenario data is synthetic; actual adapter/pricing integration remains a gate.
+
+Executable proof and remaining work belong to `docs/EXECUTION_PLAN.md`.

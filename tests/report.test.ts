@@ -92,7 +92,7 @@ test('CLI rejects unknown, duplicate, missing, and out-of-range arguments', asyn
     ['--lookback-days', '0'],
     ['--lookback-days', '91'],
     ['--lookback-days', '1.5'],
-    ['--max-candidates', '3'],
+    ['--max-candidates', '4'],
     ['--planner', 'other'],
   ]) {
     const result = await cli(...args, ...extra);

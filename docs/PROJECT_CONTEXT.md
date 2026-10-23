@@ -48,7 +48,7 @@ These flows share **one bounded investigation engine**, not separate agents:
 
 Additional required failure proof: unavailable/partial/invalid direct source, history-store failure, memory unavailable, model error, repeated action, or budget exhaustion should be bounded and correctly labeled. First run must work with empty Zetaris history and empty H-MEM memory.
 
-**CLI shape:** the first implemented slice supports `--max-candidates 1`; expansion to three is follow-on:
+**CLI shape:** supports `--max-candidates 1` through `3` (default 1), sharing discovery and one aggregate deadline:
 
 ```bash
 cloud-cost-investigator investigate --account demo --region us-east-1 \
@@ -127,6 +127,8 @@ Every candidate is challenged with at least one **targeted disconfirming** inqui
 ## 7. Savings discipline
 
 Savings are **deterministic**, not LLM-derived. A non-null amount requires a justified schedule, compute-only marginal eligible cost or rate, time units, billing coverage, currency, and treatment of Reserved Instances/Savings Plans/discounts. Explicitly exclude ongoing EBS and other retained costs unless separately modeled. Consider schedule/calendar/timezone exceptions, stop/start overhead and billing effects. A tempting nominal estimate is not necessarily a reduction in the AWS bill. For any missing essential assumption, set `estimated_monthly_savings = null`; never invent a price, confidence percentage, or coverage claim.
+
+Implemented conservative policy: complete authoritative discovery and both operational challenges, at least seven days of ≤5-minute low-average/peak utilization, no overlapping jobs, and matching owner/calendar/recovery clearances covering the calendar month following the observed window. Clearances explicitly carry excluded UTC dates and per-window overhead. Positive clearance never authorizes execution. Numeric savings currently support only USD on-demand marginal compute rates with explicit commitment treatment, retained-cost exclusion and pricing validity covering that month. Round avoided daily minutes down to billing granularity and the final amount down to USD cents; all unsupported cases remain `null`.
 
 ## 8. Detailed report and trace contract
 

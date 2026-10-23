@@ -16,9 +16,9 @@ Biome respects `.gitignore` and excludes `vendor/` and `package-lock.json`.
 The initial installation preserves existing source formatting and lint findings;
 the write commands can affect existing work, so review their diff.
 
-Read-only EC2 off-hours scheduling investigation for **Track 02 — The Agent That Can Explain Why**. This implements the first contradiction-first slice in [plan.md](plan.md). Current evidence is explicitly **synthetic mock data**. No AWS API is called and no infrastructure can be changed.
+Read-only EC2 off-hours scheduling investigation for **Track 02 — The Agent That Can Explain Why**. This implements the contradiction-first loop and broader A/C scenarios in [plan.md](plan.md). Current evidence is explicitly **synthetic mock data**. No AWS API is called and no infrastructure can be changed.
 
-An engineer supplies an account and region. The CLI discovers running instances, ranks matching compute spend, inspects utilization, proposes an observed UTC window, then challenges that exact window with operational evidence. In scenario B, a critical batch job rejects the proposal. No previous investigation is required. Savings are always `null` in this slice.
+An engineer supplies an account and region. The CLI discovers running instances, ranks matching compute spend, inspects utilization, proposes an observed UTC window, then challenges that exact window with operational evidence. In scenario B, a critical batch job rejects the proposal. No previous investigation is required. Up to three ranked candidates share one bounded investigation. Savings are deterministic when fully justified; otherwise they remain `null`.
 
 ## Run
 
@@ -28,17 +28,18 @@ Requires Node.js **24+** and npm. The repository already uses `package-lock.json
 npm ci
 npm run investigate -- --account demo --region us-east-1
 npm run investigate -- --account demo --region us-east-1 --scenario missing
+npm run investigate -- --account demo --region us-east-1 --scenario mixed --max-candidates 3
 ```
 
-The first command shows the detailed report and trace. The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. This slice does not implement scenario A. Supported flags:
+The first command shows the detailed report and trace. The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. Scenario A supplies explicit owner/calendar/recovery clearance and compute pricing for a conditional recommendation; C supplies a continuous-operation dependency. `mixed` investigates A/B/C in ranked order from four synthetic instances. Supported flags:
 
 ```text
 --account ID          required, labeled scope for the synthetic provider
 --region REGION       required
 --lookback-days N     1–90; default 28 UTC days ending at invocation
---max-candidates 1    one discovered candidate only
---scenario B|clear|missing
---planner scripted|nvidia
+--max-candidates N    1–3 ranked candidates; default 1
+--scenario A|B|C|mixed|clear|missing
+--planner scripted|model|nvidia
 --json
 ```
 
@@ -48,7 +49,7 @@ For machine-readable stdout without npm's script banner:
 node --import tsx cli.ts investigate --account demo --region us-east-1 --json
 ```
 
-Exit codes: **0** completed scoped rejection/no eligible candidates; **2** partial; **1** failed investigation, invalid invocation, or planner configuration. `complete` concerns the investigated window; it does not mean the project or sponsor gates are finished.
+Exit codes: **0** completed scoped recommendations/rejections/no eligible candidates; **2** partial; **1** failed investigation, invalid invocation, or planner configuration. `complete` concerns the investigated window; it does not mean the project or sponsor gates are finished.
 
 ## Model configuration
 
@@ -77,12 +78,18 @@ All model paths preserve bounded requests, validated actions, trusted argument b
 
 - `src/contracts.ts` validates requests, actions and observations at runtime, rejecting scope/period mismatches, stale collection times, malformed data, unsupported fields and units.
 - `src/investigation/run.ts` owns candidate ranking and the bounded planner → executor → evaluator loop. Only five read-only logical tools exist. The model chooses an allowlisted question; trusted code binds scope, window and current IDs. Model prose cannot authorize a verdict or infrastructure write.
-- `src/investigation/mock.ts` owns synthetic direct evidence and B/clear/missing scenarios. Metrics summarize the suggested daily UTC window across the observed lookback. These are application contracts, not claims about available AWS endpoints.
-- `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → contradicted/unresolved transition; it renders the detailed CLI trace.
+- `src/investigation/mock.ts` owns synthetic direct evidence and A/B/C/mixed/clear/missing scenarios. Metrics summarize the suggested daily UTC window across the observed lookback. These are application contracts, not claims about available AWS endpoints.
+- `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → supported/contradicted/unresolved transition; it renders the detailed CLI trace.
 
-Hard bounds: two discovery tool attempts; six candidate tool attempts; two discovery plus seven candidate planner calls (nine total); 5s per tool; 15s per planner call; 120s overall. Every attempted call counts, including failures. Identical repeated tool actions stop the run. The native model request also has a 20s cancellation deadline and 32KiB response limit. Unsupported/missing evidence never becomes zero or proof of safety. Daily same-day UTC windows only are supported; overnight windows must be split by a future adapter.
+Hard bounds: two discovery tool attempts; six tool attempts per candidate; two discovery plus seven planner calls per candidate (23 maximum); 5s per tool; 15s per planner call; 120s overall. Every attempted call counts, including failures. Identical repeated tool actions defer the active candidate. A later failure preserves completed candidates; exhausted aggregate budgets explicitly defer the remainder. The native model request also has a 20s cancellation deadline and 32KiB response limit. Unsupported/missing evidence never becomes zero or proof of safety. Daily same-day UTC windows only are supported; overnight windows must be split by a future adapter.
 
-A rejected window requires a later retrieved current conflict. Empty/non-authoritative sources cannot clear scheduling safety. Conditional recommendations, calendar exceptions and deterministic savings are deliberately left to follow-on work in the plan. Human review remains required for any eventual shutdown.
+A rejected window requires a later retrieved current conflict. Empty/non-authoritative sources cannot clear scheduling safety. Conditional recommendations require complete authoritative discovery, at least seven days of low-average/low-peak utilization at ≤5-minute aggregation, both targeted operational challenges, no overlapping jobs, no continuous dependency, and matching positive owner/calendar/recovery clearance. Empty job queries alone never suffice. Human review remains required for any eventual shutdown.
+
+## Savings assumptions
+
+`src/investigation/policy.ts` computes a **USD compute-only estimate for the UTC calendar month following the observation window**. Both operations and dependencies must explicitly clear that month, the daily window, reviewed excluded dates and stop/start recovery overhead. Billing must provide a valid marginal on-demand hourly rate, known commitment treatment, billing granularity and explicit exclusion of retained costs. Other currencies, commitments, expired prices and missing assumptions produce `null`; prices are never inferred from historical total spend.
+
+The calculation subtracts excluded days, subtracts per-window overhead, rounds daily avoided time down to billing units, then multiplies by the hourly compute rate and rounds down to USD cents. Fixture A uses 00:00–06:00 UTC, one excluded date, 30 minutes overhead, 60-minute billing units and **synthetic** USD 0.50/hour. For October that is `(31 − 1) × 5 × 0.50 = USD 75`. EBS, networking and other retained charges remain excluded. This is a conditional planning estimate; human approval and revalidation are required before any eventual scheduling.
 
 ## H-MEM and Zetaris
 

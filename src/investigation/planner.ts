@@ -108,7 +108,7 @@ export class ScriptedPlanner implements Planner {
     return {
       type: 'finish',
       reason:
-        'Targeted checks exhausted; this rejection-first slice defers unresolved positive clearance.',
+        'Targeted checks exhausted; defer any unresolved scheduling clearance.',
     };
   }
 }

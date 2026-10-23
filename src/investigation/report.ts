@@ -1,4 +1,10 @@
 import {
+  schedulingProof,
+  calculateSavings,
+  rankCandidates,
+  sameSchedule,
+} from './policy.ts';
+import {
   type Action,
   array,
   type CandidateReport,
@@ -27,8 +33,6 @@ const ids = (value: unknown) => {
     throw new Error('Duplicate citation');
   return values;
 };
-const sameSchedule = (a: Schedule, b: Schedule) =>
-  a.start_hour_utc === b.start_hour_utc && a.end_hour_utc === b.end_hour_utc;
 const usable = (e: Observation) =>
   e.status === 'ok' || e.status === 'partial' || e.status === 'no_match';
 
@@ -36,7 +40,12 @@ function hypothesis(value: unknown): Hypothesis {
   const h = exact(value, ['window', 'state', 'evidence_ids', 'reason']);
   return {
     window: validateSchedule(h.window),
-    state: member(h.state, ['proposed', 'contradicted', 'unresolved']),
+    state: member(h.state, [
+      'proposed',
+      'contradicted',
+      'unresolved',
+      'supported',
+    ]),
     evidence_ids: ids(h.evidence_ids),
     reason: textValue(h.reason),
   };
@@ -58,8 +67,14 @@ function candidate(value: unknown): CandidateReport {
     'assumptions',
     'next_human_actions',
     'estimated_monthly_savings',
+    'savings_calculation',
   ]);
-  if (c.estimated_monthly_savings !== null)
+  if (
+    c.estimated_monthly_savings !== null &&
+    (typeof c.estimated_monthly_savings !== 'number' ||
+      !Number.isFinite(c.estimated_monthly_savings) ||
+      c.estimated_monthly_savings < 0)
+  )
     throw new Error('Unsupported savings');
   return {
     instance_id: identifier(c.instance_id),
@@ -67,7 +82,11 @@ function candidate(value: unknown): CandidateReport {
     selection_evidence_ids: ids(c.selection_evidence_ids),
     proposed_window:
       c.proposed_window === null ? null : validateSchedule(c.proposed_window),
-    verdict: member(c.verdict, ['not_recommended', 'needs_verification']),
+    verdict: member(c.verdict, [
+      'not_recommended',
+      'needs_verification',
+      'conditional_recommendation',
+    ]),
     explanation: textValue(c.explanation),
     supporting_evidence_ids: ids(c.supporting_evidence_ids),
     contradicting_evidence_ids: ids(c.contradicting_evidence_ids),
@@ -76,7 +95,9 @@ function candidate(value: unknown): CandidateReport {
     missing_checks: strings(c.missing_checks),
     assumptions: strings(c.assumptions),
     next_human_actions: strings(c.next_human_actions),
-    estimated_monthly_savings: null,
+    estimated_monthly_savings: c.estimated_monthly_savings as number | null,
+    savings_calculation:
+      c.savings_calculation as CandidateReport['savings_calculation'],
   };
 }
 
@@ -148,10 +169,15 @@ export function validateReport(value: unknown): InvestigationReport {
   const d = exact(r.discovery, ['discovered_count', 'candidate_limit', 'gaps']);
   const discovery = {
     discovered_count: integer(d.discovered_count, 0, 100),
-    candidate_limit: integer(d.candidate_limit, 1, 1) as 1,
+    candidate_limit: integer(d.candidate_limit, 1, 3),
     gaps: strings(d.gaps),
   };
-  const candidates = array(r.candidates, 1).map(candidate);
+  const candidates = array(r.candidates, request.max_candidates).map(candidate);
+  if (
+    discovery.candidate_limit !== request.max_candidates ||
+    new Set(candidates.map((c) => c.instance_id)).size !== candidates.length
+  )
+    throw new Error('Invalid candidate limit or duplicate');
   if (candidates.length > discovery.discovered_count)
     throw new Error('Undiscovered candidate');
   const evidence = array(r.evidence, 100).map((value) => {
@@ -200,6 +226,25 @@ export function validateReport(value: unknown): InvestigationReport {
       mode: integration_mode,
     });
   });
+  const inventory = evidence.find((e) => e.tool === 'list_ec2_instances');
+  const billing = evidence.find((e) => e.tool === 'get_ec2_billing');
+  if (
+    inventory?.data &&
+    'instances' in inventory.data &&
+    billing?.data &&
+    'costs' in billing.data
+  ) {
+    const ranked = rankCandidates(
+      inventory.data,
+      billing.data,
+      request.max_candidates,
+    );
+    if (
+      candidates.length !== ranked.length ||
+      candidates.some((c, i) => c.instance_id !== ranked[i])
+    )
+      throw new Error('Invalid ranked selection');
+  }
   const registry = new Map(evidence.map((e) => [e.evidence_id, e]));
   if (registry.size !== evidence.length)
     throw new Error('Duplicate evidence ID');
@@ -307,7 +352,14 @@ export function validateReport(value: unknown): InvestigationReport {
       if (
         e.tool === 'get_ec2_operations' &&
         (!targetedWindow ||
-          !proposals.some((p) => sameSchedule(p.action.window, targetedWindow)))
+          !proposals.some(
+            (p) =>
+              sameSchedule(p.action.window, targetedWindow) &&
+              p.action.evidence_ids.some(
+                (id) =>
+                  evidenceById(id).scope.instance_id === e.scope.instance_id,
+              ),
+          ))
       )
         throw new Error('Challenge preceded hypothesis');
       retrieved.add(e.evidence_id);
@@ -341,6 +393,13 @@ export function validateReport(value: unknown): InvestigationReport {
     );
   };
   for (const c of candidates) {
+    const expectedSavings = calculateSavings(request, c, evidence);
+    if (
+      c.estimated_monthly_savings !== (expectedSavings?.amount ?? null) ||
+      JSON.stringify(c.savings_calculation) !==
+        JSON.stringify(expectedSavings?.calculation ?? null)
+    )
+      throw new Error('Unsupported savings calculation');
     cited(c.selection_evidence_ids, c.instance_id);
     cited(c.supporting_evidence_ids, c.instance_id);
     cited(c.contradicting_evidence_ids, c.instance_id);
@@ -386,8 +445,10 @@ export function validateReport(value: unknown): InvestigationReport {
       throw new Error('Missing hypothesis transition');
     const initial = c.hypotheses[0];
     const final = c.hypotheses[1];
-    const proposal = proposals.find((p) =>
-      sameSchedule(p.action.window, proposedWindow),
+    const proposal = proposals.find(
+      (p) =>
+        sameSchedule(p.action.window, proposedWindow) &&
+        p.action.evidence_ids.some((id) => initial.evidence_ids.includes(id)),
     );
     if (!proposal) throw new Error('Missing proposal trace');
     if (
@@ -442,6 +503,21 @@ export function validateReport(value: unknown): InvestigationReport {
         )
           throw new Error('Invalid contradictory evidence');
       }
+    } else if (c.verdict === 'conditional_recommendation') {
+      const proof = schedulingProof(request, c, evidence);
+      if (
+        !proof ||
+        final.state !== 'supported' ||
+        c.contradicting_evidence_ids.length ||
+        proof.some(
+          (e) =>
+            !final.evidence_ids.includes(e.evidence_id) ||
+            !c.supporting_evidence_ids.includes(e.evidence_id) ||
+            (e.tool !== 'get_ec2_metrics' &&
+              retrievalStep(e.evidence_id) <= proposal.step),
+        )
+      )
+        throw new Error('Unsupported conditional recommendation');
     } else if (
       final.state !== 'unresolved' ||
       c.contradicting_evidence_ids.length
@@ -456,8 +532,12 @@ export function validateReport(value: unknown): InvestigationReport {
   ]);
   const budget = {
     discovery_attempts: integer(b.discovery_attempts, 0, 2),
-    candidate_attempts: integer(b.candidate_attempts, 0, 6),
-    planner_calls: integer(b.planner_calls, 0, 9),
+    candidate_attempts: integer(
+      b.candidate_attempts,
+      0,
+      6 * request.max_candidates,
+    ),
+    planner_calls: integer(b.planner_calls, 0, 2 + 7 * request.max_candidates),
     elapsed_ms: integer(b.elapsed_ms, 0, 3_600_000),
   };
   const toolAttempts = trace.filter((t) => t.phase === 'tool');
@@ -467,6 +547,15 @@ export function validateReport(value: unknown): InvestigationReport {
     )
   )
     throw new Error('Unbound tool attempt');
+  for (const c of candidates)
+    if (
+      toolAttempts.filter(
+        (t) =>
+          t.action?.type === 'tool' &&
+          t.action.args.instance_id === c.instance_id,
+      ).length > 6
+    )
+      throw new Error('Candidate tool budget exceeded');
   const discoveryAttempts = toolAttempts.filter(
     (t) =>
       t.action?.type === 'tool' &&
@@ -560,7 +649,9 @@ export function renderReport(value: InvestigationReport): string {
       for (const v of values) lines.push(`${label}: ${v}`);
     }
     lines.push(
-      'Estimated monthly savings: null (unsupported marginal-cost and scheduling assumptions)',
+      c.savings_calculation
+        ? `Estimated monthly savings: ${c.estimated_monthly_savings} ${c.savings_calculation.currency}; ${c.savings_calculation.period.from} → ${c.savings_calculation.period.to}; ${c.savings_calculation.eligible_days} days × avoided daily hours = ${c.savings_calculation.avoided_hours} hours × ${c.savings_calculation.hourly_compute_rate}/hour (rounded down). ${citations(c.savings_calculation.evidence_ids)}`
+        : 'Estimated monthly savings: null (unsupported marginal-cost and scheduling assumptions)',
     );
   }
   lines.push('', 'Retrieved current evidence:');

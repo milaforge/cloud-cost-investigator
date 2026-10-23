@@ -139,3 +139,41 @@
   investigation deadline. Single-writer constraints remain in force.
 - This supersedes earlier notes saying CLI warm planning is not implemented.
   Runtime proof and remaining integration gates belong to EXECUTION_PLAN.md.
+
+## Broader A/C, bounded selection and savings rationale (2026-10-23)
+
+- Extend the existing planner/executor/evaluator rather than add roles or a new
+  workflow. Shared discovery ranks positive matching compute spend, then each of
+  at most three candidates receives isolated current observations and attempt
+  history under one total deadline. Finished verdicts survive later failures.
+- Empty operations results cannot establish safety. A needs positive, matching
+  operations/dependency clearance of owner authority, reviewed calendar and
+  recovery readiness for the explicit UTC window and estimate month. All jobs
+  overlapping a positive window block it, including noncritical jobs. C's
+  continuous-operation dependency is a distinct evidence-supported rejection.
+- Share deterministic ranking/safety/savings policy between execution and report
+  validation. Positive conclusions and numeric estimates are recomputed at the
+  report boundary; candidate identity is bound through metric citations even
+  when multiple candidates propose identical UTC windows.
+- Use the UTC month following the observation window so the estimate period is
+  explicit and reproducible. Require ≥7 days of utilization with ≤5-minute
+  aggregation, low average and peaks, complete authoritative discovery and both
+  targeted operational checks. These are conservative MVP rules, not universal
+  AWS scheduling guarantees; revalidation and human approval remain mandatory.
+- An observed compute total ranks candidates but never supplies an avoidable
+  hourly price. Numeric estimates currently use only explicit marginal USD
+  on-demand rates, known commitment treatment, retained-cost exclusion and
+  pricing validity. Subtract calendar exceptions and stop/start overhead, floor
+  avoided minutes to billing units, then floor dollars to cents. Other currencies
+  remain null until their rounding semantics are modeled. Fixtures are synthetic
+  and establish no live AWS prices or scheduling authority.
+- Keep existing history schema v1: verdict strings accept conditional outcomes,
+  H-MEM accepts supported hypotheses, and each candidate gets one compact summary
+  with only shared discovery plus its own current evidence. Union recalled IDs
+  across candidates; history remains advisory. No remote schema change is needed.
+- This supersedes the earlier rejection-only, one-candidate, always-null-savings
+  implementation boundary. Execution proof remains in EXECUTION_PLAN.md.
+
+- Remember aggregate timeout exhaustion explicitly: a scheduled timer may fire
+  before Date.now reaches its integer cutoff. That timeout still exhausts the
+  shared budget; do not start another candidate or history persistence afterward.

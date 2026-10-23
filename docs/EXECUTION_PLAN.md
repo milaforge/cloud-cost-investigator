@@ -26,6 +26,60 @@ The Oct 23 MVP discovery approved four shared-engine flows: A supported off-hour
 
 **Earlier inspection had not verified:** live API calls for any of the five direct categories; historical read and append via Zetaris; H-MEM project round-trip; approved model call; CLI test execution. New executed evidence is recorded below. Team-reported prior Zetaris data availability does not verify the newly planned direct adapters. Never mark any of these complete from a written plan.
 
+### Broader A/C, three candidates and savings proof — 2026-10-23
+
+**Gate/owner:** Day 2 broader scenario slice, Milad. This extends the existing
+bounded loop; active milestone and live-integration gates remain unchanged.
+
+- [x] Synthetic A produces a conditional recommendation only with complete
+  authoritative discovery/metrics, both fresh targeted operational challenges,
+  matching owner/calendar/recovery clearance and no overlapping jobs or uptime
+  constraint. Human approval and revalidation remain explicit.
+- [x] Synthetic C rejects a proposed shutdown because fresh dependency evidence
+  establishes continuous operation. Missing sources independently defer.
+- [x] One shared discovery selects at most three candidates by descending positive
+  matching compute spend, ties by instance ID. Identical proposed windows remain
+  isolated by instance and metric citations. Later failures preserve earlier
+  verdicts; planner/deadline exhaustion explicitly defers remaining candidates.
+- [x] Deterministic USD marginal on-demand compute estimate uses the calendar
+  month following the observation window, excluded dates, recovery overhead and
+  billing-unit rounding. Unsupported pricing/commitments/retained costs/currency
+  keep savings null. Final report validation recomputes proof and arithmetic.
+- [x] H-MEM and Zetaris summary conversion supports each candidate with isolated
+  provenance; actual local H-MEM three-candidate store/retrieve is tested. Remote
+  multi-candidate appends and new verdict storage were not exercised live here.
+
+**Executed proof (mock current evidence; no live AWS/model/pricing calls):**
+
+- `npm test`: **107/107 passed**. Adds 29 focused tests covering A/C/mixed,
+  clearance/coverage failures, calendar arithmetic including leap February,
+  null savings, forged reports, cross-instance citations, later-source failure,
+  aggregate planner/runtime exhaustion, local multi-candidate memory and mocked
+  model transport. Existing warm sponsor/failure regressions pass offline.
+- `npm run typecheck` and `npm run lint`: passed. `git diff --check`: passed.
+- `HMEM_PERSIST_DIR= ZETARIS_HISTORY_TABLE= ZETARIS_HISTORY_ALLOW_APPEND=false node --import tsx cli.ts investigate --account demo --region us-east-1 --scenario mixed --max-candidates 3 --json`:
+  exited **0**, `complete`, **mock/scripted**, four discovered / three selected;
+  A conditional, B job rejection, C continuous-operation rejection. Two discovery
+  attempts, eight candidate tool attempts, thirteen planner calls. For this
+  invocation's November estimate: `(30 - 1) * 5 * USD 0.50 = USD 72.50` for A;
+  others null. History explicitly disabled for this CLI proof; no remote writes.
+  Fixed October test fixture separately reproduces USD 75.
+- Whole-repository `npm run format:check` still reports the **pre-existing**
+  formatting failures in `docs/EXECUTION_PLAN.md` and `docs/ZETARIS_HISTORY.md`.
+  Changed source/test files pass scoped Biome formatting. Existing table
+  formatting is preserved.
+
+**Reliability correction:** an aggregate-deadline timeout is remembered even if
+its timer fires just before the wall clock cutoff. It cannot start another
+candidate/tool or persist history after that budget is exhausted.
+
+**Blocker/next action:** Zayan must map and verify live authoritative scheduling
+clearance and marginal pricing/commitment coverage against these validated
+contracts. Milad must complete measured baseline evaluation and live warm model
+proof. Actual AWS pricing, remote multi-candidate persistence, exact event-model
+approval, slides/demo, clean-checkout release and submission remain separate
+unclosed gates. These fixture proofs do not advance the release milestone.
+
 ### Warm investigation proof — 2026-10-23
 
 - **Gate/owner:** Day 2 scenario D, Milad. Implemented scoped recall and compact

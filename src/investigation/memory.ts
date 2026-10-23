@@ -27,9 +27,12 @@ export interface ReasoningSummary {
   instance_id: string;
   hypothesis: {
     window: Schedule;
-    state: 'proposed' | 'contradicted' | 'unresolved';
+    state: 'proposed' | 'contradicted' | 'unresolved' | 'supported';
   } | null;
-  verdict: 'not_recommended' | 'needs_verification';
+  verdict:
+    | 'not_recommended'
+    | 'needs_verification'
+    | 'conditional_recommendation';
   reason: string;
   unresolved_risks: string[];
   provenance: { integration_mode: Mode; evidence_ids: string[] };
@@ -62,7 +65,12 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
     const h = exact(o.hypothesis, ['window', 'state']);
     hypothesis = {
       window: validateSchedule(h.window),
-      state: member(h.state, ['proposed', 'contradicted', 'unresolved']),
+      state: member(h.state, [
+        'proposed',
+        'contradicted',
+        'unresolved',
+        'supported',
+      ]),
     };
   }
   return {
@@ -72,7 +80,11 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
     scope,
     instance_id: identifier(o.instance_id),
     hypothesis,
-    verdict: member(o.verdict, ['not_recommended', 'needs_verification']),
+    verdict: member(o.verdict, [
+      'not_recommended',
+      'needs_verification',
+      'conditional_recommendation',
+    ]),
     reason: textValue(o.reason),
     unresolved_risks: array(o.unresolved_risks, 8).map((v) =>
       textValue(v, 400),
@@ -92,9 +104,10 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
 /** Deliberately omits telemetry, provider payloads, and complete reports. */
 export function reasoningSummaryFromReport(
   input: InvestigationReport,
+  candidateIndex = 0,
 ): ReasoningSummary {
   const report = validateReport(input);
-  const candidate = report.candidates[0];
+  const candidate = report.candidates[candidateIndex];
   if (!candidate) throw new Error('hmem_summary_candidate_required');
   const hypothesis = candidate.hypotheses.at(-1);
   return validateReasoningSummary({
@@ -117,7 +130,13 @@ export function reasoningSummaryFromReport(
     ),
     provenance: {
       integration_mode: report.integration_mode,
-      evidence_ids: report.evidence.map((o) => o.evidence_id),
+      evidence_ids: report.evidence
+        .filter(
+          (e) =>
+            e.scope.instance_id === undefined ||
+            e.scope.instance_id === candidate.instance_id,
+        )
+        .map((o) => o.evidence_id),
     },
   });
 }

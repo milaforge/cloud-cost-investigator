@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { loadProjectEnv } from './src/config.ts';
 import { type InvestigationRequest, validateRequest } from './src/contracts.ts';
-import { MockProvider } from './src/investigation/mock.ts';
+import { MockProvider, type MockScenario } from './src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from './src/investigation/model.ts';
 import { NvidiaPlanner } from './src/investigation/nvidia.ts';
 import { ScriptedPlanner } from './src/investigation/planner.ts';
@@ -16,9 +16,9 @@ Options:
   --account ID          Required investigation account scope
   --region REGION       Required AWS region scope
   --lookback-days N     UTC observation period, 1–90 days (default: 28)
-  --max-candidates 1    This first slice supports one discovered candidate
+  --max-candidates N    Investigate 1–3 ranked candidates (default: 1)
   --planner MODE        scripted (default), model, or nvidia (legacy alias)
-  --scenario MODE       B (default), clear, or missing
+  --scenario MODE       A, B (default), C, mixed, clear, or missing
   --json                Write only the validated report JSON to stdout
   --help                Show this help
 
@@ -34,7 +34,7 @@ Exit status: 0 complete, 2 partial, 1 failed or invalid invocation.
 export interface CliOptions {
   request: InvestigationRequest;
   planner: 'scripted' | 'model' | 'nvidia';
-  scenario: 'B' | 'clear' | 'missing';
+  scenario: MockScenario;
   json: boolean;
 }
 
@@ -74,24 +74,24 @@ export function parseArgs(
   const days = values.get('--lookback-days') ?? '28';
   if (!/^(?:[1-9]|[1-8][0-9]|90)$/.test(days))
     throw new Error('Invalid lookback');
-  if ((values.get('--max-candidates') ?? '1') !== '1')
+  if (!/^[1-3]$/.test(values.get('--max-candidates') ?? '1'))
     throw new Error('Unsupported candidate limit');
   const planner = values.get('--planner') ?? 'scripted';
   const scenario = values.get('--scenario') ?? 'B';
   if (planner !== 'scripted' && planner !== 'model' && planner !== 'nvidia')
     throw new Error('Invalid planner');
-  if (scenario !== 'B' && scenario !== 'clear' && scenario !== 'missing')
+  if (!['A', 'B', 'C', 'mixed', 'clear', 'missing'].includes(scenario))
     throw new Error('Invalid scenario');
   const request = validateRequest({
     account_id: values.get('--account'),
     region: values.get('--region'),
-    max_candidates: 1,
+    max_candidates: Number(values.get('--max-candidates') ?? '1'),
     window: {
       from: new Date(now - Number(days) * 86_400_000).toISOString(),
       to: new Date(now).toISOString(),
     },
   });
-  return { request, planner, scenario, json };
+  return { request, planner, scenario: scenario as MockScenario, json };
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<number> {

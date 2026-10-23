@@ -42,7 +42,10 @@ export interface HistoryRecord {
   observed_from_utc: string;
   observed_to_utc: string;
   source_mode: 'mock' | 'fixture' | 'live' | 'stub';
-  verdict: 'not_recommended' | 'needs_verification';
+  verdict:
+    | 'not_recommended'
+    | 'needs_verification'
+    | 'conditional_recommendation';
   summary_json: string;
 }
 export interface HistoricalRecord {
@@ -87,7 +90,11 @@ function validateRecord(value: unknown): HistoryRecord {
       observed_from_utc: iso(window.from),
       observed_to_utc: iso(window.to),
       source_mode: member(r.source_mode, ['mock', 'fixture', 'live', 'stub']),
-      verdict: member(r.verdict, ['not_recommended', 'needs_verification']),
+      verdict: member(r.verdict, [
+        'not_recommended',
+        'needs_verification',
+        'conditional_recommendation',
+      ]),
       summary_json: JSON.stringify(summary),
     };
   } catch {
@@ -97,9 +104,10 @@ function validateRecord(value: unknown): HistoryRecord {
 
 export function historyRecordFromReport(
   input: InvestigationReport,
+  candidateIndex = 0,
 ): HistoryRecord {
   const report = validateReport(input);
-  const candidate = report.candidates[0];
+  const candidate = report.candidates[candidateIndex];
   if (!candidate) throw new Error('zetaris_history_candidate_required');
   const recordId = createHash('sha256')
     .update(JSON.stringify([report.investigation_id, candidate.instance_id]))
@@ -121,7 +129,13 @@ export function historyRecordFromReport(
       rejected_windows: candidate.hypotheses
         .filter((h) => h.state === 'contradicted')
         .map((h) => h.window),
-      evidence_ids: report.evidence.map((e) => e.evidence_id),
+      evidence_ids: report.evidence
+        .filter(
+          (e) =>
+            e.scope.instance_id === undefined ||
+            e.scope.instance_id === candidate.instance_id,
+        )
+        .map((e) => e.evidence_id),
       missing_checks: candidate.missing_checks.slice(0, 8),
     }),
   });
