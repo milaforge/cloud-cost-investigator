@@ -63,4 +63,6 @@ Use `security-review` for security-sensitive changes, `architecture-review` for 
 
 Load the intended project `.env` before concluding that credentials are absent; process environment alone does not establish file configuration. Inspect only required key presence and safe metadata, never values. Preserve existing shell-variable precedence and never print credentials or private endpoints.
 
-Validate model API protocol compatibility separately from model names and credentials: this planner uses Chat Completions; a Codex backend or Responses-only route is not automatically compatible. Do not guess alternate credential destinations.
+Validate model API protocol compatibility separately from model names and credentials: this planner uses Chat Completions; a Codex backend or Responses-only route is not automatically compatible. Do not guess alternate credential destinations. For remote Zetaris local storage, require the server-visible persistent directory; creating a local workspace folder does not provision remote storage.
+
+Before recommending a Zetaris local storage path, inspect the configured filesystem access root as well as volume mounts. A writable mounted parent directory does not establish that application path validation allows every subdirectory. In the supplied deployment, `ZETARIS_LOCAL_FILE_SYTEM_ROOT_PATH` is `/home/zetaris/customer-data/shared`; UI picker paths may additionally be relative to that root and need separate verification.

@@ -16,7 +16,10 @@
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "test:integration": "node --import tsx --test --test-isolation=none tests/integration/*.test.ts"
+    "probe:zetaris": "node --import tsx scripts/probe-zetaris.ts",
+    "test:integration": "node --import tsx --test --test-isolation=none tests/integration/*.test.ts",
+    "probe:zetaris:history": "node --import tsx scripts/probe-zetaris.ts --history",
+    "probe:zetaris:roundtrip": "node --import tsx scripts/probe-zetaris-history-roundtrip.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",

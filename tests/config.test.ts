@@ -11,6 +11,7 @@ import {
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
+import { queryZetaris } from '../src/tools/zetaris.ts';
 import type { InvestigationRequest } from '../src/contracts.ts';
 
 const request: InvestigationRequest = {
@@ -156,4 +157,53 @@ test('arbitrary compatible provider completes B through the same validated loop'
   assert.equal(report.candidates[0].verdict, 'not_recommended');
   assert.equal(report.planner.model, 'custom/model');
   assert.ok(fetchMock.mock.callCount() >= 5);
+});
+
+test('Zetaris requires explicit HTTP opt-in and sanitizes provider errors', async (t) => {
+  const values = {
+    ZETARIS_BASE_URL: 'https://zetaris.example',
+    ZETARIS_API_KEY: 'fake-key',
+    ZETARIS_ORG_ID: 'fake-org',
+    ZETARIS_ALLOW_HTTP: 'false',
+    ZETARIS_AUTH_MODE: 'token',
+    NODE_TLS_REJECT_UNAUTHORIZED: '1',
+  };
+  const previous = Object.keys(values).map((key) => process.env[key]);
+  t.after(() =>
+    Object.keys(values).forEach((key, i) => {
+      if (previous[i] === undefined) delete process.env[key];
+      else process.env[key] = previous[i];
+    }),
+  );
+  Object.assign(process.env, values);
+  const fetchMock = t.mock.method(
+    globalThis,
+    'fetch',
+    async (_url: string | URL | Request, options?: RequestInit) => {
+      assert.equal(
+        new Headers(options?.headers).get('Authorization'),
+        'Bearer fake-key',
+      );
+      assert.equal(new Headers(options?.headers).get('X-Org-ID'), 'fake-org');
+      assert.equal(options?.redirect, 'error');
+      assert.deepEqual(JSON.parse(String(options?.body)), {
+        sql: 'SELECT 1',
+        limit: 100,
+      });
+      return new Response('secret diagnostic', { status: 403 });
+    },
+  );
+  await assert.rejects(queryZetaris('SELECT 1'), {
+    message: 'zetaris_http_403',
+  });
+  process.env.ZETARIS_BASE_URL = 'http://zetaris.example';
+  await assert.rejects(queryZetaris('SELECT 1'), {
+    message: 'zetaris_configuration_invalid',
+  });
+  assert.equal(fetchMock.mock.callCount(), 1);
+  process.env.ZETARIS_ALLOW_HTTP = 'true';
+  await assert.rejects(queryZetaris('SELECT 1'), {
+    message: 'zetaris_http_403',
+  });
+  assert.equal(fetchMock.mock.callCount(), 2);
 });

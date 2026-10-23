@@ -85,7 +85,43 @@ npm run probe:hmem
 
 This performs a genuine **local Meterless H-MEM reference** store → disk persistence → new engine instance → retrieval, using a compact summary of an executed mock B investigation. It uses and removes its own temporary directory. Summaries carry scope, timestamp, hypothesis, decision reason, unresolved risks and provenance; historical IDs never become current evidence. The adapter supports caller-owned persistent directories, isolated per account/region, and validates stored data on read and write. The reference uses local deterministic embeddings and single-writer JSON persistence. This proof does **not** establish a hosted service or warm-run query-priority behavior.
 
-The investigation CLI does not read/write historical context yet and labels both history services `not_configured`. Zetaris history append/query remains blocked pending a verified dedicated schema, endpoint behavior and least-privilege append/read permissions. The existing generic SQL connectivity helper is not exposed to the planner. Connectivity and history-storage preparation are separate work; they do not prove integrated sponsor history persistence.
+The investigation CLI itself does not automatically save/recall historical context yet;
+both history services remain labeled `not_configured` there. A separate Zetaris
+history adapter now provides validated, account/region-scoped reads and explicitly
+enabled append/read-back, restricted to the `CCI_HISTORY` lakehouse. No generic SQL
+or credentials are exposed to the planner.
+
+Configure the Zetaris section of [.env.example](.env.example) in your local `.env`:
+use the **Web UI origin** as `ZETARIS_BASE_URL`, your dedicated app user's
+`ZETARIS_USERNAME`/`ZETARIS_PASSWORD`, `ZETARIS_AUTH_MODE=password`, and
+`ZETARIS_HISTORY_TABLE=CCI_HISTORY.investigations.records`. The login response supplies
+the organisation ID; an optional `ZETARIS_ORG_ID` must match it. Legacy bearer-token
+mode remains supported. The app never needs the lakehouse filesystem path.
+
+**Required setup:** follow the [local Docker lakehouse and table setup](docs/ZETARIS_HISTORY.md#required-local-docker-setup-history-lakehouse).
+For a new installation, run [the dedicated table SQL](scripts/zetaris-history.sql) once as administrator,
+verify the app user's table-scoped read/append permissions, then enable
+`ZETARIS_HISTORY_ALLOW_APPEND=true` when ready for writes. Existing `.env` values
+are never overwritten by these scripts. HTTP requires `ZETARIS_ALLOW_HTTP=true`,
+which the user authorized for this deployment; HTTPS remains preferred.
+
+Manual checks (outside normal tests and the LLM integration test):
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:zetaris
+NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:zetaris:history
+# After table provisioning, permission review and explicit append enablement:
+NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:zetaris:roundtrip
+```
+
+The first validates SELECT 1; the second checks the configured table schema (or
+catalog metadata when no table is configured). The round-trip probe writes one
+synthetic mock-B history record and verifies a scoped readback; it retains that
+labeled record. The user reported a successful real Zetaris round-trip on
+2026-10-23 with mock investigation evidence; effective least-privilege permissions
+and automatic CLI history use remain unverified.
+The adapter is an MVP with one writer, not an atomic uniqueness guarantee under
+concurrent writers. Failed or ambiguous inserts are never automatically retried.
 
 ## Verify
 
