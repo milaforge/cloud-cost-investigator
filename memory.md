@@ -1,5 +1,21 @@
 # Project Memory
 
+## Development linting and formatting (2026-10-23)
+
+- Lint remediation keeps the ASCII control-character rejection regex intact,
+  with a documented suppression on that declaration only. Non-null assertions
+  are replaced by checked lookups, stable narrowed locals and test assertions.
+  The dynamic loader reuses the vendored H-MEM constructor type instead of
+  `any`; no extra runtime import or dependency is needed.
+
+- Use Biome as one development-only dependency for TypeScript/JavaScript and
+  JSON linting and formatting, keeping npm and its existing lockfile.
+- Respect Git ignore rules and exclude the upstream `vendor` tree and generated
+  npm lockfile. Recommended lint rules stay enabled; existing findings are
+  reported rather than hidden or fixed as part of tool installation.
+- Keep checks (`lint`, `format:check`) separate from explicit writes (`lint:fix`,
+  `format`) so validation does not rewrite concurrent work.
+
 ## Documentation decisions
 
 - `docs/RULES.md` keeps hackathon notes in one canonical JSON fenced block so
@@ -36,22 +52,6 @@
 - Event rules were aligned from local notes only. Portal requirements and
   sponsor/model availability still need independent verification.
 
-## Development linting and formatting (2026-10-23)
-
-- Lint remediation keeps the ASCII control-character rejection regex intact,
-  with a documented suppression on that declaration only. Non-null assertions
-  are replaced by checked lookups, stable narrowed locals and test assertions.
-  The dynamic loader reuses the vendored H-MEM constructor type instead of
-  `any`; no extra runtime import or dependency is needed.
-
-- Use Biome as one development-only dependency for TypeScript/JavaScript and
-  JSON linting and formatting, keeping npm and its existing lockfile.
-- Respect Git ignore rules and exclude the upstream `vendor` tree and generated
-  npm lockfile. Recommended lint rules stay enabled; existing findings are
-  reported rather than hidden or fixed as part of tool installation.
-- Keep checks (`lint`, `format:check`) separate from explicit writes (`lint:fix`,
-  `format`) so validation does not rewrite concurrent work.
-
 ## Approved optimization-first MVP and architecture (2026-10-23)
 
 **Team-confirmed product change:** The former primary user question, “why did EC2 costs increase between two periods?”, is **superseded** by “suggest safe EC2 optimization opportunities.” This is a deliberate product-scope change under Track 02, not a claim that the previous workflow has been implemented. No baseline, two billing snapshots, or previous run is a prerequisite. Billing still supports spend prioritization and qualified savings.
@@ -71,7 +71,22 @@
 
 **Documentation alignment only:** This note captures agreed decisions, not completed features, sponsor proof, code modifications or test results. The executable gates, exact commands and blockers belong in `docs/EXECUTION_PLAN.md`.
 
+## First working investigation slice rationale (2026-10-23)
+
+- Keep a single rejection-first engine: deterministic code owns scope, candidate ranking, current-evidence registration, hypotheses and verdicts; a planner chooses the next question. The offline scripted planner exists for reproducibility and is never labeled a model. No positive recommendation or savings formula is needed to prove the initial unsafe window was rejected.
+- Runtime validation sits at request/action, tool observation and final report boundaries. Exact fields and bounded collections prevent accidental raw-provider payload retention. A conflict citation must resolve to current-run evidence retrieved after the hypothesis; history IDs remain a separate concept.
+- Model generation requests a small action-name/reason choice. The NVIDIA adapter binds trusted account/region, period, selected instance and observed metric-window IDs. Asking the model to repeat all arguments created malformed outputs without adding reasoning value. Executor-shaped trace objects are omitted from model context so it does not imitate the wrong wire shape; attempted tool names still include failures. The executor continues to validate every bound action independently.
+- Fixed NVIDIA endpoint and one documented allowlisted model avoid arbitrary credential destinations or speculative provider frameworks. Native fetch plus existing tsx suffice. Model failure is explicit and never silently becomes scripted success. Exact event-model approval and successful access are separate claims.
+- Tool/runtime/planner budgets count attempts, not only successful responses; timeouts cancel cooperative adapters and bound waiting for noncooperative ones. Repetition terminates rather than retrying without new facts. Missing or non-authoritative evidence cannot clear safety; every savings value remains null.
+- H-MEM uses the checked-in local reference, scoped hashed directories and compact timestamped reasoning summaries, separate from the inherited notebook state. The reference is single-writer JSON storage, not a hosted service. Validate reads and fail closed after a persistence failure so a failed append cannot be recalled from the same mutated in-memory engine. Its standalone store/reload/query proof does not imply warm investigation planning.
+- Do not guess a Zetaris append schema or SQL endpoint from the old generic connectivity helper. The write exception requires a verified dedicated history contract and permissions; absent access is a blocker, not permission to invent a live adapter. First-run reports remain useful without either history service.
+- Retain npm and its lockfile. Add only development compiler/types for reproducible investigation checks. A separate extending TypeScript config isolates this product slice from the inherited optional Anthropic notebook dependency; the original root config and notebook behavior stay intact. The shared H-MEM loader throws on missing engine instead of terminating its host process, allowing callers to sanitize and contain that failure.
+
 ## Configurable providers and environment loading (2026-10-23)
 
 - User explicitly requested arbitrary OpenAI-compatible models/providers. This supersedes the fixed NVIDIA endpoint/model allowlist decision above. One shared Chat Completions planner owns transport and response validation; the legacy NVIDIA planner is a preset. Trusted local environment configuration selects the endpoint, while untrusted model output still cannot select destinations, arguments or verdicts.
 - Native Node 24 `.env` loading avoids another production dependency and preserves shell precedence. Generic LLM settings never borrow NVIDIA credentials; redirects are refused, remote endpoints require HTTPS, and loopback HTTP supports local models. Provider-specific parameters are optional and cannot replace invariant request fields.
+
+## Manual model integration checks (2026-10-23)
+
+- User will run the live LLM access test manually. Keep it in `tests/integration`, exposed by `npm run test:integration`, outside the normal offline test glob. Reuse the production planner boundary for one real call, validate the returned action, and never execute a tool in the access test. The test explicitly enables TLS verification even if the surrounding development shell disables it.

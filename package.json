@@ -8,15 +8,15 @@
   "scripts": {
     "setup": "npx --yes degit meterless/meterless/engines/hmem/reference vendor/hmem && cd vendor/hmem && npm install --no-audit --no-fund",
     "notebook": "tsx notebook.ts",
+    "investigate": "node --import tsx cli.ts investigate",
+    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.investigation.json --noEmit",
+    "probe:hmem": "node --import tsx scripts/probe-hmem.ts",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "investigate": "node --import tsx cli.ts investigate",
-    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
-    "typecheck": "tsc -p tsconfig.investigation.json --noEmit",
-    "test:integration": "node --import tsx --test --test-isolation=none tests/integration/*.test.ts",
-    "probe:hmem": "node --import tsx scripts/probe-hmem.ts"
+    "test:integration": "node --import tsx --test --test-isolation=none tests/integration/*.test.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",

@@ -1,0 +1,228 @@
+# Remaining work — agent handoff
+
+Requested backlog and resume context, prepared 2026-10-23. These four items
+correspond to the remaining stages discussed after implementing `plan.md`.
+`docs/EXECUTION_PLAN.md` remains authoritative for milestone status, executable
+proof, integration modes and blockers. Record commands/results there before
+checking off an item here; keep the two aligned. This file does not establish
+completion or supersede product policy.
+
+## Start here
+
+Read `AGENTS.md`, `docs/RULES.md`, `docs/PROJECT_CONTEXT.md`,
+`docs/EXECUTION_PLAN.md`, `memory.md` and `plan.md`. Inspect Git status and preserve
+concurrent changes. Re-read source before editing: configuration, model adapters,
+probes and formatting have changed since the first implementation session.
+
+The existing slice discovers one EC2 candidate from account/region, proposes a
+UTC shutdown window from mock utilization, retrieves a conflicting critical job,
+then rejects the window. Missing evidence produces uncertainty. It emits readable
+trace and validated JSON, keeps savings null, and bounds calls/time/repetition.
+No baseline or previous run is required. Current operational evidence is mock.
+
+Earlier Oct 23 execution evidence records 54 passing tests, the investigation
+typecheck, an isolated source-copy installation, a genuine NVIDIA-backed B run
+over mock evidence, and a separate local H-MEM store/persist/reload/query proof.
+These are dated results, not guarantees about the current changing worktree.
+Rerun relevant checks and record new results. Use package.json for current scripts:
+
+    npm test
+    npm run typecheck
+    npm run probe:hmem
+    npm run investigate -- --account demo --region us-east-1
+    node --import tsx cli.ts investigate --account demo --region us-east-1 --scenario missing --json
+
+The last command intentionally returns exit 2 for a partial investigation.
+Review existing lint/format findings before running write commands. Do not treat
+an available probe script as proof that a live integration succeeded.
+
+## 1. [ ] Prove and implement constrained Zetaris investigation history
+
+Driver: Zayan; Milad integrates it into the investigation. This unblocks item 2.
+
+What exists / what is missing:
+- `src/tools/zetaris.ts` is connectivity scaffolding; inspect its current helper
+  for connection readiness. It does not establish a dedicated history store,
+  approved schema, append support or least-privilege permissions.
+- The investigation currently labels Zetaris history `not_configured`. Earlier
+  evidence recorded missing connection configuration. Recheck readiness safely;
+  do not assume credentials or access remain unchanged, print their values, or
+  search unrelated secret files.
+- Zetaris stores structured historical observations/outcomes. Current inventory,
+  billing, utilization, jobs and dependency facts come from direct tools.
+
+Work required:
+- Obtain/verify the deployed API contract, dedicated non-infrastructure history
+  namespace/schema, backing-store support and authorized read/append permissions.
+  Resolve missing schema/access with the team; do not invent table identifiers,
+  endpoints or write semantics from the generic SQL helper.
+- Agree a compact runtime-validated record: investigation ID, account/region/
+  instance, observed UTC interval, collection/recording times, typed observation
+  summaries and provenance, proposed window, verdict/reason and source modes.
+  Keep raw telemetry, full provider bodies and secrets out of historical rows.
+- Expose only fixed, allowlisted query and append operations. Validate scope,
+  limits/date ranges, response shape and cross-resource isolation. Bound request
+  size, timeouts and attempts. Define duplicate/retry behavior so an ambiguous
+  append failure cannot silently multiply records or claim persistence succeeded.
+- Keep AWS read-only. The approved write exception covers only this dedicated
+  append-only history operation; no model-authored SQL, general DML/DDL, updates,
+  deletes or infrastructure mutations may reach the planner/executor.
+
+Done when:
+- A non-sensitive record is genuinely appended and read back through Zetaris
+  with matching scope, timestamps and provenance. Real permissions and supported
+  operations are documented, rather than inferred from SELECT/connectivity.
+- Empty history, denied writes, malformed responses, cross-scope rows, timeouts
+  and ambiguous failures have focused tests and truthful degraded behavior.
+- `docs/EXECUTION_PLAN.md` records exact sanitized commands, actual integration
+  mode, results, owner and remaining blockers. Mocks cannot close this gate.
+
+## 2. [ ] Wire historical context into a genuine warm investigation (scenario D)
+
+Driver: Milad; Zayan owns structured-history correctness. Depends on item 1 for
+the complete two-sponsor proof. H-MEM wiring can progress independently.
+
+What exists / what is missing:
+- `src/investigation/memory.ts` provides scoped, validated reasoning summaries
+  and real local Meterless H-MEM persistence/retrieval. `scripts/probe-hmem.ts`
+  proves the reference engine round trip, separately from the CLI loop.
+- The local reference uses deterministic embeddings and single-writer JSON
+  storage; it is not a hosted service. Preserve its failure/capacity safeguards.
+- `src/investigation/run.ts`, `src/contracts.ts` and the report validator still
+  describe history services as `not_configured`. A successful standalone probe
+  does not establish that memory influences investigation planning.
+
+Work required:
+- Retrieve bounded, scoped Zetaris rows and H-MEM reasoning context during the
+  normal investigation, and store compact validated outcomes afterward. Choose
+  the smallest persistence/configuration seam fitting the current CLI; preserve
+  first-run operation with empty or unavailable historical services.
+- Keep the roles distinct: Zetaris supplies typed prior observations for
+  comparison; H-MEM supplies rejected hypotheses, reasons and unresolved risks
+  that prioritize a fresh safety question. Avoid duplicating full telemetry.
+- Extend request/run context, planner context and report contracts together.
+  Report historical IDs, timestamps, source modes, influence and read/write
+  failures separately from current evidence. Update runtime validators and the
+  readable renderer, not only TypeScript interfaces.
+- Let a recalled concern measurably change an eligible fresh query's priority.
+  Preserve prerequisite gates, trusted argument binding, scope, budgets and
+  cancellation. Historical confidence cannot authorize a current verdict.
+
+Done when:
+- A reproducible cold run stores useful structured history and reasoning; a
+  later process/run retrieves both, changes a fresh query priority because of
+  recalled context, and compares current observations with historical rows.
+- Changing current operational evidence changes the supported verdict even when
+  memory disagrees. Every current factual citation resolves to evidence actually
+  retrieved during that run; historical IDs never enter that registry.
+- Empty stores and independent history/memory read/write failures remain bounded,
+  explicitly disclosed, and cannot turn stale context into scheduling clearance.
+- Real sponsor traces prove the complete D flow in the execution plan. Separately
+  label fixture tests, local H-MEM proof and actual Zetaris calls.
+
+## 3. [ ] Complete broader safety scenarios, candidate bounds and savings
+
+Drivers: Both. Reuse the existing engine and preserve scenario B throughout.
+
+What exists / what is missing:
+- The CLI/request contract currently accepts one candidate. Candidate ranking,
+  executor/evaluator and timing limits live in `src/investigation/run.ts`;
+  evidence fixtures live in `src/investigation/mock.ts`.
+- Candidate/report validators currently support rejection or needs-verification,
+  with savings fixed to null. The clear-jobs variation intentionally defers;
+  it is not a completed scenario A conditional recommendation.
+- Dependency-conflict and missing-source tests provide foundations for C, but
+  the complete named scenario set and multi-candidate proof remain follow-on.
+
+Work required:
+- A: add a conditional recommendation only after a targeted falsification check
+  and adequate utilization/peak, authoritative jobs/schedules, dependency/uptime
+  and calendar/exception evidence. State a concrete UTC window, assumptions,
+  caveats, missing checks and required human approval. Low average CPU, a dev tag,
+  or an empty non-authoritative job query cannot establish safety.
+- C: separately demonstrate justified continuous operation (`not_recommended`)
+  and insufficient evidence (`needs_verification`). Preserve distinct source
+  statuses: `ok`, `no_match`, `partial`, `unavailable`, `error`.
+- Expand discovery to at most three candidates using a fixed, explainable ranking.
+  Extend contracts, CLI validation, orchestration and reports coherently; enforce
+  per-candidate and aggregate call/runtime budgets and preserve partial results
+  when another candidate fails. Never simply multiply an unbounded loop.
+- Add deterministic marginal compute-only savings only with sufficient billing,
+  currency, schedule/calendar, pricing, commitment/discount and coverage evidence.
+  Handle retained EBS/other charges and stop/start/billing effects explicitly.
+  Missing essential assumptions keep the estimate null; the model never supplies
+  an invented price, amount, confidence or commitment assumption.
+- Test scope/region/resource and period isolation, stale/partial data, peaks,
+  overlapping jobs, dependencies, changed windows and failure/budget behavior.
+  Extend final report validation and CLI rendering for every new disposition.
+
+Done when:
+- Reproducible A/B/C plus missing-source fixtures produce the justified distinct
+  outcomes, with genuine later contradiction in B and valid current citations.
+- Up to three candidates remain deterministic, bounded and independently scoped;
+  overall completion is separate from individual verdicts.
+- Every non-null estimate is reproducible from validated inputs and covered by
+  negative tests; unsupported estimates remain null. No infrastructure changes.
+
+## 4. [ ] Prove live evidence, evaluate the system and prepare release materials
+
+Drivers: Zayan for live direct adapters/data truth; Milad for model approval,
+evaluation, documentation/demo/submission; both for safety and evidence review.
+Start access/model-approval discovery early; release proof depends on items 1–3.
+
+What exists / what is missing:
+- Five logical current-evidence tools currently run on labeled mocks. These are
+  application operations, not proof that AWS exposes every required endpoint.
+- A genuine NVIDIA-hosted model investigation was recorded; exact event approval
+  is separate. Current model selection/configuration and HTTP behavior should be
+  traced through `src/config.ts`, `src/investigation/model.ts`,
+  `src/investigation/nvidia.ts`, `src/http.ts` and `cli.ts` before editing.
+- The earlier installation proof used an isolated source copy. Final release
+  reproduction must use the actual submitted revision in a clean checkout.
+- Full scenario evaluation, slides, sponsor explanation and demo remain release
+  work. Do not infer completion from README text or earlier test totals.
+
+Work required:
+- Integrate Zayan's actual read-only inventory, billing, metrics, operations and
+  dependency adapters behind the existing validated boundary as access permits.
+  Verify account/region permissions, UTC periods, units/granularity, pagination,
+  collection times, source authority and coverage. Jobs/dependencies may need
+  operational sources outside native AWS APIs; unavailable authority must defer.
+- Keep mock/fixture/live/stub provenance truthful per source and in reports.
+  Review any required mixed-mode contract changes explicitly. Never relabel a
+  synthetic observation as live or treat a generic connectivity probe as a full
+  investigation/source proof. Record exact live coverage and remaining gaps.
+- Verify the exact chosen model against current event/sponsor rules and actual
+  access. Preserve the successful NVIDIA proof separately from eligibility.
+  Document Cursor usage only from actual use, not the starter's expectations.
+- Run a measured A/B/C/D and failure evaluation against a simple average-CPU
+  heuristic. Report real denominators, disposition accuracy, unsafe positives,
+  citation validity, latency, tool/model counts and model cost when available.
+  Mark unavailable cost/metrics unknown; do not fabricate benchmark numbers.
+- Reproduce installation, CLI runs and relevant checks from a clean submitted
+  checkout. Update README/setup and failure/mode guidance from executed behavior.
+  Preserve concurrent work; inspect the current optional-notebook, lint and format
+  state before carrying forward old failures as still current.
+- Prepare slides, an accurate sponsor contribution explanation and a 1–4 minute
+  demo: show B's proposal → later contradiction → rejection, then warm D showing
+  the separate value of Zetaris and H-MEM. Declare reused components and remaining
+  mock sources. A dashboard and extra agent roles are outside the MVP priority.
+- Check artifacts for secrets, sensitive exports, private endpoints and raw
+  provider bodies. Confirm actual portal requirements/deadline with the team;
+  local notes record target freeze Oct 26 and submission before Oct 27, 2026
+  23:45 UTC, subject to portal verification. External publication/submission must
+  follow the user's authorization; do not invent a submission confirmation.
+
+Done when:
+- The release checklist in `docs/EXECUTION_PLAN.md` has executed evidence for
+  genuine integrations, scenario/evaluation results, approved model, clean setup
+  and ready assets. Every unresolved access/coverage/submission gate stays explicit.
+- A new reviewer can reproduce the submitted CLI and distinguish current evidence,
+  historical context, real integrations and synthetic examples without hidden
+  manual setup. Record submission confirmation only after actual submission.
+
+
+---
+
+
+Live AWS evidence, integrated warm-run memory, and Zetaris history append/read remain unfinished.

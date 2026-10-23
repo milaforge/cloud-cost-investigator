@@ -1,241 +1,255 @@
 # Cloud Cost Investigator — Execution Plan (Milad + Zayan)
 
-> **Execution-only document.** Event requirements and rubric are recorded in [`RULES.md`](./RULES.md); contributor workflow is in [`../AGENTS.md`](../AGENTS.md). For goals, scope, data semantics, safety, and report format see [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md). Update this checklist as work actually completes; planned items are **not** evidence of completion.
+> **Sole execution tracker.** Event requirements are recorded in [`RULES.md`](./RULES.md); approved product and safety contracts are in [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md); agent workflow in [`../AGENTS.md`](../AGENTS.md). A task is complete only with executed evidence. Preserve the distinction between team decisions, planned work, mocks and verified live integrations.
 
-**Hackathon track:** 02 — The Agent That Can Explain Why  
-**Scope:** AWS EC2, investigation/recommendation only; no infrastructure changes.  
-**Team agreement (Oct 22):** EC2-only MVP, evidence from billing, utilization, inventory and operational changes.  
-**Deadline:** October 27, 2026, **23:45 UTC**; target completion on October 26.  
-**Active milestone:** Day 2 kickoff — October 23, 2026. The Oct 22 tasks below are prerequisites to verify or carry forward, not claimed completed work. Advance this milestone after recording gate evidence.
+**Hackathon track:** 02 — The Agent That Can Explain Why.  
+**Approved scope (2026-10-23):** AWS EC2 off-hours scheduling safety; direct current-evidence tools; Zetaris structured history; Meterless reasoning memory; no infrastructure modification. The older cost-increase/snapshot-comparison workflow is superseded.  
+**Deadline:** 2026-10-27 23:45 UTC in recorded event notes; verify portal. Target freeze: Oct 26.  
+**Active milestone:** Day 2 kickoff, Fri Oct 23, 2026. Do not advance from this checkpoint based on elapsed time or this documentation revision.
 
-## Day 2 kickoff: current evidence and order of work
+## 1. Decision change and current verification state
 
-This is a **static inspection**, not proof that any integration works. No live
-provider calls, runtime tests, or credential checks were performed in this review.
+The Oct 23 MVP discovery approved four shared-engine flows: A supported off-hours opportunity, B an evidence-driven rejected scheduling hypothesis, C justified continuous operation or needs verification, and D a later run using both historical stores with **fresh** operational verification. First run must not require either a historical baseline or prior memory. There is no cost-increase-comparison prerequisite.
 
-| Observed artifact | What it establishes | What remains to prove | Owner |
-| --- | --- | --- | --- |
-| `package.json`, `notebook.ts`, `src/engine.ts` | TypeScript notebook and H-MEM loader exist | Project-context store/retrieve round-trip and clean-checkout setup | Milad |
-| `src/contracts.ts` | Initial request/evidence/report interfaces exist | Runtime validation, comparison/scope fields, observation statuses, hypotheses and traces | Both |
-| `src/tools/zetaris.ts`, `src/test-zetaris.ts` | SQL connectivity helper and probe script exist | Actual connectivity, four allowlisted tools, typed observations and fixture datasets | Zayan |
-| `src/llm.ts` | Starter retrieval and optional Anthropic answer path exist | Approved investigation-model call, NVIDIA contribution, and bounded planner/evaluator behavior | Milad |
-| `README.md` | Starter notebook instructions exist | Project-specific install, investigation, evaluation, provenance and limitations | Milad |
+**Corrected source ownership:** Zayan is building direct TypeScript evidence adapters (mock first, live later) for inventory, billing, utilization, operations/jobs and dependencies. Zetaris is for querying/storing compact structured investigation **history**, not fetching the current EC2 facts. Meterless H-MEM stores/retrieves reasoning-oriented historical summaries. Narrowly scoped Zetaris history appends have team approval in principle; they require least-privilege implementation and runnable proof. AWS and current-evidence tools remain strictly read-only.
 
-The generic SQL helper is connectivity scaffolding, not an agent-facing tool.
-The optional starter model path is not proof of approved model access.
+**Existing static evidence only, as of the earlier Oct 23 inspection:**
 
-Work in this order, closing unfinished Day 1 prerequisites as part of Day 2:
+| Artifact                                       | Establishes                                                | Does **not** establish                                                                        | Owner |
+| ---------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----- |
+| `package.json`, `notebook.ts`, `src/engine.ts` | TypeScript starter and H-MEM loader are present            | Approved agent memory store/retrieve round-trip or investigation CLI                          | Milad |
+| `src/contracts.ts`                             | Preliminary instance-scoped request/evidence/report shapes | Candidate-discovery contract or runtime validation                                            | Both  |
+| `src/tools/zetaris.ts`, `src/test-zetaris.ts`  | Generic SQL connectivity scaffolding and probe             | Historical table read/write, least-privilege role, supported append path, or real integration | Zayan |
+| `src/llm.ts`                                   | Optional starter answer path                               | Approved model/NVIDIA call, bounded investigation loop                                        | Milad |
+| `README.md`                                    | Notebook instructions                                      | Reproducible EC2 investigation                                                                | Milad |
+| `plan.md`                                      | Approved contradiction-first implementation slice          | Executed completion by itself; see proof below                                                | Both  |
 
-1. **Both:** settle the runtime data contract and minimal labeled fixtures; reuse
-   TypeScript/Node.js and H-MEM rather than starting a second implementation.
-2. **Zayan:** prove read-only Zetaris access and all four allowlisted operations
-   against those fixtures. **Milad:** prove one approved model call and a
-   project-context Meterless store → retrieve round-trip.
-3. **Milad:** connect the bounded planner/executor/evaluator to those tools; the
-   second query must depend on evidence from the first, with a recorded trace.
-4. **Both:** run scenario A and an unavailable/partial-source path; validate
-   evidence references, uncertainty, bounds, and the JSON report.
-5. Record runnable commands and outcomes below. Carry blockers with owners and
-   next actions; a local fixture fallback keeps development moving but does not
-   satisfy the real Zetaris integration gate.
+**Earlier inspection had not verified:** live API calls for any of the five direct categories; historical read and append via Zetaris; H-MEM project round-trip; approved model call; CLI test execution. New executed evidence is recorded below. Team-reported prior Zetaris data availability does not verify the newly planned direct adapters. Never mark any of these complete from a written plan.
 
 ### Verification and blocker log
 
-Append a row after each actual check; include date, reproducible command, result,
-`fixture`/`live`/`stub` mode, and owner. Sanitize commands and output; never include
-keys, tokens, private endpoints, or sensitive account data. Do not mark a milestone
-complete from this static review.
+Append after actual execution. Include date, command, result, `mock`/`fixture`/`live`/`stub` integration mode, owner and next action; sanitize secrets, account details and provider payloads. The following row records only a documentation event, **not a test**.
 
-| Date | Gate or integration | Command / evidence | Mode | Result or blocker | Owner / next action |
-| --- | --- | --- | --- | --- | --- |
-| 2026-10-23 | Day 2 kickoff | Static source inspection listed above | Not executed | Runtime gates unverified | Milad + Zayan: execute prerequisites and Day 2 gate |
+| Date       | Gate or integration       | Command / evidence                                                              | Mode         | Result or blocker                                               | Owner / next action                              |
+| ---------- | ------------------------- | ------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------- | ------------------------------------------------ |
+| 2026-10-23 | Initial Day 2 inspection  | Static inspection previously recorded in this plan                              | Not executed | No runtime integration verified                                 | Both: run Day 2 prerequisites                    |
+| 2026-10-23 | Approved design alignment | Team-approved MVP flows and corrected direct/Zetaris/Meterless responsibilities | Design only  | Supersedes cost-delta implementation slice; no executable proof | Both: align contracts and run integration probes |
 
-## 1. Owners and interfaces
+### Executed first-loop slice — 2026-10-23
 
-| Area | Driver | Deliverable |
-| --- | --- | --- |
-| **Data sources, Zetaris, datasets** | **Zayan** | Read-only access to billing, metrics, inventory and changes with stable typed responses and evidence IDs |
-| **Agent orchestration, Nemotron, Meterless** | **Milad** | Working bounded planner–executor–evaluator loop, memory integration, report generation and decision trace |
-| **Interface contract + integration tests** | **Both** | Agreed query semantics, representative fixture records and an end-to-end investigation |
-| **UI + submission/docs** | **Milad** (Zayan reviews data accuracy) | Minimal trace/report viewer, README, evaluation results, slides and demo video |
-| **Scenario quality and safe recommendations** | **Both** | Cases A/B/C with ground-truth expectation and audited evidence |
+**Active gate:** Day 2 contradiction-first loop. **Outcome:** mock direct evidence + scripted/live NVIDIA planning now execute; the combined sponsor gate remains open. Real AWS adapters and warm Zetaris/H-MEM planning are not claimed. Existing document edits were preserved. No infrastructure mutation, generic agent SQL or production dependency was added; TypeScript and Node declarations are development-only dependencies.
 
-**Do not block on unconfigured production AWS.** Use explicitly labeled reproducible fixture data through Zetaris first, then substitute real read-only data only if credentials and billing coverage permit.
+| Gate / exact command                                                                                                                                         | Executed outcome / integration mode                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Owner / blocker / next action                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `npm test`                                                                                                                                                   | **54/54 passed**. Actual in-process CLI, B rejection, changed jobs/windows, partial/unavailable/invalid evidence, scope/UTC/units, high peaks, model failure, repeated action, budgets/timeouts, report citation tampering, local H-MEM and mocked NVIDIA boundary tests. No live API integration inferred from tests.                                                                                                                                                                                                                                           | Both: maintain these focused gates                                                                        |
+| `npm run typecheck`                                                                                                                                          | **Passed**, strict `tsconfig.investigation.json`: CLI, investigation code, scripts and tests.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Milad: scoped investigation proof                                                                         |
+| `npm run investigate -- --account demo --region us-east-1`                                                                                                   | **Exit 0**, mock direct evidence + scripted planner. Discovers 2 instances; selects highest matching running compute spend; proposes 00:00–06:00 UTC; later 02:00–03:00 critical batch rejects it. 2 discovery + 2 candidate tool attempts, 5 planner calls; savings `null`.                                                                                                                                                                                                                                                                                     | Both: scenario B basic behavior proven                                                                    |
+| `node --import tsx cli.ts investigate --account demo --region us-east-1 --scenario missing --json`                                                           | **Exit 2**, mock/scripted, `partial` + `needs_verification`; operations `unavailable`, savings `null`.`--scenario clear` instead preserves `no_match`, queries dependencies and defers; tests also move the metrics window to change the targeted query.                                                                                                                                                                                                                                                                                                         | Both: unknown is not safe; positive clearance remains follow-on                                           |
+| `NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx cli.ts investigate --account demo --region us-east-1 --planner nvidia --json`                              | **Live NVIDIA model + mock direct evidence**: genuine bounded scenario B rejection with 5 model calls and 4 direct mock tool attempts. Model `nvidia/nemotron-3.5-lightning-30b-a3b`; fixed NVIDIA-hosted endpoint class; no third-party model SDK. Final run `d93ce923-63b5-4a78-b694-efd355972345`: `complete`, `not_recommended`, `hypothesis_contradicted`, **5973 ms**.                                                                                                                                                                                     | Milad: actual NVIDIA contribution proven; exact event-model approval still needs team/portal confirmation |
+| `npm run probe:hmem`                                                                                                                                         | **Passed**: executed mock B summary → actual local Meterless reference add/persistence → new engine instance → query retrieves historical hypothesis/provenance. Engine source `vendor/hmem`; no hosted service, warm planner or Zetaris proof implied. Probe owns and removes its temporary directory.                                                                                                                                                                                                                                                          | Milad: store/retrieve prerequisite proven; integrate query priority in later D                            |
+| Clean temporary source copy; `npm ci --ignore-scripts --no-audit --no-fund`, `npm test`, `npm run typecheck`, `npm run probe:hmem`, then documented JSON CLI | Fresh dependency install passed; 54 tests, typecheck, local H-MEM and mock B reproduced without working-tree modules or secrets. Node 24 selected explicitly because asdf does not inherit a version in `/tmp`. This is an isolated source-copy proof, not a committed clean Git checkout.                                                                                                                                                                                                                                                                       | Milad: final clean-checkout release gate still requires submitted revision                                |
+| Legacy root `node_modules/.bin/tsc --noEmit`                                                                                                                 | **Pre-existing starter failure:** missing optional `@anthropic-ai/sdk` in `src/llm.ts`. Investigation typecheck passes separately; no new production dependency installed to satisfy the unrelated notebook path.                                                                                                                                                                                                                                                                                                                                                | Milad: optional starter decision outside this slice                                                       |
+| Zetaris history append/query | Not integrated in this slice; dedicated schema and effective append/read permissions require separate proof. CLI reports history `not_configured`. | Zayan: supply verified history contract; Milad integrates |
 
-### Shared API/data handoff (agree before parallel implementation)
+**Model failure evidence:** the older Nemotron model returned HTTP 410; another catalog-listed model was not available for chat. Initial full-action prompts produced malformed actions and correctly stopped as incomplete. The model boundary now requests only an allowlisted action name and short reason; trusted code binds account/region, window, instance and retrieved IDs. Strict validation remains authoritative; no fallback or repair invents model success. During development an alternate live run also stopped partially when the model requested operations before proposing a window; this is not an adaptive live-success proof. Generation now limits choices to currently valid prerequisites as well as binding trusted arguments. Offline changed-evidence tests are the deterministic adaptation proof.
+
+**Diff hygiene:** focused `git diff --check` on implementation, README, package files and rationale passed. Whole-tree checking still reports the pre-existing Markdown hard-break trailing spaces in the concurrent context/execution-plan edits.
+
+**Remaining gate:** no current AWS integration, authorized Zetaris append/read, exact model event approval or warm D integration. H-MEM is tested as local reference persistence separately, while the first-run CLI uses no historical context. Do not advance the milestone or close the combined sponsor gate from the mock slice. A/C/D, multi-candidate expansion, numeric savings, measured full evaluation, slides/demo and submission are explicitly follow-on work in `plan.md`.
+
+### Environment/provider configuration verification (2026-10-23)
+
+- **Slice/owner:** Day 2 configuration support, Milad. Native Node `.env` loading with shell precedence; configurable OpenAI-compatible planner; legacy NVIDIA preset retained; `.env.example` added. No production dependencies or secret-file edits.
+- **Executed:** `npm test`: **59/59 passed**; `npm run typecheck`: passed. Focused `node_modules/.bin/biome lint` and `biome format` on `src/config.ts`, `src/http.ts`, `src/investigation/{model,nvidia}.ts`, `tests/{config,nvidia}.test.ts`, `cli.ts`: passed. `npm run investigate -- --account demo --region us-east-1 --json`: exit 0, mock B rejection. The existing 10ms total-runtime test had one transient timing failure during development; final suite passed.
+- **Mode/coverage:** arbitrary-provider transport is mocked; full B loop uses that transport plus mock evidence. Tests verify environment file reading/precedence, provider credential isolation, URL/body constraints, aliased model response IDs, request parameters. No new live provider or sponsor proof claimed.
+
+### Manual LLM integration test (2026-10-23)
+
+- **Manual test added:** `npm run test:integration` discovers `tests/integration/llm.test.ts`, separate from `npm test`. It loads configured model settings, enforces TLS verification, performs one real planner request and validates its action without executing tools. Left for the user to run against the live provider. A discovery-check invocation during development hit the TLS guard before network access; it was not a live model success. The test now explicitly enables certificate verification.
+
+### Reported integration failure diagnosis (2026-10-23)
+
+- User's manual LLM integration run failed with `model_http_405`. Safe inspection confirmed generic config loads from `.env`, no shell base override, and a configured Codex backend route. The adapter sends POST to base + `/chat/completions`; this route/protocol mismatch explains the failure. No credential or private hostname was logged, and no live model test was rerun. Matching Chat Completions API base/credential is required, or a separately implemented protocol adapter if only Codex/Responses is available. Added sanitized 405 guidance to the integration test and README; no automatic endpoint substitution or secret changes.
+- Verification: investigation typecheck and focused integration-file Biome lint/format passed. Live model success and history append/read remain unverified.
+
+### Development tooling verification (2026-10-23)
+
+- **Slice/owner:** Day 2 reproducibility support, Milad; install development-only
+  Biome 2.6.2 with npm and expose lint/format scripts. No runtime or integration
+  behavior changes; mode: local tooling, no live sponsor/API proof.
+- **Passed:** `node_modules/.bin/biome lint biome.json package.json` and
+  `node_modules/.bin/biome format biome.json package.json`; configuration and
+  package scripts are valid. `npm test`: 54/54 passed. `npm run typecheck`: passed.
+  `git diff --check -- package.json package-lock.json biome.json`: passed.
+- **Existing findings:** `npm run lint -- --max-diagnostics=0` exits 1 with
+  2 errors, 26 warnings and 4 informational diagnostics. Both errors concern the
+  intentional control-character validation regex in `src/contracts.ts`.
+  `npm run format:check -- --max-diagnostics=0` exits 1 with 25 files requiring
+  formatting. No existing source or documentation was bulk rewritten.
+- **Next action/blocker:** Milad/team to review existing findings and agree on
+  a formatting baseline separately; tool installation is complete. Live sponsor
+  gates and milestone status remain as recorded above.
+
+### Lint remediation verification (2026-10-23)
+
+- **Slice/owner:** Day 2 tooling follow-up, Milad; resolve remaining lint
+  diagnostics in notebook/engine types, contracts, planner, report validation,
+  runner and their affected tests. Mode: local checks and offline fixtures.
+- **Passed:** `npm run lint:fix` and `npm run lint`, 36 files, no diagnostics;
+  `npm run typecheck`; `npm test`, 59/59 tests. Direct `textValue` regression
+  probe rejects all 33 ASCII control characters and preserves Persian text.
+- **Decision:** Preserve the intentional control-character regex through a
+  declaration-local explained suppression. Retain fail-closed evidence checks;
+  replace non-null assertions with checked lookups and narrowed locals.
+- **Blocker/next action:** None for lint remediation. Existing formatting and
+  live integration/release gates remain separately tracked; no gate advanced.
+
+### Selected commit verification (2026-10-23)
+
+- **Scope/owner:** selected scope, CLI, model, H-MEM, tooling and documentation changes; Zetaris connectivity/history implementation and setup changes excluded. Milad owns this Day 2 reproducibility check; combined sponsor gates remain open.
+- **Method/mode:** exported the selected Git index to an isolated temporary directory and reused the installed Node 24.19.0 dependencies and local H-MEM reference. No project `.env` was copied and no live provider calls were made. An initial invocation was blocked by the temporary directory lacking an asdf version selection; explicit `ASDF_NODEJS_VERSION=24.19.0` resolved the tooling prerequisite.
+- **Passed:** `npm test`, **58/58** offline tests; `npm run typecheck`; `npm run lint`, 36 files with no diagnostics.
+- **Formatting limitation:** `npm run format:check -- --reporter=summary` exits 1 for `docs/EXECUTION_PLAN.md` and the inherited `src/tools/zetaris.ts`. No formatting fixes were applied; the Zetaris implementation changes remain outside these commits.
+- **Remaining work:** integrate verified current AWS evidence and historical stores, prove warm-run influence, and complete the broader scenario/release gates already listed below. These checks do not establish live integration or project completion.
+
+## 2. Owners and interfaces
+
+| Area                                       | Driver                         | Deliverable                                                                                                                                                  |
+| ------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Direct evidence adapters and mock datasets | **Zayan**                      | Read-only TypeScript logical tools for inventory, billing, utilization, operations/jobs and dependencies, shared typed observations with stable evidence IDs |
+| Zetaris history                            | **Zayan** (Milad integrates)   | Dedicated append-only structured history schema, authorized write boundary, allowlisted read and append, actual read-after-write proof                       |
+| Planner/evaluator, approved model, H-MEM   | **Milad**                      | Bounded evidence-dependent loop, real reasoning memory round-trip, validated report, decision trace                                                          |
+| Shared data/report contract and tests      | **Both**                       | Runtime validation, scope/UTC/units/coverage, integration mode labeling, A/B/C/D fixtures, missing-source case                                               |
+| CLI, README, evaluation and submission     | **Milad** (Zayan reviews data) | Detailed readable report/JSON, repeatable commands, measured evaluation, slides and demo                                                                     |
+
+### Logical API handoff (proposed names; test semantics before parallel work)
 
 ```text
-get_cost_change(period_a, period_b, filter)
-get_instance_metrics(instance_id, window)
-get_instance_inventory(instance_id)
-get_instance_changes(instance_id, window)
+list_ec2_instances(account_id, region, window?)
+get_ec2_billing(account_id, region, window, instance_filter?)
+get_ec2_metrics(account_id, region, instance_id, window)
+get_ec2_operations(account_id, region, instance_id, window)
+get_ec2_dependencies(account_id, region, instance_id)
+query_investigation_history(account_id, region, instance_filter?, limit)
+append_investigation_history(validated_record)  # restricted append-only historical write
 ```
 
-Each returns `status` (`ok`, `no_match`, `partial`, `unavailable`, `error`), `source`, `data`, `evidence_ids`, `observed_at/period`, and coverage/missing-data indicators. **Never treat an empty dataset, missing source, or query failure as proof that there are no dependencies.** Use consistent `(account_id, region, instance_id)` identifiers and UTC timestamps. Keep mock/live providers interchangeable.
+All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, source, `mock`/`fixture`/`live`/`stub` mode, UTC observed/collected timestamps, scope, coverage, units and IDs. Missing means unknown, not zero; no matches from a non-authoritative source do not prove the absence of jobs/dependencies. Historical data is marked separately and cannot be cited as current operational evidence. Validate schemas at runtime.
 
-## 2. Day-by-day plan
+**Write boundary:** only the history append is approved. No model-authored SQL may reach the generic Zetaris query helper; no AWS mutation and no general Zetaris DML or table-management actions exposed to the agent. Prove backing-store support, permissions and constrained inputs before claiming this gate.
 
-### Day 1 — Thu, Oct 22: scope + skeleton (verify/catch up on Oct 23)
+## 3. Day-by-day execution and gates
 
-**Milad**
-- [ ] Create repository, minimal TypeScript/Node.js investigation CLI using the existing starter and `README.md` run instructions.
-- [ ] Confirm Track 02, engineer persona, EC2-only scope and structured report contract.
-- [ ] Verify the approved model endpoint/access (prefer Nemotron) and make **one real model call** (log endpoint/model used; no secrets).
-- [ ] Verify Meterless setup and a **store → retrieve** context round-trip.
-- [ ] Implement minimal `planner → tool call → evaluator → finish/replan` loop using a fixture tool.
-- [ ] Define runtime-validated JSON contracts (TypeScript types alone are insufficient) for actions, observations, evidence, findings and traces.
-
-**Zayan**
-- [ ] Verify Zetaris environment, authentication and supported query interface.
-- [ ] Create or expose inventory and billing fixture datasets as distinct sources.
-- [ ] Prove a Zetaris query can retrieve/join relevant records; return stable IDs and provenance.
-- [ ] Share a tiny sample response and agreed tool interfaces with Milad.
-
-**Joint gate:** One investigation request results in at least one real tool observation and a structured, non-fabricated response. Record which integrations are **real** and which are **stubbed**.
-
-### Day 2 — Fri, Oct 23: data integration + first working investigation
+### Day 1 — Thu Oct 22 (carry forward unverified prerequisites)
 
 **Milad**
-- [ ] Replace fixture stub with Zayan's Zetaris-backed allowlisted tools.
-- [ ] Add bounded execution (`max_steps`, tool timeouts, retry cap, error statuses).
-- [ ] Make the agent choose a second query based on findings from its first result.
-- [ ] Emit an evidence-backed JSON report, preserving retrieved evidence IDs.
+- [x] Runnable TypeScript investigation CLI using the existing starter, with mock provider and README usage.
+- [x] Runtime-validated request, observation, hypothesis, trace and report contracts; account/region scope and UTC periods.
+- [ ] One genuine approved investigation-model call; record actual model, endpoint class and NVIDIA contribution, no secrets.
+- [x] Genuine Meterless H-MEM store -> retrieve round-trip for investigation memory.
+- [x] Bounded planner -> executor -> evaluator -> finish/replan skeleton.
 
 **Zayan**
-- [ ] Add `ec2_metrics` with meaningful off-hours and peak behavior.
-- [ ] Add `ec2_changes` including a scheduled-job/deployment record for the unsafe case.
-- [ ] Implement/test all four query operations against fixtures via Zetaris.
-- [ ] Verify costs, currencies, UTC timestamps, resource IDs, coverage and missing fields.
+- [ ] Document actual direct API inventory, billing, metrics, operations and dependency coverage, permissions and gaps.
+- [x] Produce minimal labeled mock observations plus one unsafe scheduling fixture.
+- [ ] Verify supported Zetaris historical read and narrowly scoped append path with a non-sensitive test record.
 
-**Joint gate:** Scenario A runs from the CLI through real Zetaris queries over
-labeled data to a validated JSON report **with assumptions, citations and missing
-checks**. A second tool choice depends on earlier evidence and appears in the
-trace. Verify an approved model call and a Meterless context round-trip, including
-any unfinished Day 1 prerequisites. An unavailable/partial-source run terminates
-within configured budgets with explicit uncertainty and no invented savings.
-Record commands, integration modes and results. Integration blockers have owners
-and next actions; incomplete sponsor access keeps the gate open.
+**Joint prerequisite gate:** One scoped CLI investigation retrieves evidence from a clearly labeled provider and emits a validated, honest JSON result. Sponsor/model calls remain separate **unverified** gates until genuinely executed.
 
-### Days 3–4 — Sat–Sun, Oct 24–25: reasoning quality + evaluation
+### Day 2 — Fri Oct 23: first end-to-end contradiction slice
 
 **Milad**
-- [ ] Implement evaluator feedback and explicit hypothesis statuses: proposed/supported/contradicted/unresolved.
-- [ ] Demonstrate replanning: a plausible initial stop/downsize hypothesis is **rejected** after contradictory evidence.
-- [ ] Persist/resume investigation state with Meterless; mark historical context separately from fresh evidence.
-- [ ] Deterministically calculate estimated savings only when cost/pricing and schedule data justify them; otherwise return `null` in `estimated_monthly_savings` (or its agreed typed equivalent).
-- [ ] Add trace logs recording plan, tool action, outcome, evaluation and revision.
-- [ ] Implement missing-data behavior, tool retries and graceful bounded termination.
+- [x] Candidate discovery from account/region, **without a supplied instance ID or history prerequisite**.
+- [x] Model chooses an initial scheduling question; a later tool choice changes based on the returned evidence.
+- [x] Evaluator identifies a conflict, **rejects** the specific proposed shutdown window, and logs the transition.
+- [x] Runtime validation, maximum calls/steps/time, repeated-action protection, graceful partial failures, clear modes.
+- [x] Detailed CLI + JSON report with current evidence references, gaps, no fabricated savings.
 
 **Zayan**
-- [ ] Finalize the three independent, labeled incident fixtures with explicit expected outcomes:
-  - A: feasible off-hours savings (with checks)
-  - B: unsafe optimization despite deceptively low average utilization
-  - C: increase justified by workload/capacity needs
-- [ ] Add an intentional partial-source or failed-query scenario.
-- [ ] Validate queries against all fixtures, including joins and provenance.
-- [ ] Check how EC2 compute, EBS, reservations/Savings Plans affect claims in outputs.
+- [x] Build read-only mock-backed direct tools for candidate discovery, billing, utilization, job/change and dependency lookups.
+- [x] Build scenario B: low apparent overnight CPU but a critical scheduled batch or dependency overlapping the initial shutdown window.
+- [x] Define and test source timestamps, UTC windows, missing-data statuses and coverage fields.
+- [ ] Implement only _approved, scoped_ Zetaris historical record read and append if access/support allows; otherwise log a blocker, do not fake it.
 
-**Joint gate:** The agent produces the expected disposition on A, B and C; case B includes a **visible hypothesis revision**. Verify every cited evidence ID exists. Record failures honestly.
+**Joint gate:** Scenario **B** runs from a CLI over **explicitly labeled mock data**, discovers a candidate, attempts a safety challenge, revises and rejects a plausible but unsafe schedule, with valid retrieved evidence IDs and a readable trace. A missing-critical-source variation yields `needs_verification` or an explicit incomplete report within budgets and `null` savings. In addition, separately verify one approved model call, H-MEM round-trip, and actual Zetaris history read/append. **A mock-only slice can prove investigation behavior but does not close live sponsor integration gates.** Record commands, results and unresolved owner actions; do not check gate boxes early.
 
-### Day 5 — Mon, Oct 26: freeze, demo, submission assets
+### Days 3–4 — Sat–Sun Oct 24–25: full user flows and sponsor proof
 
 **Milad**
-- [ ] Prepare a readable CLI trace for the demo: question → evidence retrieved → revised hypothesis → final report. Add a UI/viewer only if core gates pass and time remains.
-- [ ] Add clean install/run commands, `.env.example`, fixture seed, example investigation command and tests.
-- [ ] Prepare slide deck and record a **1–4 minute** demo showing case B prominently.
-- [ ] Document architecture, constraints, benchmark, safety choices and precise sponsor-tech usage.
+- [ ] Scenario A: evidence-gated conditional off-hours recommendation, including a concrete UTC schedule and approvals/unknowns.
+- [ ] Scenario C: justify required continuous operation **and** independently test a missing-source/unknown outcome.
+- [ ] Scenario D: second run retrieves H-MEM historical reasoning and historical typed Zetaris rows; both influence planning or comparison, not current verdict authority.
+- [ ] Deterministic compute-only savings when verifiable, otherwise `null`; explicitly handle commitment/retained charges and incomplete billing granularity.
+- [ ] Model failure, tool timeout, memory/history errors, partial responses, invalid outputs, budget exhaustion; all bounded.
+- [ ] Expose full trace and JSON report with validation and provenance; measure latency and tool counts.
 
 **Zayan**
-- [ ] Review demo data for coherence; confirm all presented savings numbers are reproducible or clearly illustrative.
-- [ ] Ensure Zetaris setup instructions and sample queries work from scratch.
-- [ ] Validate sources, expected fixture outcomes and permissions; remove any secrets/personal data.
-- [ ] Run end-to-end tests independently on a fresh checkout/environment.
+- [ ] Replace/mock-swap direct providers with live read-only API-backed adapters wherever access permits; **truthfully label** remaining mocks.
+- [ ] Verify historical Zetaris append/read with the approved narrow permissions on non-sensitive records and baseline optionality.
+- [ ] Finalize A/B/C/D fixture observations, expected verdicts, coverage and source-specific failure cases.
+- [ ] Test account/region/instance isolation, time zones, data completeness, joins and no raw secret payloads.
+- [ ] Verify actual AWS compute pricing/billing coverage and commitment assumptions before allowing any savings number.
 
-**Joint gate:** A fresh checkout reproduces the demo without manual database fixes; submission assets exist and reflect **working** behavior.
+**Joint gate:** Reproducibly distinguish A, B and C, show a meaningful warm D run, and test unavailable data. A changed current schedule must change the conclusion when supported even if old memory disagrees. Sponsor integrations must be real, traced and accurately documented. Compare to a simplistic average-CPU rule and record actual measured behavior, including false positives.
 
-### Day 6 — Tue, Oct 27: contingency + submission
+### Day 5 — Mon Oct 26: freeze and submission assets
 
 **Milad**
-- [ ] Verify demo video, slides, public repo/README and required submission fields.
-- [ ] Explicitly declare reused or pre-existing components if the event requires it.
-- [ ] Submit **before 23:45 UTC**, preferably well ahead of deadline.
+- [ ] Fresh-checkout CLI installation, mock seeding, execution and test instructions in project-specific README.
+- [ ] Display readable decision trace: initial window -> conflicting live/mock evidence -> revision; plus warm run with different investigation context.
+- [ ] Slides and **1–4 minute demo** showing B first, then D sponsor contributions; document NVIDIA, Zetaris, Meterless and Cursor accurately.
+- [ ] Publish measured disposition/evidence validity/safety false positives, runtime and tool count; no invented numbers.
 
 **Zayan**
-- [ ] Re-run scenarios and integrity checks; help fix only blocking defects.
-- [ ] Verify sponsor connections and data-source reproducibility.
+- [ ] Independently reproduce provider and historical-store paths from documented instructions.
+- [ ] Confirm integration modes and data provenance in slide/demo fixtures; review assumptions behind any savings.
+- [ ] Scan artifacts for credentials, sensitive AWS exports, unsafe write tools and raw secrets.
 
-**Joint gate:** Submission confirmed; avoid late architectural changes.
+**Joint gate:** A clean environment reproduces the demo without undocumented manual fixes; required assets are ready. No optional dashboard work until this holds.
 
-## 3. Integration contract: minimum end-to-end slice
+### Day 6 — Tue Oct 27: contingency and submission
 
-First demonstration question:
+- [ ] Verify recorded event deadline/portal fields, materials, reusable-component declarations and accessible repository. **Milad**
+- [ ] Run final A/B/C/D and failure checks; avoid late architecture changes. **Both**
+- [ ] Submit before **23:45 UTC**, then record confirmation. **Milad**
 
-> "Which EC2 resources explain the spending increase, and can any cost be reduced safely?"
+## 4. First vertical slice / proposed acceptance tests
 
-Expected operation:
+**Slice:** One discovered EC2 instance, one scheduling hypothesis, one fresh contradictory observation, one rejected recommendation, one validated report, one missing-source test. Reuse TypeScript/Node.js and H-MEM; do not add dependencies without need and agreement.
 
-1. Planner asks for a cost delta (with comparison period).
-2. Tool returns cost driver(s), source period and evidence IDs.
-3. Planner chooses an instance, retrieves utilization and inventory; evaluator detects a risk/knowledge gap.
-4. Agent retrieves change/schedule evidence and revises or qualifies its hypothesis.
-5. Report states cost driver, recommendation or refusal, assumptions, risks, missing checks and cited evidence.
-6. Meterless persists context; trace demonstrates why actions were chosen.
+| Test                                                   | Expected result                                                                        | Owner |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- | ----- |
+| B, realistic mock                                      | Evidence-driven next query exposes critical job; agent rejects overlapping stop window | Both  |
+| Alternate source result                                | Tool choice or verdict responds to new evidence; not a hard-coded narrative            | Milad |
+| Missing job/dependency source                          | `needs_verification`; absence is not interpreted as safety                             | Both  |
+| `no_match` versus `unavailable`                        | Distinct statuses and recorded coverage/authority                                      | Zayan |
+| Invalid scope, UTC period, malformed observation       | Report refuses to combine unrelated/invalid data                                       | Both  |
+| Model unavailable / repeated action / budget exhausted | Stops within configured limits with explicit incomplete/partial outcome                | Milad |
+| History empty on first run                             | Current investigation still completes using direct evidence                            | Milad |
+| H-MEM historical warning contradicts current evidence  | Fresh evidence decides; past warning prompts verification only                         | Milad |
+| Historical Zetaris append + query                      | Real typed record read-after-write, correct scope and provenance                       | Zayan |
+| History write denied or Meterless unavailable          | Clear degraded context behavior without inventing a successful write/read              | Both  |
+| A, conditional schedule                                | Adequately checked window; approval, caveats and justified savings or `null`           | Both  |
+| C, justified continuous operation                      | Supported refusal, not falsely marked as waste                                         | Both  |
+| Baseline: low average CPU                              | Record unsafe suggestion vs risk-aware verdict on B                                    | Both  |
 
-### Must-have schema checks
+## 5. Release checklist
 
-- Each observation references a real retrieval source, timestamp/period and immutable evidence ID.
-- Every recommendation cites supporting evidence. Rejected recommendations cite contradictions.
-- Savings estimate uses deterministic arithmetic and clearly identifies applicable cost components.
-- `error`, `unavailable`, `partial`, `no_match` remain distinguishable.
-- A safety-gated conclusion can be `needs_verification`; do not force a positive savings recommendation.
+- [ ] Direct API adapter path for current evidence actually runs; mocks/fixtures/live sources are clearly labeled.
+- [ ] Genuine Zetaris history read and constrained authorized append; stored observation is useful on a subsequent run.
+- [ ] Genuine Meterless H-MEM context store and retrieve; retrieved memory affects a subsequent query choice without being current evidence.
+- [ ] Approved model call verified; NVIDIA contribution genuine; Cursor use described accurately.
+- [ ] One real evidence-dependent replanning/rejection visible in B; all report citations reference actually retrieved current records.
+- [ ] Conditional recommendations honor peaks/jobs/dependencies and human approval; no AWS changes.
+- [ ] Unknown savings are `null`, and any numeric estimates are reproducible and scoped to marginal compute.
+- [ ] A/B/C/D plus missing-source, timeout, invalid-output and history/memory failure reproducible.
+- [ ] Measured evaluation and rule-based baseline comparison with actual denominators and uncertainty.
+- [ ] No credentials, sensitive exports, or raw secret-bearing provider responses in code/fixtures/reports.
+- [ ] README, reproducible clean setup, slide deck, sponsor explanation and **1–4 minute demo** ready.
+- [ ] Submission portal verified and entry submitted before deadline.
 
-## 4. Testing plan
+## 6. Cut list and operational coordination
 
-| Test | Expected behavior | Driver |
-| --- | --- | --- |
-| A: 24/7 dev server | Conditional scheduling recommendation, quantified where justified | Both |
-| B: low average CPU + weekly critical batch | Agent tests and **rejects/defer** unsafe downsize/stop suggestion | Both |
-| C: intended capacity expansion | Explanation of justified expense, not false waste flag | Both |
-| Missing metrics/job data | `needs_verification`, no assertion that unknown dependency is absent | Milad |
-| Zetaris timeout/unavailable | Bounded retry, partial report, explicit source failure | Both |
-| Tool returns contradictory periods/IDs | Detect mismatch instead of combining unrelated evidence | Zayan |
-| Memory contains old finding | Agent treats it as historical context and rechecks current evidence | Milad |
-| Duplicate model/tool loop | Stops within budgets and explains incomplete result | Milad |
-| Baseline: low-CPU rule | Document where it over-recommends vs risk-aware agent | Both |
+**Priority:** Direct-tool correctness + bounded reasoning/rejection -> actual sponsor read/append and memory round-trips -> A/C/D and failure evaluation -> detailed readable report -> polish. Cut multi-cloud, Kubernetes, changing infrastructure, EC2 downsizing, elaborate viewers, enterprise auth, forecasting and extra roles, never provenance, sponsor integration or safety tests.
 
-**Evidence for judges:** a working invocation, a readable trace of at least one replan, verified citations, test results, and honest failure cases. Metrics to report: scenario accuracy, evidence validity, unsafe-recommendation false positives, run duration and tool calls. Only use measured numbers.
-
-## 5. Operational workflow between Milad and Zayan
-
-- **Daily contract-first sync:** announce any schema changes before changing tool responses; share representative examples and expected results.
-- **One code owner per layer, shared integration review:** Zayan owns source correctness; Milad owns decision/report correctness.
-- **Continuous integration:** merge the thinnest working path each day instead of keeping two large isolated branches.
-- **Blocker escalation:** if a sponsor SDK/endpoint fails, capture exact request/error and create a fixture-backed adapter; do not falsely represent a stub as a live integration. Restore the required real integration before submission.
-- **Feature triage order:** sponsor integrations → reliable agent loop → falsification demo and scenario evaluation → trace UI → visual polish. Add focused tests and failure handling with each slice. Cut unrelated features first.
-
-## 6. Release checklist
-
-- [ ] End-to-end data path actually traverses **Zetaris**.
-- [ ] **Meterless** actually stores/retrieves project-relevant investigation context.
-- [ ] An approved model call is verified; NVIDIA model/technology usage is genuine and documented, with no invented API claims.
-- [ ] Cursor usage is documented accurately.
-- [ ] At least one autonomous, evidence-driven **re-plan after contradiction** is visible.
-- [ ] All recommendations cite evidence, disclose uncertainty, and never change AWS resources.
-- [ ] Three fixtures, their expected outcomes, and a missing-source/failure path run reproducibly.
-- [ ] Low-CPU baseline comparison and measured evaluation (disposition, citation validity, unsafe recommendations, duration, tool calls, and available call-cost data) are recorded; unavailable measurements are identified.
-- [ ] No secrets or sensitive AWS exports in the public repository.
-- [ ] `README.md`, clean-run commands, slides, and 1–4 minute demo video are ready.
-- [ ] Deadline and portal requirements verified; submission completed.
-
-## 7. Cut list if behind schedule
-
-Cut **multi-cloud, Kubernetes, automated remediation, auth/roles, fancy dashboards, complex multi-agent orchestration, forecasting, live AWS onboarding, and elaborate reports**. Keep the three scenarios, real sponsor integrations, adaptive investigation, provenance and safety evaluation. A reliable CLI plus readable trace can be a better submission than an unfinished dashboard.
-
-## 8. Suggested commits (optional)
-
-- `chore: bootstrap cloud cost investigator and typed interfaces`
-- `feat(data): federate EC2 evidence through Zetaris`
-- `feat(agent): implement bounded investigation loop`
-- `feat(agent): validate evidence and revise unsafe hypotheses`
-- `test: cover safe unsafe and justified cost scenarios`
-- `docs: finalize reproducible demo and submission`
+**Parallel work protocol:** Both agree on schemas and representative tool responses before divergent implementation. Zayan owns data-source truth; Milad owns verdict/report truth. Preserve concurrent changes. When a provider is blocked, record sanitized request/error metadata and use a separately labeled mock for development; a stub is not a live integration. Keep rationale in `memory.md` and **all progress** in this execution plan; do not infer completion from documentation.
