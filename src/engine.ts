@@ -3,34 +3,34 @@
 // without setup. The startup line names which source loaded, so nobody
 // debugs the wrong copy.
 
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CANDIDATES = [
   {
-    label: "vendor/hmem",
-    entry: path.join(here, "..", "vendor", "hmem", "src", "index.ts"),
+    label: 'vendor/hmem',
+    entry: path.join(here, '..', 'vendor', 'hmem', 'src', 'index.ts'),
   },
   {
-    label: "monorepo sibling",
+    label: 'monorepo sibling',
     entry: path.join(
       here,
-      "..",
-      "..",
-      "..",
-      "engines",
-      "hmem",
-      "reference",
-      "src",
-      "index.ts",
+      '..',
+      '..',
+      '..',
+      'engines',
+      'hmem',
+      'reference',
+      'src',
+      'index.ts',
     ),
   },
 ];
 
 export interface LoadedEngine {
-  HMEM: new (opts: { clock?: () => number; persistDir?: string }) => any;
+  HMEM: typeof import('../vendor/hmem/src/index.ts').HMEM;
   source: string;
 }
 
@@ -41,11 +41,5 @@ export async function loadHMEM(): Promise<LoadedEngine> {
       return { HMEM: mod.HMEM, source: c.label };
     }
   }
-  console.error(
-    "H-MEM engine not found. Run the setup step first:\n\n  npm run setup\n",
-  );
-  console.error(
-    "(It vendors the reference implementation into vendor/hmem via degit.)",
-  );
-  process.exit(1);
+  throw new Error('H-MEM engine not found. Run npm run setup first.');
 }
