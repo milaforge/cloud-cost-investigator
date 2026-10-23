@@ -58,3 +58,9 @@ The release checklist in `docs/EXECUTION_PLAN.md` is authoritative. It must incl
 Prefer the smallest safe reversible change and installed dependencies; ask before adding production dependencies. Follow existing package-manager conventions; prefer pnpm or uv when compatible. Work in the current branch/worktree. Run relevant checks and distinguish pre-existing failures from new failures. Do not access unrelated sensitive files, modify secrets, perform destructive operations, or commit/push without authorization. Do not put “Codex” in commit or PR titles.
 
 Use `security-review` for security-sensitive changes, `architecture-review` for structural design changes, `context7-docs` for current library/API docs, and `codegraph-navigation` when a repository index is available.
+
+## Configuration inspection
+
+Load the intended project `.env` before concluding that credentials are absent; process environment alone does not establish file configuration. Inspect only required key presence and safe metadata, never values. Preserve existing shell-variable precedence and never print credentials or private endpoints.
+
+Validate model API protocol compatibility separately from model names and credentials: this planner uses Chat Completions; a Codex backend or Responses-only route is not automatically compatible. Do not guess alternate credential destinations.

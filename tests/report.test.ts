@@ -105,6 +105,15 @@ test('lookback uses a UTC interval without a prior investigation', async () => {
   });
 });
 
+test('NVIDIA mode without credentials fails without falling back or leaking raw errors', async () => {
+  const result = await cli(...args, '--planner', 'nvidia', '--json');
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.equal(
+    result.stderr,
+    'Investigation failed. Check the selected planner configuration and supported inputs; no fallback was used.\n',
+  );
+});
 
 test('report rejects forged citations, historical IDs, scope/window mismatches, invalid transitions and false contradictions', async () => {
   const result = await cli(...args, '--json');

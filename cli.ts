@@ -1,7 +1,10 @@
+import { loadProjectEnv } from './src/config.ts';
+import { OpenAICompatiblePlanner } from './src/investigation/model.ts';
 import { pathToFileURL } from 'node:url';
 import { validateRequest, type InvestigationRequest } from './src/contracts.ts';
 import { runInvestigation } from './src/investigation/run.ts';
 import { MockProvider } from './src/investigation/mock.ts';
+import { NvidiaPlanner } from './src/investigation/nvidia.ts';
 import { ScriptedPlanner } from './src/investigation/planner.ts';
 import { renderReport, validateReport } from './src/investigation/report.ts';
 
@@ -14,20 +17,22 @@ Options:
   --region REGION       Required AWS region scope
   --lookback-days N     UTC observation period, 1–90 days (default: 28)
   --max-candidates 1    This first slice supports one discovered candidate
-  --planner MODE        scripted (default)
+  --planner MODE        scripted (default), model, or nvidia (legacy alias)
   --scenario MODE       B (default), clear, or missing
   --json                Write only the validated report JSON to stdout
   --help                Show this help
 
 Current evidence always comes from labeled synthetic mocks; AWS is never called.
-The scripted planner runs offline. Zetaris history and H-MEM are not
-configured in this slice.
+The CLI loads .env without overriding shell variables. The model planner uses
+LLM_BASE_URL, LLM_MODEL and optional LLM_API_KEY (or legacy NVIDIA settings).
+Current evidence remains mock; model failure never falls back to
+scripted planning. Zetaris history and H-MEM are not configured in this slice.
 Exit status: 0 complete, 2 partial, 1 failed or invalid invocation.
 `;
 
 export interface CliOptions {
   request: InvestigationRequest;
-  planner: 'scripted';
+  planner: 'scripted' | 'model' | 'nvidia';
   scenario: 'B' | 'clear' | 'missing';
   json: boolean;
 }
@@ -72,7 +77,7 @@ export function parseArgs(
     throw new Error('Unsupported candidate limit');
   const planner = values.get('--planner') ?? 'scripted';
   const scenario = values.get('--scenario') ?? 'B';
-  if (planner !== 'scripted')
+  if (planner !== 'scripted' && planner !== 'model' && planner !== 'nvidia')
     throw new Error('Invalid planner');
   if (scenario !== 'B' && scenario !== 'clear' && scenario !== 'missing')
     throw new Error('Invalid scenario');
@@ -103,7 +108,12 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     return 0;
   }
   try {
-    const planner = new ScriptedPlanner();
+    const planner =
+      options.planner === 'model'
+        ? new OpenAICompatiblePlanner()
+        : options.planner === 'nvidia'
+          ? new NvidiaPlanner()
+          : new ScriptedPlanner();
     const report = validateReport(
       await runInvestigation(options.request, {
         provider: new MockProvider(options.scenario),
@@ -133,6 +143,7 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   try {
+    loadProjectEnv();
     process.exitCode = await main();
   } catch {
     process.stderr.write('Unable to load .env configuration.\n');
