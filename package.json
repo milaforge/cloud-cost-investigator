@@ -11,7 +11,10 @@
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "investigate": "node --import tsx cli.ts investigate",
+    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.investigation.json --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",

@@ -1,0 +1,578 @@
+import {
+  array,
+  exact,
+  identifier,
+  integer,
+  member,
+  textValue,
+  utc,
+  validateAction,
+  validateObservation,
+  validateRequest,
+  validateSchedule,
+  type Action,
+  type CandidateReport,
+  type Hypothesis,
+  type InvestigationReport,
+  type Observation,
+  type Schedule,
+  type ToolAction,
+  type TraceEntry,
+} from '../contracts.ts';
+
+const strings = (value: unknown) => array(value, 100).map((v) => textValue(v));
+const ids = (value: unknown) => {
+  const values = array(value, 100).map(identifier);
+  if (new Set(values).size !== values.length)
+    throw new Error('Duplicate citation');
+  return values;
+};
+const sameSchedule = (a: Schedule, b: Schedule) =>
+  a.start_hour_utc === b.start_hour_utc && a.end_hour_utc === b.end_hour_utc;
+const usable = (e: Observation) =>
+  e.status === 'ok' || e.status === 'partial' || e.status === 'no_match';
+
+function hypothesis(value: unknown): Hypothesis {
+  const h = exact(value, ['window', 'state', 'evidence_ids', 'reason']);
+  return {
+    window: validateSchedule(h.window),
+    state: member(h.state, ['proposed', 'contradicted', 'unresolved']),
+    evidence_ids: ids(h.evidence_ids),
+    reason: textValue(h.reason),
+  };
+}
+
+function candidate(value: unknown): CandidateReport {
+  const c = exact(value, [
+    'instance_id',
+    'selection_reason',
+    'selection_evidence_ids',
+    'proposed_window',
+    'verdict',
+    'explanation',
+    'supporting_evidence_ids',
+    'contradicting_evidence_ids',
+    'hypotheses',
+    'risks',
+    'missing_checks',
+    'assumptions',
+    'next_human_actions',
+    'estimated_monthly_savings',
+  ]);
+  if (c.estimated_monthly_savings !== null)
+    throw new Error('Unsupported savings');
+  return {
+    instance_id: identifier(c.instance_id),
+    selection_reason: textValue(c.selection_reason),
+    selection_evidence_ids: ids(c.selection_evidence_ids),
+    proposed_window:
+      c.proposed_window === null ? null : validateSchedule(c.proposed_window),
+    verdict: member(c.verdict, ['not_recommended', 'needs_verification']),
+    explanation: textValue(c.explanation),
+    supporting_evidence_ids: ids(c.supporting_evidence_ids),
+    contradicting_evidence_ids: ids(c.contradicting_evidence_ids),
+    hypotheses: array(c.hypotheses, 20).map(hypothesis),
+    risks: strings(c.risks),
+    missing_checks: strings(c.missing_checks),
+    assumptions: strings(c.assumptions),
+    next_human_actions: strings(c.next_human_actions),
+    estimated_monthly_savings: null,
+  };
+}
+
+function traceEntry(value: unknown): TraceEntry {
+  const t = exact(value, [
+    'step',
+    'phase',
+    'reason',
+    'action',
+    'status',
+    'evidence_ids',
+  ]);
+  const entry: TraceEntry = {
+    step: integer(t.step, 0, 1000),
+    phase: member(t.phase, ['planner', 'tool', 'evaluator', 'finish']),
+    reason: textValue(t.reason),
+    evidence_ids: ids(t.evidence_ids),
+  };
+  if (t.action !== undefined) entry.action = validateAction(t.action);
+  if (t.status !== undefined)
+    entry.status = member(t.status, [
+      'ok',
+      'no_match',
+      'partial',
+      'unavailable',
+      'error',
+    ] as const);
+  return entry;
+}
+
+/** Runtime report boundary. Only registered, scoped observations may support current conclusions. */
+export function validateReport(value: unknown): InvestigationReport {
+  const r = exact(value, [
+    'investigation_id',
+    'goal',
+    'request',
+    'started_at',
+    'finished_at',
+    'completion_status',
+    'integration_mode',
+    'planner',
+    'discovery',
+    'candidates',
+    'evidence',
+    'trace',
+    'historical_context',
+    'budget',
+    'limitations',
+    'stop_reason',
+  ]);
+  const request = validateRequest(r.request);
+  const started_at = utc(r.started_at);
+  const finished_at = utc(r.finished_at);
+  if (Date.parse(finished_at) < Date.parse(started_at))
+    throw new Error('Invalid report times');
+  const integration_mode = member(r.integration_mode, [
+    'mock',
+    'fixture',
+    'live',
+    'stub',
+  ]);
+  const p = exact(r.planner, ['mode', 'model']);
+  const planner = {
+    mode: member(p.mode, ['scripted', 'live']),
+    model: p.model === null ? null : textValue(p.model, 128),
+  };
+  if ((planner.mode === 'scripted') !== (planner.model === null))
+    throw new Error('Invalid planner label');
+  const d = exact(r.discovery, ['discovered_count', 'candidate_limit', 'gaps']);
+  const discovery = {
+    discovered_count: integer(d.discovered_count, 0, 100),
+    candidate_limit: integer(d.candidate_limit, 1, 1) as 1,
+    gaps: strings(d.gaps),
+  };
+  const candidates = array(r.candidates, 1).map(candidate);
+  if (candidates.length > discovery.discovered_count)
+    throw new Error('Undiscovered candidate');
+  const evidence = array(r.evidence, 100).map((value) => {
+    const o = exact(value, [
+      'tool',
+      'status',
+      'source',
+      'integration_mode',
+      'scope',
+      'observed_window',
+      'collected_at',
+      'coverage',
+      'missing_fields',
+      'units',
+      'evidence_id',
+      'data',
+    ]);
+    const scope = exact(o.scope, ['account_id', 'region', 'instance_id']);
+    // Rebuild expected arguments independently of the response's account, region and period.
+    const args: ToolAction['args'] = {
+      account_id: request.account_id,
+      region: request.region,
+      window: request.window,
+    };
+    if (scope.instance_id !== undefined) {
+      args.instance_id = identifier(scope.instance_id);
+      if (!candidates.some((c) => c.instance_id === args.instance_id))
+        throw new Error('Evidence outside candidate scope');
+    }
+    if (o.tool === 'get_ec2_operations') {
+      const c = candidates.find((c) => c.instance_id === args.instance_id);
+      if (!c?.proposed_window)
+        throw new Error('Untargeted operational evidence');
+      args.proposed_window = c.proposed_window;
+    }
+    const action = validateAction({
+      type: 'tool',
+      tool: o.tool,
+      args,
+      reason: 'Validate retrieved evidence scope',
+    });
+    if (action.type !== 'tool') throw new Error('Invalid evidence action');
+    return validateObservation(value, action, {
+      started_at,
+      now: finished_at,
+      mode: integration_mode,
+    });
+  });
+  const registry = new Map(evidence.map((e) => [e.evidence_id, e]));
+  if (registry.size !== evidence.length)
+    throw new Error('Duplicate evidence ID');
+  const evidenceById = (id: string): Observation => {
+    const observation = registry.get(id);
+    if (!observation) throw new Error('Unretrieved current citation');
+    return observation;
+  };
+  const h = exact(r.historical_context, [
+    'zetaris',
+    'hmem',
+    'context_ids',
+    'limitations',
+  ]);
+  const historical_context = {
+    zetaris: member(h.zetaris, ['not_configured']),
+    hmem: member(h.hmem, ['not_configured']),
+    context_ids: ids(h.context_ids),
+    limitations: strings(h.limitations),
+  };
+  if (historical_context.context_ids.length)
+    throw new Error('History is not configured');
+  const cited = (citations: string[], instance?: string) => {
+    for (const id of citations) {
+      const e = registry.get(id);
+      if (!e || historical_context.context_ids.includes(id))
+        throw new Error('Unretrieved current citation');
+      if (
+        instance &&
+        e.scope.instance_id !== undefined &&
+        e.scope.instance_id !== instance
+      )
+        throw new Error('Cross-candidate citation');
+    }
+  };
+  const trace = array(r.trace, 1000).map(traceEntry);
+  const retrieved = new Set<string>();
+  const retrievalSteps = new Map<string, number>();
+  const retrievalStep = (id: string): number => {
+    const step = retrievalSteps.get(id);
+    if (step === undefined) throw new Error('Citation precedes retrieval');
+    return step;
+  };
+  const proposals: {
+    action: Extract<Action, { type: 'propose' }>;
+    step: number;
+  }[] = [];
+  for (let i = 0; i < trace.length; i++) {
+    const t = trace[i];
+    if (i > 0 && t.step <= trace[i - 1].step)
+      throw new Error('Unordered trace');
+    cited(t.evidence_ids);
+    if (t.action?.type === 'tool') {
+      const a = t.action.args;
+      if (
+        a.account_id !== request.account_id ||
+        a.region !== request.region ||
+        a.window.from !== request.window.from ||
+        a.window.to !== request.window.to ||
+        (a.instance_id !== undefined &&
+          !candidates.some((c) => c.instance_id === a.instance_id))
+      )
+        throw new Error('Trace action outside request scope');
+      const actionWindow = a.proposed_window;
+      if (
+        actionWindow &&
+        !candidates.some(
+          (c) =>
+            c.instance_id === a.instance_id &&
+            c.proposed_window &&
+            sameSchedule(c.proposed_window, actionWindow),
+        )
+      )
+        throw new Error('Trace window mismatch');
+    }
+    if (t.phase === 'tool' && t.evidence_ids.length) {
+      if (t.action?.type !== 'tool' || t.evidence_ids.length !== 1)
+        throw new Error('Unbound tool observation');
+      const e = evidenceById(t.evidence_ids[0]);
+      if (
+        retrieved.has(e.evidence_id) ||
+        e.tool !== t.action.tool ||
+        e.status !== t.status ||
+        e.scope.instance_id !== t.action.args.instance_id
+      )
+        throw new Error('Tool registration mismatch');
+      const targetedWindow = t.action.args.proposed_window;
+      if (
+        e.tool === 'get_ec2_operations' &&
+        (!targetedWindow ||
+          !proposals.some((p) => sameSchedule(p.action.window, targetedWindow)))
+      )
+        throw new Error('Challenge preceded hypothesis');
+      retrieved.add(e.evidence_id);
+      retrievalSteps.set(e.evidence_id, t.step);
+    }
+    for (const id of t.evidence_ids)
+      if (!retrieved.has(id)) throw new Error('Citation precedes retrieval');
+    if (t.action?.type === 'propose') {
+      cited(t.action.evidence_ids);
+      for (const id of t.action.evidence_ids)
+        if (!retrieved.has(id)) throw new Error('Hypothesis precedes evidence');
+      proposals.push({ action: t.action, step: t.step });
+    }
+  }
+  if (retrieved.size !== registry.size)
+    throw new Error('Unregistered evidence');
+  const conflicts = (e: Observation, window: Schedule) => {
+    if (!usable(e) || e.scope.instance_id === undefined || !e.data)
+      return false;
+    if (e.tool === 'get_ec2_operations' && 'jobs' in e.data)
+      return e.data.jobs.some(
+        (j) =>
+          j.critical &&
+          j.window.start_hour_utc < window.end_hour_utc &&
+          j.window.end_hour_utc > window.start_hour_utc,
+      );
+    return (
+      e.tool === 'get_ec2_dependencies' &&
+      'requires_continuous_operation' in e.data &&
+      e.data.requires_continuous_operation
+    );
+  };
+  for (const c of candidates) {
+    cited(c.selection_evidence_ids, c.instance_id);
+    cited(c.supporting_evidence_ids, c.instance_id);
+    cited(c.contradicting_evidence_ids, c.instance_id);
+    const selected = c.selection_evidence_ids.map((id) => evidenceById(id));
+    if (
+      !selected.some(
+        (e) =>
+          usable(e) &&
+          e.tool === 'list_ec2_instances' &&
+          e.data &&
+          'instances' in e.data &&
+          e.data.instances.some(
+            (i) => i.instance_id === c.instance_id && i.state === 'running',
+          ),
+      ) ||
+      !selected.some(
+        (e) =>
+          usable(e) &&
+          e.tool === 'get_ec2_billing' &&
+          e.data &&
+          'costs' in e.data &&
+          e.data.costs.some(
+            (i) => i.instance_id === c.instance_id && i.compute_cost > 0,
+          ),
+      )
+    )
+      throw new Error('Unsupported candidate selection');
+    const proposedWindow = c.proposed_window;
+    if (proposedWindow === null) {
+      if (
+        c.hypotheses.length ||
+        c.verdict !== 'needs_verification' ||
+        c.contradicting_evidence_ids.length
+      )
+        throw new Error('Missing proposed window');
+      continue;
+    }
+    if (
+      c.hypotheses.length !== 2 ||
+      c.hypotheses[0].state !== 'proposed' ||
+      c.hypotheses[1].state === 'proposed'
+    )
+      throw new Error('Missing hypothesis transition');
+    const initial = c.hypotheses[0];
+    const final = c.hypotheses[1];
+    const proposal = proposals.find((p) =>
+      sameSchedule(p.action.window, proposedWindow),
+    );
+    if (!proposal) throw new Error('Missing proposal trace');
+    if (
+      proposal.action.evidence_ids.length !== initial.evidence_ids.length ||
+      initial.evidence_ids.some(
+        (id) => !proposal.action.evidence_ids.includes(id),
+      )
+    )
+      throw new Error('Proposal citation mismatch');
+    for (const h of c.hypotheses) {
+      cited(h.evidence_ids, c.instance_id);
+      if (!sameSchedule(h.window, proposedWindow))
+        throw new Error('Hypothesis window changed');
+    }
+    if (
+      !initial.evidence_ids.some((id) => {
+        const e = evidenceById(id);
+        return (
+          e.tool === 'get_ec2_metrics' &&
+          usable(e) &&
+          e.coverage.complete &&
+          !e.missing_fields.length &&
+          e.scope.instance_id === c.instance_id &&
+          e.data &&
+          'suggested_window' in e.data &&
+          e.data.average_cpu_percent <= 10 &&
+          e.data.peak_cpu_percent <= 20 &&
+          sameSchedule(e.data.suggested_window, proposedWindow) &&
+          retrievalStep(id) < proposal.step
+        );
+      })
+    )
+      throw new Error('Unsupported initial hypothesis');
+    if (c.verdict === 'not_recommended') {
+      if (
+        final.state !== 'contradicted' ||
+        !c.contradicting_evidence_ids.length ||
+        !final.evidence_ids.some((id) =>
+          c.contradicting_evidence_ids.includes(id),
+        )
+      )
+        throw new Error('Unsupported rejection');
+      for (const id of new Set([
+        ...c.contradicting_evidence_ids,
+        ...final.evidence_ids,
+      ])) {
+        const e = evidenceById(id);
+        if (
+          e.scope.instance_id !== c.instance_id ||
+          !conflicts(e, proposedWindow) ||
+          retrievalStep(id) <= proposal.step
+        )
+          throw new Error('Invalid contradictory evidence');
+      }
+    } else if (
+      final.state !== 'unresolved' ||
+      c.contradicting_evidence_ids.length
+    )
+      throw new Error('Invalid unresolved verdict');
+  }
+  const b = exact(r.budget, [
+    'discovery_attempts',
+    'candidate_attempts',
+    'planner_calls',
+    'elapsed_ms',
+  ]);
+  const budget = {
+    discovery_attempts: integer(b.discovery_attempts, 0, 2),
+    candidate_attempts: integer(b.candidate_attempts, 0, 6),
+    planner_calls: integer(b.planner_calls, 0, 9),
+    elapsed_ms: integer(b.elapsed_ms, 0, 3_600_000),
+  };
+  const toolAttempts = trace.filter((t) => t.phase === 'tool');
+  if (
+    toolAttempts.some(
+      (t) => t.action?.type !== 'tool' || t.status === undefined,
+    )
+  )
+    throw new Error('Unbound tool attempt');
+  const discoveryAttempts = toolAttempts.filter(
+    (t) =>
+      t.action?.type === 'tool' &&
+      (t.action.tool === 'list_ec2_instances' ||
+        t.action.tool === 'get_ec2_billing'),
+  ).length;
+  if (
+    budget.discovery_attempts !== discoveryAttempts ||
+    budget.candidate_attempts !== toolAttempts.length - discoveryAttempts
+  )
+    throw new Error('Tool attempt count mismatch');
+  if (
+    budget.planner_calls < trace.filter((t) => t.phase === 'planner').length ||
+    budget.planner_calls < toolAttempts.length
+  )
+    throw new Error('Planner call count mismatch');
+  const completion_status = member(r.completion_status, [
+    'complete',
+    'partial',
+    'failed',
+  ]);
+  if (
+    completion_status === 'complete' &&
+    candidates.some((c) => c.verdict === 'needs_verification')
+  )
+    throw new Error('Unresolved complete report');
+  return {
+    investigation_id: identifier(r.investigation_id),
+    goal: member(r.goal, ['evaluate_ec2_off_hours_scheduling']),
+    request,
+    started_at,
+    finished_at,
+    completion_status,
+    integration_mode,
+    planner,
+    discovery,
+    candidates,
+    evidence,
+    trace,
+    historical_context,
+    budget,
+    limitations: strings(r.limitations),
+    stop_reason: textValue(r.stop_reason),
+  };
+}
+
+const citations = (values: string[]) =>
+  values.length ? `[${values.join(', ')}]` : '(none)';
+const schedule = (value: Schedule | null) =>
+  value
+    ? `${String(value.start_hour_utc).padStart(2, '0')}:00–${String(value.end_hour_utc).padStart(2, '0')}:00 UTC daily`
+    : 'none established';
+
+/** Detailed readable equivalent of the validated JSON report. */
+export function renderReport(value: InvestigationReport): string {
+  const r = validateReport(value);
+  const lines = [
+    `Cloud Cost Investigator — ${r.completion_status}`,
+    `Investigation: ${r.investigation_id}`,
+    `Goal: ${r.goal}`,
+    `Current evidence: ${r.integration_mode.toUpperCase()}${r.integration_mode === 'mock' ? ' (synthetic data; no AWS calls)' : ''}`,
+    `Planner: ${r.planner.mode}${r.planner.model ? ` (${r.planner.model})` : ' (deterministic; no model calls)'}`,
+    `Scope: account=${r.request.account_id} region=${r.request.region}`,
+    `Observed: ${r.request.window.from} → ${r.request.window.to}`,
+    `Run: ${r.started_at} → ${r.finished_at}`,
+    `Discovery: ${r.discovery.discovered_count} discovered instances; candidate limit ${r.discovery.candidate_limit}`,
+    ...r.discovery.gaps.map((v) => `Discovery gap: ${v}`),
+  ];
+  for (const c of r.candidates) {
+    lines.push(
+      '',
+      `Instance ${c.instance_id}: ${c.verdict}`,
+      `Selected: ${c.selection_reason} ${citations(c.selection_evidence_ids)}`,
+      `Proposed shutdown: ${schedule(c.proposed_window)}`,
+      `Finding: ${c.explanation}`,
+      `Supporting evidence: ${citations(c.supporting_evidence_ids)}`,
+      `Contradicting evidence: ${citations(c.contradicting_evidence_ids)}`,
+    );
+    for (const h of c.hypotheses)
+      lines.push(
+        `Hypothesis ${h.state}: ${schedule(h.window)} — ${h.reason} ${citations(h.evidence_ids)}`,
+      );
+    if (c.verdict === 'not_recommended')
+      lines.push(`Rejected shutdown window: ${schedule(c.proposed_window)}`);
+    for (const [label, values] of [
+      ['Risk', c.risks],
+      ['Missing check', c.missing_checks],
+      ['Assumption', c.assumptions],
+      ['Next human action', c.next_human_actions],
+    ] as const) {
+      for (const v of values) lines.push(`${label}: ${v}`);
+    }
+    lines.push(
+      'Estimated monthly savings: null (unsupported marginal-cost and scheduling assumptions)',
+    );
+  }
+  lines.push('', 'Retrieved current evidence:');
+  for (const e of r.evidence) {
+    lines.push(
+      `${e.evidence_id}: ${e.tool} status=${e.status} source=${e.source} mode=${e.integration_mode}`,
+      `  Scope: ${JSON.stringify(e.scope)}; observed=${e.observed_window.from} → ${e.observed_window.to}; collected=${e.collected_at}`,
+      `  Coverage: complete=${e.coverage.complete} authoritative=${e.coverage.authoritative}; units=${e.units}; missing=${e.missing_fields.join(', ') || 'none'}`,
+      `  Observation: ${JSON.stringify(e.data)}`,
+    );
+  }
+  lines.push('', 'Decision trace:');
+  for (const t of r.trace) {
+    lines.push(
+      `${t.step}. ${t.phase}${t.status ? ` (${t.status})` : ''}: ${t.reason} ${citations(t.evidence_ids)}`,
+    );
+    if (t.action) lines.push(`  Validated action: ${JSON.stringify(t.action)}`);
+  }
+  lines.push(
+    '',
+    'Historical context: Zetaris not configured; H-MEM not configured; no historical records used.',
+  );
+  for (const v of r.historical_context.limitations)
+    lines.push(`History limitation: ${v}`);
+  for (const v of r.limitations) lines.push(`Limitation: ${v}`);
+  lines.push(
+    `Budget: discovery=${r.budget.discovery_attempts}; candidate=${r.budget.candidate_attempts}; planner=${r.budget.planner_calls}; elapsed=${r.budget.elapsed_ms}ms`,
+    `Stopped: ${r.stop_reason}`,
+    'Infrastructure access is read-only. Any eventual change requires human review and approval.',
+  );
+  return `${lines.join('\n')}\n`;
+}

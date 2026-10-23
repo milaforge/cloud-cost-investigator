@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "cli.ts",
+    "src/contracts.ts",
+    "src/investigation",
+    "tests",
+    "scripts"
+  ]
+}
