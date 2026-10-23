@@ -1,5 +1,17 @@
 # Project Memory
 
+## OpenAI completion-token compatibility (2026-10-23)
+
+- The shared Chat Completions adapter defaults to `max_completion_tokens` for
+  the exact official OpenAI API base. Its earlier unconditional `max_tokens`
+  default is incompatible with reasoning models. Other compatible providers
+  retain the legacy default; an explicit choice of either parameter takes
+  precedence, so the adapter never injects both. No model-name guessing,
+  credential destination changes or automatic live retries are needed.
+- The completion cap includes reasoning tokens. A truncated response remains
+  an explicit failure; configured limits stay bounded at 4096. Preserve raw
+  provider-error suppression and TLS verification when diagnosing compatibility.
+
 ## Development linting and formatting (2026-10-23)
 
 - Lint remediation keeps the ASCII control-character rejection regex intact,

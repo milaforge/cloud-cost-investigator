@@ -62,6 +62,13 @@ Set `LLM_BASE_URL` (including `/v1` when required), `LLM_MODEL`, and `LLM_API_KE
 
 `LLM_RESPONSE_FORMAT` defaults to `text` (JSON is still required in the response). Choose `json_object` or `json_schema` only if supported. `LLM_EXTRA_BODY` accepts JSON provider options, including either `max_tokens` or `max_completion_tokens` (1–4096); it cannot override messages, model, tools or streaming. Remove NVIDIA-specific options when switching providers. Provider compatibility depends on Chat Completions and instruction-following support; arbitrary providers were tested with mocked transport, not live credentials.
 
+For `https://api.openai.com/v1`, the default limit is
+`max_completion_tokens: 1024`; other providers retain `max_tokens: 1024`.
+Either explicit limit in `LLM_EXTRA_BODY` overrides the default. OpenAI reasoning
+models such as `gpt-6.1-sol` need `max_completion_tokens`. If reasoning consumes
+the limit before producing JSON, the planner reports `model_incomplete_response`;
+raise the limit within the supported 4096-token cap if needed.
+
 With no `LLM_*` settings, `--planner model` falls back to `NVIDIA_API_KEY` and optional `NVIDIA_MODEL`. The legacy `--planner nvidia` selects that NVIDIA preset explicitly. Model IDs are configurable; event approval of a selected model remains a separate gate. The default `scripted` planner runs offline.
 
 All model paths preserve bounded requests, validated actions, trusted argument binding and deterministic verdicts. Redirects are refused. Failures return incomplete results without scripted fallback. Current evidence remains mock regardless of the selected model. See [the execution plan](docs/EXECUTION_PLAN.md) for actual integration proof.
@@ -145,6 +152,9 @@ and validates the returned planner action. No AWS or Zetaris tools execute.
 It verifies TLS, refuses redirects, times out within 25 seconds, and reports
 sanitized failures rather than provider response bodies. Provider charges may apply.
 Missing configuration or unavailable access fails the test; nothing is silently skipped.
+`model_http_400` indicates a rejected request; a valid key alone does not establish
+parameter compatibility. Check for an explicit `max_tokens` on an OpenAI reasoning
+model or provider-specific options retained in `LLM_EXTRA_BODY`.
 `model_http_405` means the selected route rejected the POST method. Check that
 `LLM_BASE_URL` is the provider's Chat Completions base URL; the adapter appends
 `/chat/completions`. Codex backend and Responses-only routes are different

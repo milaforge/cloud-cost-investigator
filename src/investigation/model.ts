@@ -177,8 +177,14 @@ export class OpenAICompatiblePlanner implements Planner {
         },
         body: JSON.stringify({
           model: this.model,
-          ...(this.config.extraBody?.max_completion_tokens === undefined
-            ? { max_tokens: 1024 }
+          // OpenAI reasoning models require the completion-token parameter.
+          // Preserve the legacy default for other compatible providers and
+          // honor either explicitly configured limit without sending both.
+          ...(this.config.extraBody?.max_completion_tokens === undefined &&
+          this.config.extraBody?.max_tokens === undefined
+            ? this.config.baseUrl === 'https://api.openai.com/v1'
+              ? { max_completion_tokens: 1024 }
+              : { max_tokens: 1024 }
             : {}),
           ...this.config.extraBody,
           stream: false,

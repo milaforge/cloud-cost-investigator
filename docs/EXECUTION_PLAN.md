@@ -57,6 +57,36 @@ Append after actual execution. Include date, command, result, `mock`/`fixture`/`
 
 **Remaining gate:** no current AWS integration, authorized Zetaris append/read, exact model event approval or warm D integration. H-MEM is tested as local reference persistence separately, while the first-run CLI uses no historical context. Do not advance the milestone or close the combined sponsor gate from the mock slice. A/C/D, multi-candidate expansion, numeric savings, measured full evaluation, slides/demo and submission are explicitly follow-on work in `plan.md`.
 
+### OpenAI request compatibility correction (2026-10-23)
+
+- **Gate/owner:** Day 2 approved-model access prerequisite, Milad. User reported
+  HTTP 400 using the official OpenAI base and `gpt-6.1-sol`. Safe intended `.env`
+  inspection confirmed that base/model, key presence, text response mode and no
+  extra provider options; no credential values were logged or changed.
+- **Change:** the exact official OpenAI base now defaults to
+  `max_completion_tokens: 1024`, replacing the incompatible legacy `max_tokens`
+  default. Other providers and explicit configured limits retain their behavior.
+  Added mocked compatibility/override coverage, sanitized 400 guidance and README
+  documentation. No production dependencies or model/API destination changes.
+- **Executed:** `npm test`: **72/72 passed** (offline/mocked transport);
+  `npm run typecheck`: passed; focused Biome lint/format on
+  `src/investigation/model.ts`, `tests/config.test.ts` and
+  `tests/integration/llm.test.ts`: passed.
+- **Repeat-suite limitation:** a subsequent full run passed 71/72, failing the
+  previously recorded timing-sensitive `total runtime bound applies across
+  individual calls` assertion (2 tool attempts versus expected 1 with a 10ms
+  total budget). No timing/runtime implementation was changed in this slice.
+- **Live limitation/next action:** `npm run test:integration` was attempted here
+  and failed with `model_transport_unavailable` before an HTTP response. Thus
+  the reported 400's response detail and successful real OpenAI action remain
+  unverified. User reruns the live test from their working network. Context7
+  retrieval did not complete and was canceled; official OpenAI model/API pages
+  were checked directly for Chat Completions support and token-limit semantics.
+  Combined sponsor/model-approval gates remain open.
+- **User-confirmed follow-up:** user reports the configured model works after
+  this correction. This is user-confirmed live access, not an agent-executed
+  successful integration run or proof of event-model approval.
+
 ### Environment/provider configuration verification (2026-10-23)
 
 - **Slice/owner:** Day 2 configuration support, Milad. Native Node `.env` loading with shell precedence; configurable OpenAI-compatible planner; legacy NVIDIA preset retained; `.env.example` and sanitized fixed-query Zetaris probe added. No production dependencies or secret-file edits.

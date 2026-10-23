@@ -30,6 +30,11 @@ test('configured LLM accepts a request and returns a valid planner action', {
       t.signal,
     );
   } catch (error) {
+    if (error instanceof Error && error.message === 'model_http_400') {
+      t.diagnostic(
+        'HTTP 400: check model-specific request parameters. OpenAI reasoning models use max_completion_tokens instead of max_tokens; remove incompatible LLM_EXTRA_BODY options left over from another provider. A valid API key does not guarantee request compatibility.',
+      );
+    }
     if (error instanceof Error && error.message === 'model_http_405') {
       t.diagnostic(
         'HTTP 405: verify LLM_BASE_URL is the provider base for POST /chat/completions. Codex backend and Responses API routes require a different adapter. The test does not change endpoints or retry with credentials.',

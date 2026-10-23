@@ -12,7 +12,7 @@ import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
 import { queryZetaris } from '../src/tools/zetaris.ts';
-import type { InvestigationRequest } from '../src/contracts.ts';
+import { validateAction, type InvestigationRequest } from '../src/contracts.ts';
 
 const request: InvestigationRequest = {
   account_id: 'demo',
@@ -158,6 +158,93 @@ test('arbitrary compatible provider completes B through the same validated loop'
   assert.equal(report.planner.model, 'custom/model');
   assert.ok(fetchMock.mock.callCount() >= 5);
 });
+
+for (const { name, baseUrl, extraBody, expected } of [
+  {
+    name: 'OpenAI defaults to completion tokens',
+    baseUrl: 'https://api.openai.com/v1/',
+    extraBody: {},
+    expected: { max_completion_tokens: 1024 },
+  },
+  {
+    name: 'OpenAI honors an explicit completion limit',
+    baseUrl: 'https://api.openai.com/v1',
+    extraBody: { max_completion_tokens: 4096 },
+    expected: { max_completion_tokens: 4096 },
+  },
+  {
+    name: 'OpenAI honors an explicit legacy limit for compatible models',
+    baseUrl: 'https://api.openai.com/v1',
+    extraBody: { max_tokens: 512 },
+    expected: { max_tokens: 512 },
+  },
+  {
+    name: 'other providers retain the legacy default',
+    baseUrl: 'https://provider.example/v1',
+    extraBody: {},
+    expected: { max_tokens: 1024 },
+  },
+]) {
+  test(name, async (t) => {
+    const oldTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
+    t.after(() => {
+      if (oldTls === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      else process.env.NODE_TLS_REJECT_UNAUTHORIZED = oldTls;
+    });
+    const fetchMock = t.mock.method(
+      globalThis,
+      'fetch',
+      async (_url: string | URL | Request, options?: RequestInit) => {
+        const body = JSON.parse(String(options?.body));
+        assert.equal(body.max_tokens, expected.max_tokens);
+        assert.equal(
+          body.max_completion_tokens,
+          expected.max_completion_tokens,
+        );
+        assert.equal(body.model, 'gpt-6.1-sol');
+        // Model a provider that rejects the deprecated field, as in the
+        // reported 400. Explicit legacy overrides remain caller-controlled.
+        if (
+          name === 'OpenAI defaults to completion tokens' &&
+          body.max_tokens
+        ) {
+          return new Response(null, { status: 400 });
+        }
+        return Response.json({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                content: JSON.stringify({
+                  action: 'list_ec2_instances',
+                  reason: 'Discover candidates.',
+                }),
+              },
+            },
+          ],
+        });
+      },
+    );
+    const planner = new OpenAICompatiblePlanner({
+      baseUrl,
+      model: 'gpt-6.1-sol',
+      extraBody,
+    });
+    const action = await planner.next(
+      {
+        request,
+        candidate_id: null,
+        proposed_window: null,
+        observations: [],
+        trace: [],
+      },
+      new AbortController().signal,
+    );
+    assert.equal(validateAction(action).type, 'tool');
+    assert.equal(fetchMock.mock.callCount(), 1);
+  });
+}
 
 test('Zetaris requires explicit HTTP opt-in and sanitizes provider errors', async (t) => {
   const values = {
