@@ -1,4 +1,12 @@
-# Agentathon Starter: The Research Notebook Agent
+# Cloud Cost Investigator
+
+Read-only AWS EC2 cost investigation for **Track 02 — The Agent That Can Explain
+Why**. Start with [project context](docs/PROJECT_CONTEXT.md), the
+[execution plan](docs/EXECUTION_PLAN.md), and [hackathon rules](docs/RULES.md).
+Day 2 integration gates remain unverified; the commands below describe the
+inherited notebook starter, not a finished EC2 investigation workflow.
+
+## Inherited starter: The Research Notebook Agent
 
 A CLI agent whose memory is real H-MEM: it mines what you tell it, ranks what it recalls, explains where every answer came from, and remembers across runs. Zero API keys. Your hackathon project starts by replacing the CLI with your own surface and keeping the memory spine.
 
@@ -31,7 +39,10 @@ npx tsx notebook.ts sleep --preview    # consolidation plan, nothing applied
 
 ## Where the engine is used (judges look here)
 
-The rubric weights "Meterless engine usage" at 25%. Every command routes through a named H-MEM service; nothing is faked:
+The recorded hackathon rubric assigns **Sponsor Tech 10 points out of 100**; see
+[the rules](docs/RULES.md) for all criteria. The inherited notebook maps commands
+to the following H-MEM services; project-specific integration still requires
+executed verification:
 
 | Command | Engine service | Spec section |
 |---|---|---|
@@ -59,4 +70,7 @@ The reinjected memory block goes into the prompt; the answer cites memory ids. B
 - **Creative swarms**: when the swarm orchestration engine drops, fan out variants and remember which ones the user kept.
 - **Enterprise workflow**: point `remember` at your CRM export; `ask` becomes account context on demand.
 
-Rubric and tracks: [docs/community/hackathon-guide.md](../../docs/community/hackathon-guide.md). Engine spec: [engines/hmem/AGENTS.md](../../engines/hmem/AGENTS.md).
+The extension ideas above are starter examples, not project scope. Use the local
+[hackathon rules](docs/RULES.md) and [project context](docs/PROJECT_CONTEXT.md) for
+this entry. The table's engine spec references belong to the upstream H-MEM
+project; the repository-root `AGENTS.md` contains this project's instructions.
