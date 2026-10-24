@@ -26,6 +26,125 @@ The Oct 23 MVP discovery approved four shared-engine flows: A supported off-hour
 
 **Earlier inspection had not verified:** live API calls for any of the five direct categories; historical read and append via Zetaris; H-MEM project round-trip; approved model call; CLI test execution. New executed evidence is recorded below. Team-reported prior Zetaris data availability does not verify the newly planned direct adapters. Never mark any of these complete from a written plan.
 
+### Successful real-model access retry and warm proof — 2026-10-24
+
+**Gate/owner:** Milad, real-model D proof. User requested a retry after HTTP 403.
+No model, credential, endpoint or TLS configuration was changed by the agent.
+The earlier refusal no longer reproduces; its source/cause is undetermined.
+This supersedes the model-access blocker below, retaining the failed attempts
+as historical evidence. Team approval of the selected model remains confirmed.
+
+- [x] `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run test:integration`: exit **0**,
+  **1/1 passed**, configured real model returned a validated action, **8816 ms**.
+- [x] `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm -- --planner model`:
+  exit **0**, real NVIDIA-hosted `nvidia/nemotron-3-ultra-550b-a55b`, actual
+  remote Zetaris and vendored local H-MEM, **mock current AWS evidence**.
+  Cold run `5b01a6fd-c796-476c-ac11-22f7e125ed12`: **24188 ms**, five model
+  calls, four tool attempts, zero recalled records; operations queried first.
+  Warm run `68a34814-f1a4-421f-a0ae-f71222545faf`: **34390 ms**, six model
+  calls, five tool attempts, one record recalled from each store; dependencies
+  queried before operations. Both reject the window based on fresh operational
+  evidence, respectively `mock-ec2-evidence-4` and `mock-ec2-evidence-9`.
+  Runtime report validation and disjoint current-evidence IDs passed. Both
+  stores succeeded on both runs, each Zetaris append had exact readback, and
+  both H-MEM summaries were stored. Two synthetic history rows retained;
+  temporary memory directory removed. No live AWS or pricing proof implied.
+- [x] `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run --silent evaluate -- --planner
+  model > /tmp/cci-evaluation-model.json`: completed, exit **1** because three
+  expected dispositions were missed; all eight cases retained. Measured artifact
+  copied to [`evaluation-model.json`](./evaluation-model.json). Real selected
+  model / mock AWS evidence / history disabled. **5/8** matching dispositions,
+  **0/3** known-unsafe positives and **0/3** unknown-safety positives, versus
+  CPU heuristic **2/8**, **3/3**, **3/3**. Candidate/hypothesis current references
+  **25/25 valid**, all reports runtime-validated. Total investigation time
+  **252264 ms**, range **21229–55948 ms**, **26** current-tool attempts and
+  **36** planner calls; heuristic **1 ms**, **24** attempts, no model calls.
+  Model cost remains **null** (usage/billing not captured).
+  **Only 1/8 investigations completed; 7/8 were partial.** Five cases stopped
+  with `planner_unavailable_or_invalid` (B, C, clear-without-authority, partial
+  operations, unknown commitments). B and C deferred instead of discovering
+  rejection; unknown commitments produced no candidate. Two of these planner
+  failures still match expected `needs_verification` dispositions, so **5/8
+  matching dispositions is not a 5/8 successful-investigation rate**. Missing
+  operations finished partial; high peaks were safely blocked as
+  `unsupported_hypothesis`. A completed with the synthetic USD 75 estimate.
+  No repeated evaluation to replace failures; precise planner-error causes
+  are not captured by this report. Isolated HTTP 403 was not diagnosed as their
+  cause. Designed fixtures and one trial per case do not establish production
+  accuracy or model superiority over a safety-aware rule-based engine.
+
+**Next action:** diagnose the five planner failures with sanitized error codes
+before claiming reliable model behavior across A/B/C. Warm D and the requested
+measured comparison are now recorded; combined sponsor/release gates remain
+open for live AWS, effective permissions and release assets.
+
+### Measured fixture evaluation and earlier failed real-model warm attempt — 2026-10-24
+
+**Gate/owner:** Milad, Days 3–4 evaluation/model slice; the active milestone and
+combined live integration gate remain open.
+
+- [x] Added `npm run evaluate`: eight fixed synthetic cases, independent expected
+  dispositions, shared discovery ranking, no history access/writes. Default
+  scripted planner measures deterministic safety policy against the agreed
+  average-CPU <=10% heuristic. `--planner model` explicitly enables real inference;
+  failures never fall back to scripted planning and missing predictions count
+  against the full denominator.
+- [x] Extended `probe:warm -- --planner model` to use the configured real planner
+  through the existing CLI. Reports model/run IDs, timing/calls, current citations,
+  both stores, exact append readback and fresh evidence IDs; validates presence
+  of dependency/operations queries before comparing their order.
+- [x] Real-model cold/warm execution: subsequent retry passed as recorded above.
+  The earlier HTTP 403 failure below is retained; live-model evaluation is
+  recorded separately from warm sponsor proof.
+- [x] Selected-model approval **team-confirmed on Oct 24**: user explicitly
+  confirmed `nvidia/nemotron-3-ultra-550b-a55b` is fine in response to the
+  event-eligibility question. This closes the team's model-selection blocker;
+  it is user confirmation, not independent organizer verification. The earlier
+  public-source check was inconclusive. Runtime access is separate and passed
+  on the subsequent retry above.
+
+**Executed evidence:**
+
+- `node --import tsx scripts/evaluate.ts > /tmp/cci-evaluation-scripted.json`:
+  exit **0**. Sanitized measured result copied to
+  [`evaluation-scripted.json`](./evaluation-scripted.json). One run per case:
+  A/B/C, unavailable operations, empty jobs without authority, high peak,
+  partial operations and unknown commitments. **Mock evidence / scripted policy**.
+  Investigation **8/8** correct, **0/3** known-unsafe positives, **0/3** unknown-
+  safety positives; CPU heuristic **2/8**, **3/3**, **3/3** respectively. All
+  eight investigation reports passed runtime validation; candidate/hypothesis
+  citation references **44/44** resolve to current retrieved evidence.
+  Investigation total **7 ms**, case range **0–4 ms**, **37** tool attempts,
+  **48** planner calls; heuristic total **3 ms**, range **0–1 ms**, **24** tool
+  attempts, **0** planner calls. Millisecond resolution and synthetic latency
+  make these unsuitable for live performance claims. Model cost **null**;
+  no usage/billing captured. This small designed set has no production accuracy
+  estimate or statistical confidence claim, and does not prove model superiority.
+  D remains the separate two-run sponsor proof.
+- `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm -- --planner model`:
+  exit **1**, outside network sandbox, configured NVIDIA-hosted model
+  `nvidia/nemotron-3-ultra-550b-a55b`. Run
+  `d5fc0526-a38e-4ae8-a82d-3ffd9614ef6f`: first planner call failed,
+  **417 ms**, **0** tool attempts, both historical services **not queried**,
+  **0** appends. Temporary H-MEM directory removed. No second run attempted.
+- `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run test:integration`: exit **1**,
+  **0/1** passed, sanitized **model_http_403** diagnostic. Config presence was
+  checked after `.env` loading; no credential values or private URLs printed.
+  TLS remained verified; no alternate models/endpoints or secret-file edits.
+- `npm test`: **110/110 passed**, including evaluation denominators, high-peak
+  and unknown-data false positives, null savings, forged-citation rejection and
+  mocked model-403 failures with no scripted fallback or history access.
+  `npm run typecheck`, `npm run lint`: **passed**. Whole-repository
+  `npm run format:check` still fails on the **pre-existing** formatting in
+  this file and `docs/ZETARIS_HISTORY.md`; unrelated tables preserved.
+  Scoped formatting for all eight other changed/new code, JSON and documentation
+  files passed, as did `git diff --check`.
+
+**Next action (superseded by retry results above):** real-model fixture evaluation
+has now run with failed outcomes retained. No further eligibility input is
+required for this work. Live AWS, effective least privilege, broader live
+measurements and release materials remain separate gates.
+
 ### Broader A/C, three candidates and savings proof — 2026-10-23
 
 **Gate/owner:** Day 2 broader scenario slice, Milad. This extends the existing
@@ -284,7 +403,7 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
 **Milad**
 - [x] Runnable TypeScript investigation CLI using the existing starter, with mock provider and README usage.
 - [x] Runtime-validated request, observation, hypothesis, trace and report contracts; account/region scope and UTC periods.
-- [ ] One genuine approved investigation-model call; record actual model, endpoint class and NVIDIA contribution, no secrets.
+- [x] One genuine team-approved investigation-model call; Oct 24 configured NVIDIA-hosted Nemotron access and cold/warm proof recorded above, with model ID and modes.
 - [x] Genuine Meterless H-MEM store -> retrieve round-trip for investigation memory.
 - [x] Bounded planner -> executor -> evaluator -> finish/replan skeleton.
 
@@ -317,7 +436,7 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
 **Milad**
 - [ ] Scenario A: evidence-gated conditional off-hours recommendation, including a concrete UTC schedule and approvals/unknowns.
 - [ ] Scenario C: justify required continuous operation **and** independently test a missing-source/unknown outcome.
-- [ ] Scenario D: second run retrieves H-MEM historical reasoning and historical typed Zetaris rows; both influence planning or comparison, not current verdict authority.
+- [x] Scenario D: Oct 24 real-model second run retrieves actual H-MEM reasoning and remote typed Zetaris history; query order changes, fresh mock evidence controls the verdict. Exact proof above; live AWS remains separate.
 - [ ] Deterministic compute-only savings when verifiable, otherwise `null`; explicitly handle commitment/retained charges and incomplete billing granularity.
 - [ ] Model failure, tool timeout, memory/history errors, partial responses, invalid outputs, budget exhaustion; all bounded.
 - [ ] Expose full trace and JSON report with validation and provenance; measure latency and tool counts.

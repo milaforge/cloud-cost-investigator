@@ -4,7 +4,17 @@ import { loadProjectEnv } from '../src/config.ts';
 import { validateReport } from '../src/investigation/report.ts';
 
 async function proof() {
+  const args = process.argv.slice(2);
+  if (
+    args.length &&
+    (args.length !== 2 ||
+      args[0] !== '--planner' ||
+      !['scripted', 'model', 'nvidia'].includes(args[1]))
+  )
+    throw new Error('Use --planner scripted|model|nvidia');
+  const planner = args[1] ?? 'scripted';
   loadProjectEnv();
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
   if (
     !process.env.ZETARIS_HISTORY_TABLE ||
     process.env.ZETARIS_HISTORY_ALLOW_APPEND !== 'true'
@@ -14,6 +24,7 @@ async function proof() {
   const dir = await mkdtemp('/tmp/cci-warm-live-');
   process.env.HMEM_PERSIST_DIR = dir;
   const account = `warm-proof-${Date.now()}`;
+  let coldEvidence: string[] = [];
   try {
     for (let run = 1; run <= 2; run++) {
       let output = '';
@@ -30,6 +41,8 @@ async function proof() {
           account,
           '--region',
           'us-east-1',
+          '--planner',
+          planner,
           '--json',
         ]);
       } finally {
@@ -41,6 +54,10 @@ async function proof() {
         exit_status: status,
         evidence_mode: report.integration_mode,
         planner: report.planner.mode,
+        model: report.planner.model,
+        investigation_id: report.investigation_id,
+        budget: report.budget,
+        stop_reason: report.stop_reason,
         verdict: report.candidates[0]?.verdict,
         zetaris: report.historical_context.zetaris,
         hmem: report.historical_context.hmem,
@@ -57,10 +74,17 @@ async function proof() {
           s.startsWith('H-MEM summary stored'),
         ),
         queries: report.evidence.map((e: { tool: string }) => e.tool),
+        fresh_evidence: report.evidence.every(
+          (e) => !coldEvidence.includes(e.evidence_id),
+        ),
+        current_citations: report.candidates[0]?.contradicting_evidence_ids,
       };
       console.log(JSON.stringify(result));
       if (
         status !== 0 ||
+        report.planner.mode !==
+          (planner === 'scripted' ? 'scripted' : 'live') ||
+        !result.fresh_evidence ||
         result.verdict !== 'not_recommended' ||
         (run === 1 &&
           (result.recalled_zetaris !== 0 ||
@@ -73,10 +97,13 @@ async function proof() {
         (run === 2 &&
           (result.recalled_zetaris !== 1 ||
             result.recalled_hmem !== 1 ||
+            !result.queries.includes('get_ec2_dependencies') ||
+            !result.queries.includes('get_ec2_operations') ||
             result.queries.indexOf('get_ec2_dependencies') >
               result.queries.indexOf('get_ec2_operations')))
       )
         throw new Error('Warm integration proof failed');
+      if (run === 1) coldEvidence = report.evidence.map((e) => e.evidence_id);
     }
   } finally {
     if (originalDir === undefined) delete process.env.HMEM_PERSIST_DIR;

@@ -70,7 +70,7 @@ models such as `gpt-6.1-sol` need `max_completion_tokens`. If reasoning consumes
 the limit before producing JSON, the planner reports `model_incomplete_response`;
 raise the limit within the supported 4096-token cap if needed.
 
-With no `LLM_*` settings, `--planner model` falls back to `NVIDIA_API_KEY` and optional `NVIDIA_MODEL`. The legacy `--planner nvidia` selects that NVIDIA preset explicitly. Model IDs are configurable; event approval of a selected model remains a separate gate. The default `scripted` planner runs offline.
+With no `LLM_*` settings, `--planner model` falls back to `NVIDIA_API_KEY` and optional `NVIDIA_MODEL`. The legacy `--planner nvidia` selects that NVIDIA preset explicitly. Model IDs are configurable; the team confirmed `nvidia/nemotron-3-ultra-550b-a55b` for this event on Oct 24. Runtime access is a separate gate. The default `scripted` planner runs offline.
 
 All model paths preserve bounded requests, validated actions, trusted argument binding and deterministic verdicts. Redirects are refused. Failures return incomplete results without scripted fallback. Current evidence remains mock regardless of the selected model. See [the execution plan](docs/EXECUTION_PLAN.md) for actual integration proof.
 
@@ -143,6 +143,8 @@ Run the configured integration proof explicitly:
 
 ```bash
 NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm
+# Same two-run assertions with the configured real model (no scripted fallback):
+NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm -- --planner model
 ```
 
 It runs the CLI twice under a unique synthetic account, retains two labeled mock
@@ -151,11 +153,44 @@ checks operations first and records the unqueried dependency check. Run 2 recall
 both stores and checks dependencies before operations. Both verdicts cite fresh
 mock evidence. The scripted planner follows this priority deterministically;
 the model planner receives the same bounded hints and instruction, with its
-actual action visible in the trace. Historical text and old evidence IDs are
+actual action visible in the trace. The real-model cold/warm pair passed on
+Oct 24 with `nvidia/nemotron-3-ultra-550b-a55b`, remote Zetaris and local H-MEM
+over mock current evidence; see the execution plan for timings and calls.
+Historical text and old evidence IDs are
 excluded from planner hints. A cleared or unavailable fresh job source cannot
 inherit the old rejection. Source read statuses and write outcomes are reported
 separately; unavailable history never substitutes for operational evidence.
 Do not run concurrent writers against the same local memory directory.
+
+### Measured fixture evaluation
+
+```bash
+npm run evaluate
+# Explicit opt-in: real configured model, up to eight bounded investigations:
+NODE_TLS_REJECT_UNAUTHORIZED=1 npm run evaluate -- --planner model
+```
+
+The evaluation compares the investigation against a fixed average-CPU <=10%
+heuristic on eight labeled synthetic cases: A/B/C, missing operational data,
+empty jobs without clearance, high peaks, partial operations and unknown
+commitments. Both paths share discovery ranking and independently retrieve mock
+observations. Evaluation never enables history or remote appends. The default
+uses the existing scripted planner to measure deterministic safety policy;
+`--planner model` uses the real configured planner without fallback. Failed or
+absent predictions remain in the denominator and make the command exit nonzero.
+Scenario D is a separate two-run `probe:warm` proof.
+
+[Recorded scripted results](docs/evaluation-scripted.json) and
+[real-model results](docs/evaluation-model.json) include expected and
+actual verdicts, unsafe and unverified positives, candidate/hypothesis citation
+validity, elapsed milliseconds, tool attempts and planner calls. These are a
+small designed fixture set, not production accuracy or evidence that a model
+outperforms rules. Model cost is unknown because the planner does not capture
+usage/billing. The Oct 24 real-model measurement matched 5/8 dispositions with
+no unsafe positives, but only 1/8 investigations completed and five had planner
+failures. Two matching deferrals also had planner failures, so matching verdicts
+must not be presented as successful investigations. The real-model cold/warm
+integration proof separately passed. See the execution plan for exact evidence.
 
 ## Verify
 
@@ -195,4 +230,4 @@ No integration command was added to normal tests or build hooks.
 
 The original notebook remains available with `npm run notebook -- ...`. Its `.notebook/` state is independent of investigation memory. Avoid `npm run setup` unless intentionally refreshing the vendored starter; it downloads an upstream copy.
 
-Product scope, rationale and executed milestone evidence live in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md), [memory.md](memory.md), and [EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md). AWS live adapters, effective least-privilege deployment permissions, event-model approval, broader A/C/D evaluation and submission assets remain separate gates.
+Product scope, rationale and executed milestone evidence live in [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md), [memory.md](memory.md), and [EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md). AWS live adapters, effective least-privilege deployment permissions, live-model A/C/D evaluation and submission assets remain separate gates. Scripted fixture evaluation is recorded above; selected-model approval is team-confirmed.

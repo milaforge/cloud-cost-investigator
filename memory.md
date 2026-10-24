@@ -1,5 +1,38 @@
 # Project Memory
 
+## Evaluation and warm model proof (2026-10-24)
+
+- Follow-up user confirmation accepts `nvidia/nemotron-3-ultra-550b-a55b` for
+  the event. Treat model selection as team-approved without requesting another
+  eligibility source. This is not independent organizer verification or proof
+  of runtime access. A user-requested retry subsequently passed the real-model
+  cold/warm proof without agent configuration changes; the earlier HTTP 403
+  did not reproduce and its cause remains unknown. Do not infer revoked access
+  or an invalid key from an isolated 403. Executed evidence is in the plan.
+- Preserve model evaluation failures instead of rerunning to improve numbers.
+  A matching deferral can coincide with planner failure: report disposition
+  accuracy, completion and failure counts separately. Model fixture evaluation
+  and warm sponsor proof are different claims; neither establishes live AWS.
+
+- Reuse the CLI and existing planner in the warm sponsor probe; an explicit
+  planner flag selects real inference without fallback. Verify non-overlapping
+  cold/warm evidence IDs, actual presence and order of operational checks,
+  both recalled stores and exact append readback. Keep TLS verification enabled.
+- Keep evaluation tooling outside the production investigation path. Compare
+  the agreed low-average-CPU heuristic using the same discovery ranking and
+  independently retrieved fixtures; explicit expected labels are independent
+  of observed verdicts. Missing predictions count as wrong. Separate known
+  unsafe positives from recommendations with unknown safety. Citation lookup
+  alone is insufficient, so validate the complete report before counting its
+  candidate/hypothesis references.
+- Scripted policy evaluation is not measured model performance. Designed
+  fixtures cannot establish production accuracy or model superiority; retain
+  per-case durations/calls and report unavailable model cost as null. History
+  is disabled in evaluation even when the environment enables remote appends;
+  D remains a separate explicit sponsor probe. Provider HTTP 403 cannot be
+  repaired by relaxing TLS, guessing credential destinations or silent model
+  fallback. Runtime access and event eligibility require separate evidence.
+
 ## OpenAI completion-token compatibility (2026-10-23)
 
 - The shared Chat Completions adapter defaults to `max_completion_tokens` for

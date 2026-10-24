@@ -1,0 +1,267 @@
+{
+  "measured_at": "2026-10-24T06:26:38.761Z",
+  "evidence_mode": "mock",
+  "planner_mode": "scripted",
+  "request": {
+    "account_id": "evaluation-synthetic",
+    "region": "us-east-1",
+    "max_candidates": 1,
+    "window": {
+      "from": "2026-09-01T00:00:00Z",
+      "to": "2026-09-29T00:00:00Z"
+    }
+  },
+  "methodology": "Eight fixed synthetic single-candidate fixtures, one run each; independently labeled expected dispositions. CPU baseline shares discovery ranking, recommends when average CPU <=10%, ignores peaks and operational checks. Investigation uses the existing safety evaluator. Scripted runs measure deterministic policy; model runs measure real model planning. History disabled. D is measured separately by probe:warm. Citation counts cover candidate/hypothesis references and full reports pass runtime validation. No production generalization or model superiority follows from this small designed set.",
+  "model_cost": null,
+  "cost_limitation": "Planner does not record token usage or provider billing; cost is unavailable, not zero.",
+  "cpu_baseline": {
+    "disposition_correct": 2,
+    "cases": 8,
+    "unsafe_positives": 3,
+    "unsafe_cases": 3,
+    "unverified_positives": 3,
+    "unknown_cases": 3
+  },
+  "investigation": {
+    "disposition_correct": 8,
+    "cases": 8,
+    "unsafe_positives": 0,
+    "unsafe_cases": 3,
+    "unverified_positives": 0,
+    "unknown_cases": 3
+  },
+  "rows": [
+    {
+      "case": "A",
+      "expected": "conditional_recommendation",
+      "safety": "supported",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "conditional_recommendation",
+        "completion": "complete",
+        "stop_reason": "hypothesis_supported",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "e47bac28-d366-42c3-a463-fcc3b6be04d4",
+        "elapsed_ms": 4,
+        "tool_attempts": 5,
+        "planner_calls": 6,
+        "citations": {
+          "valid": 9,
+          "total": 9
+        },
+        "savings": 75
+      }
+    },
+    {
+      "case": "B",
+      "expected": "not_recommended",
+      "safety": "unsafe",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "not_recommended",
+        "completion": "complete",
+        "stop_reason": "hypothesis_contradicted",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "9ee4f455-0351-4633-8e00-e2d5f5549768",
+        "elapsed_ms": 0,
+        "tool_attempts": 4,
+        "planner_calls": 5,
+        "citations": {
+          "valid": 6,
+          "total": 6
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "C",
+      "expected": "not_recommended",
+      "safety": "unsafe",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "not_recommended",
+        "completion": "complete",
+        "stop_reason": "hypothesis_contradicted",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "506e5886-d055-4271-a584-48189614008a",
+        "elapsed_ms": 1,
+        "tool_attempts": 5,
+        "planner_calls": 6,
+        "citations": {
+          "valid": 6,
+          "total": 6
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "missing",
+      "expected": "needs_verification",
+      "safety": "unknown",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_finished",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "fa093229-0b93-4b5a-8641-e8b914d70898",
+        "elapsed_ms": 1,
+        "tool_attempts": 5,
+        "planner_calls": 7,
+        "citations": {
+          "valid": 4,
+          "total": 4
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "clear_without_authority",
+      "expected": "needs_verification",
+      "safety": "unknown",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_finished",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "ebb71ad8-0ce5-4da2-a2df-d906fdae5f16",
+        "elapsed_ms": 1,
+        "tool_attempts": 5,
+        "planner_calls": 7,
+        "citations": {
+          "valid": 4,
+          "total": 4
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "high_peak",
+      "expected": "needs_verification",
+      "safety": "unsafe",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_finished",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "7abe2a4b-7ad8-4015-91ea-dbc311a7e38b",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 4,
+        "citations": {
+          "valid": 2,
+          "total": 2
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "partial_operations",
+      "expected": "needs_verification",
+      "safety": "unknown",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_finished",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "b4dbb60e-901c-4588-ac60-278703df582f",
+        "elapsed_ms": 0,
+        "tool_attempts": 5,
+        "planner_calls": 7,
+        "citations": {
+          "valid": 4,
+          "total": 4
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "unknown_commitments",
+      "expected": "conditional_recommendation",
+      "safety": "supported",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "conditional_recommendation",
+        "completion": "complete",
+        "stop_reason": "hypothesis_supported",
+        "planner": {
+          "mode": "scripted",
+          "model": null
+        },
+        "investigation_id": "bde9f0c9-7a66-4180-b3d5-2bf70b8b2c88",
+        "elapsed_ms": 0,
+        "tool_attempts": 5,
+        "planner_calls": 6,
+        "citations": {
+          "valid": 9,
+          "total": 9
+        },
+        "savings": null
+      }
+    }
+  ]
+}

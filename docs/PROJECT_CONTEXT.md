@@ -158,7 +158,24 @@ A runnable demo must prove:
 
 ## 10. Integration status and references
 
-**Executed first-slice proof:** account/region CLI discovery, mock scenario B rejection and missing-source handling, runtime/citation/failure tests, a live NVIDIA-hosted planner run over mock evidence, a real local H-MEM summary store/reload/query, and a two-run CLI warm investigation using the configured Zetaris service plus local H-MEM (scripted planner, mock AWS evidence). History changes query order; fresh operational evidence controls rejection. Exact commands and results belong to `EXECUTION_PLAN.md`. **Still unverified:** live Zayan current-evidence adapters, effective table-scoped least-privilege deployment permissions, warm model-planner behavior, exact event-model approval, real AWS accounts/billing granularity and submission portal details. The generic Zetaris helper is connectivity scaffolding outside the agent allowlist. Earlier claims of data available through Zetaris do not establish direct API integration.
+**2026-10-24 evaluation update:** Eight designed synthetic cases now have a
+reproducible scripted-policy comparison against the low-average-CPU heuristic,
+including safety/unknown positives, citation validation and per-case timing/calls.
+Results and limitations are in `evaluation-scripted.json`; executed commands are
+in `EXECUTION_PLAN.md`. In a subsequent user-requested retry, the configured
+NVIDIA-hosted `nvidia/nemotron-3-ultra-550b-a55b` passed the access diagnostic and
+real-model cold/warm proof with both historical stores and fresh mock evidence.
+The earlier HTTP 403 no longer reproduces; its cause is unknown. No fallback,
+credential or endpoint changes were made by the agent. The user confirmed this
+exact model is fine for the event. Model selection is therefore team-approved;
+independent organizer verification was not obtained. Subsequent live-model
+fixture evaluation is in `evaluation-model.json`: 5/8 matching dispositions,
+zero unsafe/unverified positives and 25/25 valid current references, but only
+1/8 complete investigations. Five planner failures include two matching
+deferrals; disposition accuracy must not be called investigation success.
+Detailed failures, latency/calls and limitations remain in the execution plan.
+
+**Executed proof:** account/region CLI discovery, mock scenario B rejection and missing-source handling, runtime/citation/failure tests, live NVIDIA-hosted planning over mock evidence, actual local H-MEM summary store/reload/query, and two-run CLI warm investigations using the configured Zetaris service plus local H-MEM with both scripted and real-model planners over mock AWS evidence. History changes query order; fresh operational evidence controls rejection. Exact commands and results belong to `EXECUTION_PLAN.md`. **Still unverified:** live Zayan current-evidence adapters, effective table-scoped least-privilege deployment permissions, real AWS accounts/billing granularity and submission portal details. Model selection is team-confirmed as recorded above. The generic Zetaris helper is connectivity scaffolding outside the agent allowlist. Earlier claims of data available through Zetaris do not establish direct API integration.
 
 Meterless reference: [Meterless repository](https://github.com/Meterless/Meterless), specifically `llms.txt`, `README.md`, `AGENTS.md`, `engines/hmem/README.md`, `engines/hmem/AGENTS.md`. These describe H-MEM's provenance-aware memory and a runnable reference, not a production hosted memory service. Zetaris reference: [documentation](https://zetaris.github.io/). Verify supported read and narrowly scoped append semantics in the deployed environment before choosing an SDK/query shape; examples in documentation are not proof of account access.
 
