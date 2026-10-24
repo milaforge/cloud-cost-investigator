@@ -54,6 +54,10 @@ The release checklist in `docs/EXECUTION_PLAN.md` is authoritative. It must incl
 - A clean-checkout CLI run, project-specific README/setup, accurate Cursor/NVIDIA documentation, slides, sponsor explanation and a **1–4 minute** demo.
 - Target freeze Oct 26; submit before **2026-10-27 23:45 UTC** according to recorded event notes, subject to portal verification. A readable CLI and trace are sufficient; a dashboard is optional and deprioritized.
 
+## Documentation hierarchy
+
+Keep the root `README.md` at most 10 lines: a judge should understand the project in three seconds. Put setup, learning examples, architecture, limitations and other detail in Markdown files under `docs/`. Use `docs/README.md` as the progressive index: overview → demo → learning → technical references → submission evidence. Preserve detail and working relative links; do not grow the root README into a manual.
+
 ## Engineering practices
 
 Prefer the smallest safe reversible change and installed dependencies; ask before adding production dependencies. Follow existing package-manager conventions; prefer pnpm or uv when compatible. Work in the current branch/worktree. Run relevant checks and distinguish pre-existing failures from new failures. Do not access unrelated sensitive files, modify secrets, perform destructive operations, or commit/push without authorization. Do not put “Codex” in commit or PR titles.

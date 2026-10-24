@@ -1,5 +1,7 @@
 # Dedicated investigation history
 
+[Documentation index](README.md)
+
 The app works on its first run without history. To demonstrate useful history on a
 later run, it needs one durable table containing compact, timestamped decisions.
 Current AWS facts continue to come from Zayan's direct tools. Do not copy AWS exports

@@ -1,5 +1,7 @@
 # AWS evidence tools
 
+[Documentation index](README.md)
+
 Framework-independent, read-only EC2 tools for the agent. Shared `src/contracts.ts`
 is unchanged from upstream. `aws-agent.ts` returns its exact runtime-validated
 `Observation` shape. `aws-evidence.ts` retains detailed collector records with

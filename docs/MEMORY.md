@@ -1,3 +1,5 @@
+[Documentation index](README.md)
+
 | Aspect                             | Zetaris                                           | Meterless H-MEM                                                                       |
 | ---------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | Information type                   | Structured, queryable historical facts            | Contextual and semantic memory                                                        |

@@ -1,5 +1,7 @@
 # CLI guide and recorded results
 
+[Documentation index](README.md)
+
 [Project overview](../README.md) · [Components](components.md)
 
 ## Memory and decision follow-through

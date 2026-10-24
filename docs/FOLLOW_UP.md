@@ -1,5 +1,7 @@
 # Decisions and follow-through
 
+[Documentation index](README.md)
+
 H-MEM teaches scoped investigation checks. Zetaris retains the recommendation,
 what an operator decided, when to revisit it, and what was later reported or
 investigated. Direct evidence still controls every current scheduling conclusion.

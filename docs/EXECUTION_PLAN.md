@@ -26,6 +26,24 @@ This summary and sections 3/5 are the current checklist. Dated entries in sectio
 
 ## 1. Decision change and current verification state
 
+### Progressive judge-facing documentation — 2026-10-24
+
+- **Gate/owner:** release documentation, Milad; user requires a README of at most
+  10 lines and progressively deeper Markdown under `docs/`.
+- **Change:** root README is 9 lines. `docs/README.md` guides readers through
+  overview → demo/setup → outcome learning → technical references → submission
+  evidence. `docs/guide/` preserves all original README detail, including limits
+  and integration labels; existing reference filenames remain stable. AGENTS.md
+  records the durable constraint; `memory.md` records the rationale. This
+  supersedes earlier entries asking for detailed examples/setup in the root README.
+- **Executed proof:** `python3 /tmp/verify-cci-docs.py` passed the 10-line cap,
+  local Markdown path/anchor checks and preservation of original README paragraphs;
+  `git diff --check` passed.
+- **Mode/limits:** documentation-only; no runtime or live-service checks performed.
+  No release gate advanced. Remaining: clean-checkout reproduction, live evidence,
+  final submission assets and portal verification under the existing checklist.
+
+
 ### Applicable outcomes teach investigation strategy — 2026-10-24
 
 **Gate/owner:** Days 3–4 adaptive investigation and decision follow-through,
@@ -982,7 +1000,7 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
 ### Day 5 — Mon Oct 26: freeze and submission assets
 
 **Milad**
-- [ ] Fresh-checkout CLI installation, mock seeding, execution and test instructions in project-specific README.
+- [ ] Fresh-checkout CLI installation, mock seeding, execution and test instructions in docs linked from the project-specific README.
 - [x] Readable B rejection trace and changed-context warm demo executed with mock current evidence and real historical stores as labeled in their proof entries. Final demo recording remains open.
 - [ ] Slides and **1–4 minute demo** showing B first, then D sponsor contributions; document NVIDIA, Zetaris, Meterless and Cursor accurately.
 - [x] Retained scripted/real-model evaluation and memory fixed-order artifacts publish measured dispositions, citation validity, safety positives, runtime and counts, including failures and limitations.

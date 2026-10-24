@@ -1,5 +1,11 @@
 # Project Memory
 
+## Progressive documentation hierarchy (2026-10-24)
+
+- User requires a root README of at most 10 lines so judges understand the project in three seconds. This supersedes earlier decisions to put setup, outcome-learning examples and event detail directly in README.
+- Keep the pitch and entry links at the root; use `docs/README.md` to guide readers from overview and demo to learning, technical contracts and submission proof. Preserve detailed reference filenames to avoid breaking existing links; introductory pages live under `docs/guide/`.
+- Keep limitations and fixture/live distinctions available through the hierarchy. Moving documentation does not establish new integration proof or complete release gates.
+
 ## Outcome feedback teaches investigation order (2026-10-24)
 
 - User explicitly requested applicable outcomes to improve investigation strategy.

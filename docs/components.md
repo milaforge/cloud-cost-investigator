@@ -1,5 +1,7 @@
 # Components at a glance
 
+[Documentation index](README.md)
+
 **Find EC2 scheduling opportunities. Challenge them with evidence. Explain the decision.**
 
 A TypeScript / Node.js CLI connects the components below.
