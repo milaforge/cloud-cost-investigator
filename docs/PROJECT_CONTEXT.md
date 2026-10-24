@@ -5,7 +5,7 @@
 **Decision date:** 2026-10-23 (MVP discovery rounds 1–4 and corrected sponsor architecture approved).  
 **Hackathon:** Open Agent Hackathon 2026; **Track 02 — The Agent That Can Explain Why**.  
 **Deadline:** 2026-10-27 23:45 UTC per event planning notes; confirm in submission portal.  
-**Team:** Milad — orchestration, model, Meterless, CLI/report; Zayan — direct data tools, Zetaris, data correctness; both — contracts, safety evaluation.  
+**Team:** Milad — orchestration, model, Meterless, Zetaris history load/save, CLI/report; Zayan — direct AWS data tools and data correctness; both — contracts, safety evaluation.
 **Target:** AWS EC2 only. **Status:** Product decisions approved; first contradiction-first CLI slice has executable proof in `EXECUTION_PLAN.md`. Current evidence remains mock; sponsor and release gates are separate.
 
 ## 1. Product and user decision
@@ -29,7 +29,7 @@ The user's decision is **which opportunities warrant human approval, which must 
 | Failure             | Agreed                           | Status-specific bounded degradation and explicit uncertainty                                                                                                                      |
 | Source architecture | Agreed                           | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory         |
 | Historical writes   | Approved in principle            | **Narrowly scoped investigation-history append** through Zetaris with separate authorization/allowlisted API; no arbitrary SQL or AWS writes. Technical support/access unverified |
-| Observation period  | Proposed default                 | 28 UTC days, configurable; valid granularities and billing coverage must be checked against actual APIs                                                                           |
+| Observation period  | Agreed AWS MVP                   | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. The mock CLI retains its separate 28-day default until live-provider wiring.             |
 | Candidate ranking   | Proposed                         | Measured compute-cost relevance + off-hours utilization patterns; explain selection and incomplete coverage                                                                       |
 | Report shape        | Proposed implementation contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                                       |
 

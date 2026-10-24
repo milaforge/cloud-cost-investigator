@@ -238,6 +238,14 @@
 - A compact v1 structured history table keeps scope, original UTC window, verdict, source mode and bounded scheduling/evidence/missing-check data. It differs from H-MEM's narrative reasoning summary; neither supplies current facts. Validate the dedicated history schema before data access and return separately labeled historical context IDs. App SQL is fixed read/append only; environment targets are restricted to CCI_HISTORY and values are encoded as UTF-8 hex to avoid quote/backslash mode ambiguity. No model SQL or infrastructure changes.
 - Appends require explicit enablement and exact readback, with no automatic retries after an uncertain INSERT. Stable run/candidate IDs allow an exact existing record to be reused by a single writer; the pre-read is not an atomic lock and does not establish concurrent idempotency on Iceberg. Provisioning SQL runs separately as admin; the app never creates tables or grants itself access. Adapter/probe availability does not imply automatic CLI persistence or warm-history planning.
 
+## AWS adapter handoff (2026-10-23)
+
+- User relayed Milad's confirmation: AWS tools fetch/return evidence only; Milad owns Zetaris persistence. Keep the collector and both historical stores separate. No AWS writes or implicit persistence from evidence retrieval.
+- Preserve the current shared `Observation` contract unchanged. Project detailed collector records into the five exact tool names via `aws-agent.ts`; runtime-validate that boundary and keep richer source records available through the collector interface. Do not reintroduce the superseded preliminary `Evidence` wire format to the agent.
+- Explicit unavailable responses are preferable to invented CPU summaries, currencies or operational authority. Operations/dependencies remain unconfigured. Account-wide billing is a bounded aggregation of attributable instance costs, never an allocation of account totals; commitments remain unknown.
+- The earlier no-commit/push instruction is superseded by the user's explicit approval on Oct 24 to finalize and push AWS tools directly to main. Preserve a local safety snapshot and reconcile only AWS changes onto the latest upstream before committing.
+- Milad confirmed a 14-day observation window for the AWS MVP. Default to the last 14 complete UTC days; the mock CLI's separate default remains unchanged until its live-provider integration.
+
 ## Warm investigation ownership (2026-10-23)
 
 - `InvestigationHistory` coordinates the existing validated adapters after fresh

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test, { type TestContext } from 'node:test';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
@@ -15,7 +17,7 @@ const request = {
   window: { from: '2026-09-01T00:00:00Z', to: '2026-09-29T00:00:00Z' },
 };
 async function directory(t: TestContext) {
-  const dir = await mkdtemp('/tmp/cci-warm-');
+  const dir = await mkdtemp(join(tmpdir(), 'cci-warm-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   return dir;
 }
