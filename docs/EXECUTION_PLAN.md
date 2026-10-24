@@ -26,6 +26,47 @@ This summary and sections 3/5 are the current checklist. Dated entries in sectio
 
 ## 1. Decision change and current verification state
 
+### Applicable outcomes teach investigation strategy — 2026-10-24
+
+**Gate/owner:** Days 3–4 adaptive investigation and decision follow-through,
+Milad. User requested automatic strategy improvement from applicable outcomes,
+then a clear README example.
+
+- **Mechanism:** the existing outcome command accepts optional
+  `investigation_check` on `rolled_back`, restricted to the two existing operational
+  checks. Normal investigation recall validates outcome → acceptance → recommendation
+  links and converts eligible feedback into persisted H-MEM context. No separate
+  teaching command, arbitrary prose interpretation, new table, production dependency
+  or model call. The outcome remains operator-reported historical data.
+- **Acceptance proven offline:** with both stores enabled, the same-instance/mode/
+  UTC-window rollback lesson prioritizes dependencies, saving one tool call versus
+  cold scripted order in the tested fixture. Current evidence alone supports the
+  rejection. Fresh clearance replaces the old lesson; later runs do not resurrect
+  it. Newer implemented feedback can supersede a reported conflict without removing
+  checks. Unstructured/non-implementation feedback teaches no specific conflict.
+- **Trust/failure proof:** tests cover unknown checks, successful outcomes with an
+  invalid conflict check, scope/mode/time/window isolation, forged links, capped and
+  unavailable ledgers, no duplicate import, missing current evidence, local write
+  failure and historical provenance. Planner hints contain only typed check/window
+  data, never operator prose or historical current-evidence citations. Learning reads
+  inherit the investigation deadline and keep existing query/storage caps.
+- **Executed checks:** `node --import tsx --test --test-isolation=none
+  tests/outcome-learning.test.ts`: **11/11 passed**; final `npm test`: **215/215
+  passed**. `npm run typecheck`, `npm run typecheck:aws`, `npm run lint`, scoped
+  `biome check`, **56 documentation links/anchors**, and `git diff --check`: passed.
+- **Documentation:** README gives the business example; `FOLLOW_UP.md` documents the
+  optional JSON field, enablement, compatibility and bounds. Components, CLI guide,
+  product context, agent instructions and rationale are aligned. Existing historical
+  measurements remain unchanged; no general speedup claim is made.
+- **Integration mode / remaining gate:** real local H-MEM disk persistence, synthetic
+  operational evidence and fixture Zetaris HTTP transport. No new live AWS/model or
+  remote outcome-learning call/write was executed. Earlier live Zetaris proofs do
+  not verify this extension. Next: upgrade shared-table/local-memory readers together,
+  review effective permissions, and retain an authorized live outcome→recall proof.
+  Single-writer, 20-follow-up-row and 100-local-record caps remain; unrelated work
+  and untracked artifacts are preserved.
+
+
 ### README purpose, setup and event alignment — 2026-10-24
 
 - **Gate/owner:** release documentation, Milad. README now covers the engineering

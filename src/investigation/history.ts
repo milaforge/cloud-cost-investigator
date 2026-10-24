@@ -1,8 +1,8 @@
 import type {
   InvestigationReport,
   Mode,
-  Scope,
   Schedule,
+  Scope,
   ToolName,
 } from '../contracts.ts';
 import {
@@ -10,11 +10,13 @@ import {
   historyRecordFromReport,
   readZetarisHistory,
 } from '../tools/zetaris-history.ts';
+import { outcomeLearningSummary } from './follow-up.ts';
 import {
   HmemReasoningMemory,
-  reasoningSummaryFromReport,
   lessonTool,
   type OperationalLesson,
+  type ReasoningSummary,
+  reasoningSummaryFromReport,
 } from './memory.ts';
 import { sameSchedule } from './policy.ts';
 
@@ -62,7 +64,7 @@ export class InvestigationHistory {
       recorded: string,
       mode: Mode,
       missing: string[],
-      lesson?: OperationalLesson,
+      lesson?: Pick<OperationalLesson, 'check' | 'window'>,
     ) => {
       if (Date.parse(recorded) > Date.parse(startedAt)) return;
       hints.push({
@@ -130,19 +132,64 @@ export class InvestigationHistory {
         signal.throwIfAborted();
         // The newest eligible summary supersedes older lessons for this instance.
         // Keep the old records in H-MEM for audit, but do not resurrect old conflicts.
-        const latest = this.memory.retrieve(instance, {
+        let latest = this.memory.retrieve(instance, {
           as_of: startedAt,
           mode,
         })[0];
+        let learned: ReasoningSummary | null = null;
+        if (this.options.zetaris) {
+          try {
+            learned = await outcomeLearningSummary(
+              this.scope,
+              instance,
+              startedAt,
+              mode,
+              signal,
+            );
+          } catch {
+            this.result.limitations.push(
+              'Outcome learning unavailable or invalid; existing H-MEM strategy retained.',
+            );
+          }
+        }
+        if (
+          learned?.outcome &&
+          (!latest ||
+            (Date.parse(learned.outcome.observed_at) >
+              Date.parse(latest.summary.recorded_at) &&
+              Date.parse(learned.recorded_at) >
+                Date.parse(latest.summary.recorded_at)))
+        ) {
+          // Let a failed disk write reach the outer handler; never use an unpersisted lesson.
+          latest = this.memory.store(learned);
+        }
         if (latest) {
           const item = latest;
           const s = item.summary;
+          if (s.outcome) {
+            this.result.context_ids.push(
+              ...[
+                s.outcome.record_id,
+                s.outcome.decision_record_id,
+                s.outcome.recommendation_record_id,
+              ].map((id) => `zetaris:${id}`),
+            );
+            this.result.limitations.push(
+              `zetaris:${s.outcome.record_id}: operator-reported ${s.outcome.result}; H-MEM check-order context only, not current evidence.`,
+            );
+          }
           add(
             item.context_id,
             s.recorded_at,
             s.provenance.integration_mode,
             s.unresolved_risks,
-            s.lesson,
+            s.lesson ??
+              (s.outcome?.investigation_check && s.hypothesis
+                ? {
+                    check: s.outcome.investigation_check,
+                    window: s.hypothesis.window,
+                  }
+                : undefined),
           );
         }
         this.result.hmem = 'ok';

@@ -25,6 +25,9 @@ Decision JSON: {"kind":"deferred","actor":"engineer-id","reason":"Review after m
 Or: {"kind":"accepted","actor":"engineer-id","reason":"Accepted for separate human-controlled change process"}
 Outcome JSON: {"actor":"engineer-id","reason":"Observed result","observed_at":"UTC timestamp","result":"implemented|not_implemented|rolled_back","evidence_reference":"ticket-or-receipt-id"}
 
+Optional rollback investigation_check: dependency_continuous_operation|critical_job_overlap.
+With HMEM_PERSIST_DIR and Zetaris configured, applicable feedback teaches the next investigation.
+
 Zetaris is live; writes require ZETARIS_HISTORY_ALLOW_APPEND=true. No schema provisioning.
 Review evidence is MOCK; explicitly select a scenario. The optional model planner is live.
 Decisions are operator-attributed, not authenticated approvals. Outcomes are operator-reported,

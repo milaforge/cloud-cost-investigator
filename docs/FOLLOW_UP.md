@@ -13,7 +13,7 @@ reasons, actor IDs, outcome notes or evidence references.
 ## 1. Produce a recommendation
 
 ```bash
-npm run --silent investigate -- --account demo --region us-east-1 --scenario A --json > /tmp/recommendation.json
+npm run --silent investigate -- --evidence mock --account demo --region us-east-1 --scenario A --json > /tmp/recommendation.json
 ```
 
 This uses **mock** evidence. A decision requires a validated, complete investigation
@@ -150,3 +150,63 @@ mechanism proof, rather than a general effectiveness claim.
   reminder notification, decision revision or automated remediation.
 - Keep unknown evidence unknown. Neither accepted decisions nor reported outcomes
   grant scheduling clearance or become current tool evidence.
+
+## Automatic learning from outcomes
+
+Enable both `ZETARIS_HISTORY_TABLE` and `HMEM_PERSIST_DIR` in the investigation
+CLI. Outcome recording still requires explicit append authorization. No additional
+teaching command, model call or new table is needed: on the next matching
+investigation, the existing recall path adopts applicable feedback into H-MEM.
+
+For a rollback caused by a dependency, include this optional typed field in the
+outcome JSON passed to `followup outcome`:
+
+```json
+{
+  "actor": "engineer-id",
+  "reason": "Rolled back because a dependent service requires continuous operation",
+  "observed_at": "REPLACE_WITH_ACTUAL_UTC_TIME_AFTER_ACCEPTANCE",
+  "result": "rolled_back",
+  "evidence_reference": "change-ticket-42",
+  "investigation_check": "dependency_continuous_operation"
+}
+```
+
+Supported checks are `dependency_continuous_operation` (dependencies first) and
+`critical_job_overlap` (jobs first). The field is accepted only for `rolled_back`.
+The agent does not infer a cause from free text, nor does a missing field invent
+one. Existing outcome records without this field remain readable. All readers of
+the shared table must support the new optional field before writing it.
+
+The learner validates outcome → accepted decision → original recommendation links,
+account/region/instance, evidence mode and timestamps. It adopts only the latest
+eligible feedback; the lesson applies only to the same proposed UTC window.
+Already imported feedback is not stored twice. Feedback observed before a later
+investigation cannot override that investigation; newer findings replace older
+lessons. A newer `implemented` outcome can supersede an older rollback lesson,
+but does not prove current safety or skip required checks. `not_implemented`
+provides no operational learning signal.
+
+Only allowlisted check/window data reaches the planner through H-MEM. Outcome,
+decision and recommendation IDs stay separately labeled historical provenance;
+operator prose and old evidence IDs are not current observations. Missing or
+non-authoritative current evidence still causes deferral. A cleared conflict
+continues through the other safety checks and stores the new findings.
+
+Learning reads at most 20 follow-up rows per instance and refuses to learn if that
+limit is reached or links are ambiguous. Reads honor the investigation deadline.
+Unavailable Zetaris preserves existing H-MEM behavior; failed local persistence
+prevents adoption. No background task or automatic write retry is added. H-MEM's
+existing single-writer and 100-record limits still apply; older app versions cannot
+read the new local outcome summaries, so upgrade readers together.
+
+Offline proof (real local H-MEM, synthetic AWS evidence, fixture Zetaris transport):
+
+```bash
+node --import tsx --test --test-isolation=none tests/outcome-learning.test.ts
+```
+
+The dependency example saves one current-evidence tool call against the cold
+scripted order. This proves adaptive ordering in that case, not a universal
+speedup or live outcome-learning integration. Fresh authoritative evidence is
+still required for the final verdict.

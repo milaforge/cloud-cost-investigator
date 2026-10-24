@@ -336,11 +336,15 @@ export async function appendZetarisHistory(
 export async function readZetarisHistoryRecord(
   scopeInput: Scope,
   id: string,
+  parentSignal?: AbortSignal,
 ): Promise<HistoricalRecord> {
   const scope = validateScope(exact(scopeInput, ['account_id', 'region']));
   identifier(id);
   const table = target(),
-    signal = AbortSignal.timeout(20_000);
+    signal = AbortSignal.any([
+      AbortSignal.timeout(20_000),
+      ...(parentSignal ? [parentSignal] : []),
+    ]);
   await verifySchema(table, signal);
   const records = await readRows(table, scope, id, 2, signal);
   if (records.length !== 1)
@@ -352,11 +356,15 @@ export async function readZetarisHistoryRecord(
 export async function readZetarisFollowUps(
   scopeInput: Scope,
   instanceId: string,
+  parentSignal?: AbortSignal,
 ): Promise<HistoricalRecord[]> {
   const scope = validateScope(exact(scopeInput, ['account_id', 'region']));
   identifier(instanceId);
   const table = target(),
-    signal = AbortSignal.timeout(20_000);
+    signal = AbortSignal.any([
+      AbortSignal.timeout(20_000),
+      ...(parentSignal ? [parentSignal] : []),
+    ]);
   await verifySchema(table, signal);
   const records = await readRows(
     table,

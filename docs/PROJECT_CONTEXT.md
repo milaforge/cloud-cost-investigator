@@ -112,8 +112,11 @@ Use the H-MEM reference already present in the TypeScript starter (runtime store
 **Role clarification (Oct 24, user-approved):** H-MEM owns reusable investigation
 lessons with scope and conditions for reuse. Zetaris owns structured recommendations,
 explicit operator decisions and attributed outcomes. Direct tools establish present
-facts. Zetaris history no longer influences planner check order; it remains visible
-as historical audit context. A fresh first investigation still requires neither store.
+facts. Raw Zetaris history does not order planner checks. The Oct 24 outcome-learning
+extension converts linked, typed operator rollback feedback into H-MEM lessons for
+the same instance, evidence mode and UTC window. Only allowlisted check/window
+data may influence order; fresh evidence still decides. A fresh first investigation
+requires neither store. See [outcome learning](FOLLOW_UP.md#automatic-learning-from-outcomes).
 
 **Acceptance:** compare H-MEM with both fixed operational-check orders across
 recurring, cleared, switched and missing-evidence workloads; preserve ties and

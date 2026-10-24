@@ -1,25 +1,25 @@
 import { createHash } from 'node:crypto';
 import { existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadHMEM } from '../engine.ts';
+import type { HMEM, MemoryRecord } from '../../vendor/hmem/src/index.ts';
 import {
   array,
   exact,
+  type InvestigationReport,
   identifier,
+  type Mode,
   member,
+  type Observation,
+  type Schedule,
+  type Scope,
   textValue,
   utc,
   validateSchedule,
   validateScope,
-  type InvestigationReport,
-  type Mode,
-  type Observation,
-  type Schedule,
-  type Scope,
 } from '../contracts.ts';
-import { validateReport } from './report.ts';
+import { loadHMEM } from '../engine.ts';
 import { authoritative, overlaps, sameSchedule } from './policy.ts';
-import type { HMEM, MemoryRecord } from '../../vendor/hmem/src/index.ts';
+import { validateReport } from './report.ts';
 
 export interface ReasoningSummary {
   schema_version: 1;
@@ -40,6 +40,16 @@ export interface ReasoningSummary {
   provenance: { integration_mode: Mode; evidence_ids: string[] };
   /** Historical question learned from a cited, authoritative contradiction. */
   lesson?: OperationalLesson;
+  /** Attributed historical feedback; never a current evidence citation. */
+  outcome?: {
+    record_id: string;
+    decision_record_id: string;
+    recommendation_record_id: string;
+    observed_at: string;
+    result: 'rolled_back' | 'implemented';
+    verification: 'operator_reported';
+    investigation_check?: OperationalLesson['check'];
+  };
 }
 export interface OperationalLesson {
   check: 'dependency_continuous_operation' | 'critical_job_overlap';
@@ -93,6 +103,7 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
     'unresolved_risks',
     'provenance',
     'lesson',
+    'outcome',
   ]);
   if (o.schema_version !== 1)
     throw new Error('Invalid reasoning summary version');
@@ -154,6 +165,45 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
       !summary.provenance.evidence_ids.includes(summary.lesson.evidence_id)
     )
       throw new Error('Invalid historical lesson provenance');
+  }
+  if (o.outcome !== undefined) {
+    const outcome = exact(o.outcome, [
+      'record_id',
+      'decision_record_id',
+      'recommendation_record_id',
+      'observed_at',
+      'result',
+      'verification',
+      'investigation_check',
+    ]);
+    if (outcome.verification !== 'operator_reported')
+      throw new Error('Invalid outcome provenance');
+    const check =
+      outcome.investigation_check === undefined
+        ? undefined
+        : member(outcome.investigation_check, [
+            'dependency_continuous_operation',
+            'critical_job_overlap',
+          ]);
+    summary.outcome = {
+      record_id: identifier(outcome.record_id),
+      decision_record_id: identifier(outcome.decision_record_id),
+      recommendation_record_id: identifier(outcome.recommendation_record_id),
+      observed_at: utc(outcome.observed_at),
+      result: member(outcome.result, ['rolled_back', 'implemented']),
+      verification: 'operator_reported',
+      ...(check ? { investigation_check: check } : {}),
+    };
+    if (
+      summary.lesson ||
+      summary.verdict !== 'conditional_recommendation' ||
+      summary.hypothesis?.state !== 'supported' ||
+      summary.provenance.evidence_ids.length ||
+      Date.parse(summary.outcome.observed_at) >
+        Date.parse(summary.recorded_at) ||
+      (check && summary.outcome.result !== 'rolled_back')
+    )
+      throw new Error('Invalid outcome lesson');
   }
   return summary;
 }
@@ -288,7 +338,13 @@ export class HmemReasoningMemory {
           origin: 'plan_completion',
           learnedAt: Date.parse(summary.recorded_at),
           label: 'Historical investigation reasoning; requires fresh evidence',
-          refs: [...summary.provenance.evidence_ids],
+          refs: summary.outcome
+            ? [
+                `zetaris:${summary.outcome.record_id}`,
+                `zetaris:${summary.outcome.decision_record_id}`,
+                `zetaris:${summary.outcome.recommendation_record_id}`,
+              ]
+            : [...summary.provenance.evidence_ids],
         },
       });
       return this.readRecord(record);

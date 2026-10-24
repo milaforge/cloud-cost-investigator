@@ -32,6 +32,9 @@ export type FollowUpEvent =
       result: 'implemented' | 'not_implemented' | 'rolled_back';
       evidence_reference: string;
       verification: 'operator_reported';
+      investigation_check?:
+        | 'dependency_continuous_operation'
+        | 'critical_job_overlap';
     }
   | {
       kind: 'reviewed';
@@ -42,7 +45,7 @@ export type FollowUpEvent =
       evidence_ids: string[];
     };
 
-/** Operator data and observed outcomes are never planner instructions or infrastructure authority. */
+/** Only an allowlisted outcome check may teach query order; operator prose is never instructions. */
 export function validateFollowUpEvent(value: unknown): FollowUpEvent {
   const o = object(value);
   if (o.kind === 'deferred' || o.kind === 'accepted') {
@@ -77,9 +80,19 @@ export function validateFollowUpEvent(value: unknown): FollowUpEvent {
       'result',
       'evidence_reference',
       'verification',
+      'investigation_check',
     ]);
     if (e.verification !== 'operator_reported')
       throw new Error('follow_up_event_invalid');
+    const check =
+      o.investigation_check === undefined
+        ? undefined
+        : member(o.investigation_check, [
+            'dependency_continuous_operation',
+            'critical_job_overlap',
+          ]);
+    if (check && e.result !== 'rolled_back')
+      throw new Error('follow_up_check_requires_rollback');
     return {
       kind: 'outcome',
       recommendation_record_id: identifier(e.recommendation_record_id),
@@ -94,6 +107,7 @@ export function validateFollowUpEvent(value: unknown): FollowUpEvent {
       ]),
       evidence_reference: identifier(e.evidence_reference),
       verification: 'operator_reported',
+      ...(check ? { investigation_check: check } : {}),
     };
   }
   const e = exact(o, [

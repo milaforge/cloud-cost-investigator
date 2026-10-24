@@ -19,7 +19,7 @@ flowchart TD
 | **Model planner · NVIDIA supported** | Chooses the next investigation check as evidence arrives. |
 | **Read-only tools** | Collect inventory, cost, utilization, jobs and dependencies to challenge a shutdown window. |
 | **Safety evaluator** | Applies deterministic rules; rejects unsafe windows and defers when evidence is missing. |
-| **Meterless H-MEM** | Remembers scoped investigation lessons to prioritize fresh checks. |
+| **Meterless H-MEM** | Remembers scoped investigation lessons, including applicable structured rollback feedback, to prioritize fresh checks. |
 | **Zetaris** | Retains recommendations, operator decisions, due reviews and reported outcomes. |
 | **CLI report** | Shows the conclusion, evidence citations and decision trace for human review. |
 
@@ -40,7 +40,9 @@ and accepted-outcome follow-through. [Results and demos](CLI_GUIDE.md#memory-and
 Today, `memory.ts` stores two typed operational lessons; `history.ts` recalls
 scoped hints; the planner orders fresh checks; the runner and deterministic
 policy validate evidence and decide the verdict. Zetaris separately owns the
-operator decision trail and follow-through. This already implements the useful
+operator decision trail and follow-through. Linked rollback outcomes with a typed
+check can now teach H-MEM which question to verify first; raw history and prose
+never order the planner. [Outcome learning](FOLLOW_UP.md#automatic-learning-from-outcomes). This implements the useful
 core of the earlier memory recommendation.
 
 The eight-workload comparison ties both fixed orders, including cases where a

@@ -1,22 +1,25 @@
 import { createHash } from 'node:crypto';
 import {
   exact,
-  identifier,
-  validateScope,
   type InvestigationReport,
+  identifier,
+  type Mode,
   type Scope,
+  validateSchedule,
+  validateScope,
 } from '../contracts.ts';
 import {
   appendZetarisHistory,
+  type HistoryRecord,
   historyRecordFromReport,
   readZetarisFollowUps,
   readZetarisHistoryRecord,
-  type HistoryRecord,
 } from '../tools/zetaris-history.ts';
 import {
-  validateFollowUpEvent,
   type FollowUpEvent,
+  validateFollowUpEvent,
 } from './follow-up-contract.ts';
+import { type ReasoningSummary, validateReasoningSummary } from './memory.ts';
 import { validateReport } from './report.ts';
 
 const digest = (value: string) =>
@@ -118,13 +121,17 @@ export async function recordDecision(
   };
 }
 
-async function decisionRecord(scope: Scope, id: string) {
-  const saved = (await readZetarisHistoryRecord(scope, id)).record;
+async function decisionRecord(scope: Scope, id: string, signal?: AbortSignal) {
+  const saved = (await readZetarisHistoryRecord(scope, id, signal)).record;
   const event = eventOf(saved);
   if (event.kind !== 'deferred' && event.kind !== 'accepted')
     throw new Error('follow_up_decision_required');
   const recommendation = (
-    await readZetarisHistoryRecord(scope, event.recommendation_record_id)
+    await readZetarisHistoryRecord(
+      scope,
+      event.recommendation_record_id,
+      signal,
+    )
   ).record;
   sameInstance(saved, recommendation);
   if (
@@ -223,6 +230,7 @@ export async function recordOutcome(
     'observed_at',
     'result',
     'evidence_reference',
+    'investigation_check',
   ]);
   const event = validateFollowUpEvent({
     ...fields,
@@ -331,4 +339,87 @@ export async function listFollowUps(scopeInput: Scope, instance: string) {
     });
   }
   return { as_of: at, historical: true, items };
+}
+
+/** Convert linked, scoped feedback into a bounded question for H-MEM, never telemetry. */
+export async function outcomeLearningSummary(
+  scope: Scope,
+  instance: string,
+  asOf: string,
+  mode: Mode | undefined,
+  signal: AbortSignal,
+): Promise<ReasoningSummary | null> {
+  const rows = await readZetarisFollowUps(scope, instance, signal);
+  const eligible = rows
+    .flatMap(({ record }) => {
+      const event = eventOf(record);
+      if (
+        event.kind !== 'outcome' ||
+        event.result === 'not_implemented' ||
+        Date.parse(record.recorded_at_utc) > Date.parse(asOf) ||
+        (mode && record.source_mode !== mode)
+      )
+        return [];
+      return [{ record, event }];
+    })
+    .sort(
+      (a, b) =>
+        Date.parse(b.event.observed_at) - Date.parse(a.event.observed_at) ||
+        Date.parse(b.record.recorded_at_utc) -
+          Date.parse(a.record.recorded_at_utc),
+    );
+  const latest = eligible[0];
+  if (!latest) return null;
+  // Ambiguous equally timed feedback cannot teach a strategy.
+  if (
+    eligible[1]?.event.observed_at === latest.event.observed_at &&
+    eligible[1]?.record.recorded_at_utc === latest.record.recorded_at_utc
+  )
+    throw new Error('outcome_learning_ambiguous');
+  const { record, event } = latest;
+  const decision = await decisionRecord(
+    scope,
+    event.decision_record_id,
+    signal,
+  );
+  sameInstance(record, decision.record);
+  if (
+    decision.event.kind !== 'accepted' ||
+    event.recommendation_record_id !==
+      decision.event.recommendation_record_id ||
+    record.investigation_id !== decision.record.investigation_id ||
+    Date.parse(event.observed_at) <
+      Date.parse(decision.record.recorded_at_utc) ||
+    Date.parse(record.recorded_at_utc) <
+      Date.parse(decision.record.recorded_at_utc)
+  )
+    throw new Error('outcome_learning_link_invalid');
+  const recommendation = decision.recommendation;
+  const window = validateSchedule(
+    JSON.parse(recommendation.summary_json).proposed_window,
+  );
+  return validateReasoningSummary({
+    schema_version: 1,
+    investigation_id: recommendation.investigation_id,
+    recorded_at: record.recorded_at_utc,
+    scope,
+    instance_id: instance,
+    hypothesis: { window, state: 'supported' },
+    verdict: 'conditional_recommendation',
+    reason:
+      'Historical operator-reported outcome; verify current conditions before deciding.',
+    unresolved_risks: [],
+    provenance: { integration_mode: record.source_mode, evidence_ids: [] },
+    outcome: {
+      record_id: record.record_id,
+      decision_record_id: event.decision_record_id,
+      recommendation_record_id: event.recommendation_record_id,
+      observed_at: event.observed_at,
+      result: event.result,
+      verification: 'operator_reported',
+      ...(event.investigation_check
+        ? { investigation_check: event.investigation_check }
+        : {}),
+    },
+  });
 }

@@ -1,5 +1,26 @@
 # Project Memory
 
+## Outcome feedback teaches investigation order (2026-10-24)
+
+- User explicitly requested applicable outcomes to improve investigation strategy.
+  This supersedes treating all Zetaris outcomes as audit-only. Preserve the boundary:
+  Zetaris owns attributed history; H-MEM owns reusable lessons; fresh direct tools
+  and the deterministic evaluator still own safety conclusions.
+- Extend the existing outcome JSON with optional `investigation_check`, limited to
+  critical jobs or continuous-operation dependencies and accepted only on rollback.
+  Do not guess causes from free text or let reported success waive required checks.
+- On normal recall with both stores enabled, validate links to acceptance and the
+  original recommendation before storing an outcome-derived H-MEM summary. Keep
+  the historical recommendation's supported hypothesis separate from the reported
+  rollback; record explicit operator provenance and no current evidence IDs.
+- Scope learning to account/region/instance, mode and matching UTC window. Adopt
+  only newer feedback; never reimport feedback over newer investigation findings.
+  Reuse existing budgets, row/storage caps, failure containment and single-writer
+  limitations. No new dependency, model role, background worker or table DDL.
+- Optional fields preserve old records, but old strict readers reject new fields;
+  upgrade remote-table readers and local-memory consumers together. Offline proof
+  is separate from live sponsor integration and measured general superiority.
+
 ## README audience and event sources (2026-10-24)
 
 - README should explain what/why first, then runnable setup and usage, sponsor

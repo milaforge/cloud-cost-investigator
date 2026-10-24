@@ -6,9 +6,9 @@ Cloud Cost Investigator (CCI) checks when EC2 servers could be turned off,
 explains the risks, and recommends what needs human review. It never changes
 your infrastructure.
 
-With memory enabled, it learns from past investigations which checks to try first.
-This can save work when similar problems return; it still checks fresh evidence
-every time. More use does not guarantee better results.
+With memory enabled, it learns from past investigations and reported outcomes
+which checks to try first. Repeated use can help it catch recurring problems
+sooner, while checking fresh evidence every time.
 
 EC2 scheduling is the hackathon scope. The long-term goal is a cost optimization
 specialist agent.
@@ -38,6 +38,26 @@ Optional **Meterless H-MEM** lessons help choose which fresh check to run first.
 **Zetaris** retains investigation history, explicit operator decisions, due reviews
 and reported outcomes. Historical records never replace current telemetry or
 provide permission to change AWS. [Components and architecture](docs/components.md).
+
+## Learning from outcomes
+
+Suppose a team accepts a shutdown recommendation, then rolls it back because
+another service needs the server running:
+
+1. The engineer records the rollback in Zetaris and selects the dependency check
+   as the relevant issue.
+2. On the next investigation of that server and shutdown window, CCI automatically
+   stores the feedback as an H-MEM lesson and checks dependencies first.
+3. Fresh evidence decides the result. If the dependency is gone, CCI continues its
+   other safety checks and replaces the old lesson with the new findings.
+
+This works with **Zetaris history and H-MEM persistence enabled**. Today, structured
+rollback feedback can prioritize dependency or critical-job checks; free-text notes
+are not interpreted as instructions. Outcomes remain operator-reported, and a
+successful outcome never removes required safety checks. An offline end-to-end
+test proves this example with synthetic evidence and a Zetaris HTTP fixture;
+[live-service verification remains separate](docs/EXECUTION_PLAN.md).
+See [how to record an outcome](docs/FOLLOW_UP.md#automatic-learning-from-outcomes).
 
 ## Run it yourself
 

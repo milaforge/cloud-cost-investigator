@@ -190,6 +190,13 @@ The calculation subtracts excluded days, subtracts per-window overhead, rounds d
 
 ## H-MEM and Zetaris
 
+With both stores configured, applicable structured rollback outcomes automatically
+teach H-MEM check ordering on the next matching investigation. See the
+[outcome-learning example and limits](FOLLOW_UP.md#automatic-learning-from-outcomes).
+This new path has offline fixture proof; earlier live sponsor proofs do not verify
+outcome learning against the live deployment.
+
+
 ```bash
 npm run probe:hmem
 ```
