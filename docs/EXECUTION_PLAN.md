@@ -5,7 +5,24 @@
 **Hackathon track:** 02 — The Agent That Can Explain Why.  
 **Approved scope (2026-10-23):** AWS EC2 off-hours scheduling safety; direct current-evidence tools; Zetaris structured history; Meterless reasoning memory; no infrastructure modification. The older cost-increase/snapshot-comparison workflow is superseded.  
 **Deadline:** 2026-10-27 23:45 UTC in recorded event notes; verify portal. Target freeze: Oct 26.  
-**Active milestone:** Day 2 kickoff, Fri Oct 23, 2026. Do not advance from this checkpoint based on elapsed time or this documentation revision.
+**Active milestone:** Days 3–4 — full user flows and live-evidence integration, reconciled Oct 24, 2026. Day 2's mock B/failure gate and separate real-model, H-MEM and Zetaris round-trips have executed proof below. This advances the work stage, not the combined live-evidence or release gates.
+
+## Current status and next actions — reconciled 2026-10-24
+
+This summary and sections 3/5 are the current checklist. Dated entries in section 1 and the AWS integration entries at the end are historical execution records: their blockers, defaults and next actions apply only until explicitly superseded. Preserve failed measurements; do not treat older unchecked status or an earlier model failure as the latest state.
+
+| Gate | Verified state and proof | Remaining work / owner |
+| --- | --- | --- |
+| Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](#executed-first-loop-slice--2026-10-23) and [broader scenarios](#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
+| AWS CLI | Live AWS default, explicit mock mode; latest recorded `npm test` **204/204**, typechecks and lint passed. [Integration](#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](#default-evidence-correction-2026-10-24). Live proof is limited to authenticated empty discovery. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
+| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. | Effective dedicated-user least privilege remains unverified; Zayan/user. Reliable real-model A/B/C completion remains open; Milad. |
+| Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
+| Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
+| Release | README/setup and retained proof exist; release is **not complete**. | Clean-checkout/independent reproduction, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
+
+**Next slice:** Zayan/team verifies populated live CloudWatch and opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. Continue model reliability work with retained failures, then complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
+
+**Reconciliation proof:** documentation-only review against existing executed entries; no new AWS/model/Zetaris call, append, or runtime test is implied. Local validation passed for all **26** links/anchors, the active milestone and retained open live/release gates; `git diff --check` passed. Owner: Milad. Runtime tests were not rerun for this documentation-only reconciliation.
 
 ## 1. Decision change and current verification state
 
@@ -838,11 +855,11 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
 - [x] Bounded planner -> executor -> evaluator -> finish/replan skeleton.
 
 **Zayan**
-- [ ] Document actual direct API inventory, billing, metrics, operations and dependency coverage, permissions and gaps.
+- [x] Document adapter coverage and gaps in `docs/AWS_TOOLS.md`; AWS handoff/integration entries record offline checks, authenticated empty discovery and unconfigured operations/dependencies. Populated live coverage and effective permissions remain open below.
 - [x] Produce minimal labeled mock observations plus one unsafe scheduling fixture.
-- [ ] Verify supported Zetaris historical read and narrowly scoped append path with a non-sensitive test record.
+- [x] Zetaris historical append and exact readback executed with synthetic records; see user round-trip and real-model warm proof. Milad owns history; effective least-privilege verification remains open.
 
-**Joint prerequisite gate:** One scoped CLI investigation retrieves evidence from a clearly labeled provider and emits a validated, honest JSON result. Sponsor/model calls remain separate **unverified** gates until genuinely executed.
+**Joint prerequisite gate:** One scoped CLI investigation retrieves evidence from a clearly labeled provider and emits a validated, honest JSON result. This prerequisite is satisfied. Separate real-model, H-MEM and Zetaris round-trips also have executed proof; populated live AWS and effective least privilege remain separate gates.
 
 ### Day 2 — Fri Oct 23: first end-to-end contradiction slice
 
@@ -857,36 +874,38 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
 - [x] Build read-only mock-backed direct tools for candidate discovery, billing, utilization, job/change and dependency lookups.
 - [x] Build scenario B: low apparent overnight CPU but a critical scheduled batch or dependency overlapping the initial shutdown window.
 - [x] Define and test source timestamps, UTC windows, missing-data statuses and coverage fields.
-- [ ] Implement only _approved, scoped_ Zetaris historical record read and append if access/support allows; otherwise log a blocker, do not fake it.
+- [x] Milad implemented runtime-validated scoped Zetaris read/append with real readback and subsequent-run recall; see warm proof. No generic model SQL; effective deployment permissions remain open.
 
-**Joint gate:** Scenario **B** runs from a CLI over **explicitly labeled mock data**, discovers a candidate, attempts a safety challenge, revises and rejects a plausible but unsafe schedule, with valid retrieved evidence IDs and a readable trace. A missing-critical-source variation yields `needs_verification` or an explicit incomplete report within budgets and `null` savings. In addition, separately verify one approved model call, H-MEM round-trip, and actual Zetaris history read/append. **A mock-only slice can prove investigation behavior but does not close live sponsor integration gates.** Record commands, results and unresolved owner actions; do not check gate boxes early.
+**Joint gate — satisfied in the recorded modes:** Scenario **B** runs from a CLI over **explicitly labeled mock data**, discovers a candidate, attempts a safety challenge, revises and rejects a plausible but unsafe schedule, with valid retrieved evidence IDs and a readable trace. A missing-critical-source variation yields `needs_verification` or an explicit incomplete report within budgets and `null` savings. In addition, separately verify one approved model call, H-MEM round-trip, and actual Zetaris history read/append. **A mock-only slice can prove investigation behavior but does not close live sponsor integration gates.** Record commands, results and unresolved owner actions; do not check gate boxes early.
 
 ### Days 3–4 — Sat–Sun Oct 24–25: full user flows and sponsor proof
 
 **Milad**
-- [ ] Scenario A: evidence-gated conditional off-hours recommendation, including a concrete UTC schedule and approvals/unknowns.
-- [ ] Scenario C: justify required continuous operation **and** independently test a missing-source/unknown outcome.
+- [x] Scenario A: conditional schedule and approvals/unknowns verified with synthetic authoritative evidence; see broader A/C proof. Live clearance is separate.
+- [x] Scenario C: continuous-operation rejection and independent missing-source deferral verified with mock evidence; see broader A/C proof.
 - [x] Scenario D: Oct 24 real-model second run retrieves actual H-MEM reasoning and remote typed Zetaris history; query order changes, fresh mock evidence controls the verdict. Exact proof above; live AWS remains separate.
-- [ ] Deterministic compute-only savings when verifiable, otherwise `null`; explicitly handle commitment/retained charges and incomplete billing granularity.
-- [ ] Model failure, tool timeout, memory/history errors, partial responses, invalid outputs, budget exhaustion; all bounded.
-- [ ] Expose full trace and JSON report with validation and provenance; measure latency and tool counts.
+- [x] Deterministic marginal compute savings and null guards verified with synthetic pricing, commitment and retained-cost assumptions; see broader A/C proof. Actual AWS pricing remains open.
+- [x] Bounded model/tool/history/memory failures, partial/invalid output and exhausted budgets tested offline; real-model failures retained. Reliability is not implied by safe termination.
+- [x] Validated full trace/JSON reports and measured latency/tool/planner counts recorded in evaluation and warm proof.
 
 **Zayan**
-- [ ] Replace/mock-swap direct providers with live read-only API-backed adapters wherever access permits; **truthfully label** remaining mocks.
-- [ ] Verify historical Zetaris append/read with the approved narrow permissions on non-sensitive records and baseline optionality.
-- [ ] Finalize A/B/C/D fixture observations, expected verdicts, coverage and source-specific failure cases.
-- [ ] Test account/region/instance isolation, time zones, data completeness, joins and no raw secret payloads.
+- [x] AWS API-backed provider merged and selected by default; injected-transport integration passes. Explicit mock mode preserved; no silent fallback.
+- [ ] Verify populated live inventory/CloudWatch/opted-in Cost Explorer and authoritative jobs/dependencies; only authenticated empty discovery has live proof. Owner: Zayan/team.
+- [x] Milad: real Zetaris append/read and empty-history first run demonstrated with synthetic records; see warm proof.
+- [ ] Zayan/user: verify effective dedicated-user table-scoped read/append permissions and denial of broader writes; functional readback alone does not certify least privilege.
+- [x] A/B/C/D fixtures and expected outcomes, coverage and source failures exercised in scenario, warm and evaluation tests; current AWS integration suite records 204/204 passing tests.
+- [x] Offline scope/UTC/coverage, attribution/citation binding and payload-redaction tests pass; see broader A/C, diagnostics and AWS integration proof. Final artifact security scan remains open.
 - [ ] Verify actual AWS compute pricing/billing coverage and commitment assumptions before allowing any savings number.
 
-**Joint gate:** Reproducibly distinguish A, B and C, show a meaningful warm D run, and test unavailable data. A changed current schedule must change the conclusion when supported even if old memory disagrees. Sponsor integrations must be real, traced and accurately documented. Compare to a simplistic average-CPU rule and record actual measured behavior, including false positives.
+**Joint gate — fixture/sponsor proof recorded; populated live evidence and reliable model completion remain open:** Reproducibly distinguish A, B and C, show a meaningful warm D run, and test unavailable data. A changed current schedule must change the conclusion when supported even if old memory disagrees. Sponsor integrations must be real, traced and accurately documented. Compare to a simplistic average-CPU rule and record actual measured behavior, including false positives.
 
 ### Day 5 — Mon Oct 26: freeze and submission assets
 
 **Milad**
 - [ ] Fresh-checkout CLI installation, mock seeding, execution and test instructions in project-specific README.
-- [ ] Display readable decision trace: initial window -> conflicting live/mock evidence -> revision; plus warm run with different investigation context.
+- [x] Readable B rejection trace and changed-context warm demo executed with mock current evidence and real historical stores as labeled in their proof entries. Final demo recording remains open.
 - [ ] Slides and **1–4 minute demo** showing B first, then D sponsor contributions; document NVIDIA, Zetaris, Meterless and Cursor accurately.
-- [ ] Publish measured disposition/evidence validity/safety false positives, runtime and tool count; no invented numbers.
+- [x] Retained scripted/real-model evaluation and memory fixed-order artifacts publish measured dispositions, citation validity, safety positives, runtime and counts, including failures and limitations.
 
 **Zayan**
 - [ ] Independently reproduce provider and historical-store paths from documented instructions.
@@ -923,15 +942,19 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
 
 ## 5. Release checklist
 
-- [ ] Direct API adapter path for current evidence actually runs; mocks/fixtures/live sources are clearly labeled.
-- [ ] Genuine Zetaris history read and constrained authorized append; stored observation is useful on a subsequent run.
-- [ ] Genuine Meterless H-MEM context store and retrieve; retrieved memory affects a subsequent query choice without being current evidence.
-- [ ] Approved model call verified; NVIDIA contribution genuine; Cursor use described accurately.
-- [ ] One real evidence-dependent replanning/rejection visible in B; all report citations reference actually retrieved current records.
-- [ ] Conditional recommendations honor peaks/jobs/dependencies and human approval; no AWS changes.
-- [ ] Unknown savings are `null`, and any numeric estimates are reproducible and scoped to marginal compute.
-- [ ] A/B/C/D plus missing-source, timeout, invalid-output and history/memory failure reproducible.
-- [ ] Measured evaluation and rule-based baseline comparison with actual denominators and uncertainty.
+- [x] API-backed AWS provider is wired and default; injected-transport tests pass and authenticated empty discovery has live proof. Modes remain explicit.
+- [ ] Verify populated live metrics/billing and authoritative operational coverage through the integrated CLI; disclose unavailable sources and keep unsafe/unknown opportunities deferred.
+- [x] Genuine scoped Zetaris history append/readback and useful subsequent-run recall demonstrated with synthetic records.
+- [ ] Verify effective least-privilege deployment permissions separately from successful history functionality.
+- [x] Genuine local H-MEM store/retrieve changes fresh query order; changed evidence corrects stale lessons. Eight-workload comparison ties fixed ordering; no general benefit claimed.
+- [x] Team-approved real-model call and genuine NVIDIA contribution recorded; organizer/portal verification is separate.
+- [ ] Describe actual Cursor use accurately in submission assets.
+- [x] B evidence-dependent rejection demonstrated with real model calls over labeled mock evidence; validated current-run citations. No live operational-source proof implied.
+- [x] Conditional-recommendation guards for peaks/jobs/dependencies and human approval tested with mock evidence; AWS adapter path is read-only. Live operational authority remains open.
+- [x] Null-savings guards and reproducible marginal-compute arithmetic verified with synthetic pricing; live rates/commitment coverage remain open.
+- [x] A/B/C/D and bounded source/model/history/memory failure paths reproducible offline; real sponsor warm proof recorded separately.
+- [ ] Demonstrate reliable real-model A/B/C execution; retain all failed measurements and explicit safe partial outcomes.
+- [x] Measured evaluation against CPU heuristic and H-MEM against both fixed orders recorded with full denominators, failures, teaching cost and limitations.
 - [ ] No credentials, sensitive exports, or raw secret-bearing provider responses in code/fixtures/reports.
 - [ ] README, reproducible clean setup, slide deck, sponsor explanation and **1–4 minute demo** ready.
 - [ ] Submission portal verified and entry submitted before deadline.
