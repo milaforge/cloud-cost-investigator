@@ -14,6 +14,7 @@ import {
   validateScope,
   validateWindow,
 } from '../contracts.ts';
+import { validateFollowUpEvent } from '../investigation/follow-up-contract.ts';
 import { validateReport } from '../investigation/report.ts';
 import { parseZetarisTable, queryZetaris } from './zetaris.ts';
 
@@ -33,7 +34,7 @@ const COLUMNS = [
 ] as const;
 export interface HistoryRecord {
   record_id: string;
-  schema_version: 1;
+  schema_version: 1 | 2;
   investigation_id: string;
   account_id: string;
   region: string;
@@ -58,31 +59,61 @@ const iso = (value: unknown) => new Date(utc(value)).toISOString();
 function validateRecord(value: unknown): HistoryRecord {
   try {
     const r = exact(value, [...COLUMNS]);
-    if (r.schema_version !== 1) throw new Error();
+    if (r.schema_version !== 1 && r.schema_version !== 2) throw new Error();
     const scope = validateScope({ account_id: r.account_id, region: r.region });
     const summaryText = textValue(r.summary_json, 4096);
-    const s = exact(JSON.parse(summaryText), [
-      'proposed_window',
-      'rejected_windows',
-      'evidence_ids',
-      'missing_checks',
-    ]);
-    const summary = {
-      proposed_window:
-        s.proposed_window === null ? null : validateSchedule(s.proposed_window),
-      rejected_windows: array(s.rejected_windows, 8).map(validateSchedule),
-      evidence_ids: array(s.evidence_ids, 15).map(identifier),
-      missing_checks: array(s.missing_checks, 8).map((v) => textValue(v)),
-    };
+    const summary =
+      r.schema_version === 2
+        ? validateFollowUpEvent(JSON.parse(summaryText))
+        : (() => {
+            const s = exact(JSON.parse(summaryText), [
+              'proposed_window',
+              'rejected_windows',
+              'evidence_ids',
+              'missing_checks',
+            ]);
+            return {
+              proposed_window:
+                s.proposed_window === null
+                  ? null
+                  : validateSchedule(s.proposed_window),
+              rejected_windows: array(s.rejected_windows, 8).map(
+                validateSchedule,
+              ),
+              evidence_ids: array(s.evidence_ids, 15).map(identifier),
+              missing_checks: array(s.missing_checks, 8).map((v) =>
+                textValue(v),
+              ),
+            };
+          })();
     const window = validateWindow({
       from: r.observed_from_utc,
       to: r.observed_to_utc,
     });
     const recorded = iso(r.recorded_at_utc);
     if (Date.parse(recorded) < Date.parse(window.to)) throw new Error();
+    if ('kind' in summary) {
+      if (
+        (summary.kind === 'deferred' ||
+          summary.kind === 'accepted' ||
+          summary.kind === 'outcome') &&
+        r.verdict !== 'conditional_recommendation'
+      )
+        throw new Error();
+      if (
+        summary.kind === 'deferred' &&
+        Date.parse(summary.review_at) < Date.parse(recorded)
+      )
+        throw new Error();
+      if (
+        summary.kind === 'outcome' &&
+        Date.parse(summary.observed_at) > Date.parse(recorded)
+      )
+        throw new Error();
+    }
     return {
       record_id: identifier(r.record_id),
-      schema_version: 1,
+      schema_version: r.schema_version,
       investigation_id: identifier(r.investigation_id),
       ...scope,
       instance_id: identifier(r.instance_id),
@@ -205,10 +236,11 @@ async function readRows(
   limit: number,
   signal: AbortSignal,
   instanceId?: string,
+  version?: 1 | 2,
 ): Promise<HistoricalRecord[]> {
   const result = parseZetarisTable(
     await queryZetaris(
-      `SELECT ${COLUMNS.map((c) => `\`${c}\``).join(', ')} FROM ${table} WHERE account_id = ${literal(scope.account_id)} AND region = ${literal(scope.region)}${recordId ? ` AND record_id = ${literal(recordId)}` : ''}${instanceId ? ` AND instance_id = ${literal(instanceId)}` : ''} ORDER BY recorded_at_utc DESC, record_id ASC LIMIT ${limit}`,
+      `SELECT ${COLUMNS.map((c) => `\`${c}\``).join(', ')} FROM ${table} WHERE account_id = ${literal(scope.account_id)} AND region = ${literal(scope.region)}${recordId ? ` AND record_id = ${literal(recordId)}` : ''}${instanceId ? ` AND instance_id = ${literal(instanceId)}` : ''}${version ? ` AND schema_version = ${version}` : ''} ORDER BY recorded_at_utc DESC, record_id ASC LIMIT ${limit}`,
       signal,
     ),
   );
@@ -220,12 +252,14 @@ async function readRows(
   return result.data.map((row) => {
     const raw = Object.fromEntries(COLUMNS.map((name, i) => [name, row[i]]));
     if (raw.schema_version === '1') raw.schema_version = 1;
+    if (raw.schema_version === '2') raw.schema_version = 2;
     const record = validateRecord(raw);
     if (
       record.account_id !== scope.account_id ||
       record.region !== scope.region ||
       (recordId && record.record_id !== recordId) ||
-      (instanceId && record.instance_id !== instanceId)
+      (instanceId && record.instance_id !== instanceId) ||
+      (version && record.schema_version !== version)
     )
       throw new Error('zetaris_history_scope_mismatch');
     return context(record);
@@ -247,7 +281,7 @@ export async function readZetarisHistory(
       ...(parentSignal ? [parentSignal] : []),
     ]);
   await verifySchema(table, signal);
-  return readRows(table, scope, undefined, limit, signal, instanceId);
+  return readRows(table, scope, undefined, limit, signal, instanceId, 1);
 }
 
 /** Single-writer MVP: no automatic retries; reuses an identical ID only after exact readback. */
@@ -277,7 +311,9 @@ export async function appendZetarisHistory(
   // Once INSERT is sent, any failure is an uncertain write. Never retry it automatically.
   try {
     const values = COLUMNS.map((c) =>
-      c === 'schema_version' ? '1' : literal(String(record[c])),
+      c === 'schema_version'
+        ? String(record.schema_version)
+        : literal(String(record[c])),
     );
     // DML response formats vary; only the exact validated readback establishes success.
     await queryZetaris(
@@ -294,4 +330,44 @@ export async function appendZetarisHistory(
   } catch {
     throw new Error('zetaris_history_append_unverified');
   }
+}
+
+/** Exact historical lookup; duplicate IDs fail closed rather than choosing an arbitrary row. */
+export async function readZetarisHistoryRecord(
+  scopeInput: Scope,
+  id: string,
+): Promise<HistoricalRecord> {
+  const scope = validateScope(exact(scopeInput, ['account_id', 'region']));
+  identifier(id);
+  const table = target(),
+    signal = AbortSignal.timeout(20_000);
+  await verifySchema(table, signal);
+  const records = await readRows(table, scope, id, 2, signal);
+  if (records.length !== 1)
+    throw new Error('zetaris_history_record_missing_or_duplicate');
+  return records[0];
+}
+
+/** Bounded per-instance follow-up ledger. Never silently claim completeness after truncation. */
+export async function readZetarisFollowUps(
+  scopeInput: Scope,
+  instanceId: string,
+): Promise<HistoricalRecord[]> {
+  const scope = validateScope(exact(scopeInput, ['account_id', 'region']));
+  identifier(instanceId);
+  const table = target(),
+    signal = AbortSignal.timeout(20_000);
+  await verifySchema(table, signal);
+  const records = await readRows(
+    table,
+    scope,
+    undefined,
+    20,
+    signal,
+    instanceId,
+    2,
+  );
+  if (records.length === 20)
+    throw new Error('zetaris_follow_up_query_limit_exceeded');
+  return records;
 }

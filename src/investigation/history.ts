@@ -87,16 +87,13 @@ export class InvestigationHistory {
           instance,
         )) {
           const r = item.record;
+          if (Date.parse(r.recorded_at_utc) > Date.parse(startedAt)) continue;
           if (r.instance_id !== instance || (mode && r.source_mode !== mode))
             continue;
-          const summary = JSON.parse(r.summary_json) as {
-            missing_checks: string[];
-          };
-          add(
-            item.context_id,
-            r.recorded_at_utc,
-            r.source_mode,
-            summary.missing_checks,
+          // Zetaris retains the decision trail; only H-MEM teaches query order.
+          this.result.context_ids.push(item.context_id);
+          this.result.limitations.push(
+            `${item.context_id}: historical recommendation ${r.verdict}, recorded ${r.recorded_at_utc}; audit context only, not a planner hint.`,
           );
         }
         this.result.zetaris = 'ok';

@@ -22,6 +22,9 @@
     "probe:zetaris:roundtrip": "node --import tsx scripts/probe-zetaris-history-roundtrip.ts",
     "probe:warm": "node --import tsx scripts/probe-warm.ts",
     "demo:warm": "node --import tsx scripts/demo-warm.ts",
+    "followup": "node --import tsx scripts/follow-up.ts",
+    "demo:followup": "node --import tsx scripts/demo-follow-up.ts",
+    "evaluate:memory": "node --import tsx scripts/evaluate-memory.ts",
     "evaluate": "node --import tsx scripts/evaluate.ts"
   },
   "devDependencies": {

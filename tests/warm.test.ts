@@ -160,7 +160,7 @@ test('history services fail independently and disclose no provider errors', asyn
   assert.ok(!JSON.stringify(neither).includes('PRIVATE'));
 });
 
-test('Zetaris alone can prioritize fresh checks when H-MEM is unavailable', async (t) => {
+test('Zetaris audit history does not dictate query order when H-MEM is unavailable', async (t) => {
   const dir = await directory(t);
   await zetaris(t);
   await run(undefined, true);
@@ -169,10 +169,10 @@ test('Zetaris alone can prioritize fresh checks when H-MEM is unavailable', asyn
   const warm = await run(blocked, true);
   assert.equal(warm.historical_context.hmem, 'unavailable');
   assert.equal(warm.historical_context.zetaris, 'ok');
-  assert.deepEqual(checks(warm), [
-    'get_ec2_dependencies',
-    'get_ec2_operations',
-  ]);
+  assert.deepEqual(checks(warm), ['get_ec2_operations']);
+  assert.ok(
+    warm.historical_context.context_ids.some((id) => id.startsWith('zetaris:')),
+  );
 });
 
 test('future historical records cannot influence current query order; disabled appends do not write', async (t) => {

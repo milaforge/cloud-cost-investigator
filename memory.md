@@ -1,5 +1,32 @@
 # Project Memory
 
+## Distinct memory and decision-follow-through roles (2026-10-24)
+
+- User challenged storing historical facts that must be fetched again. Keep the
+  working warm demonstration, but distinguish reusable investigation method from
+  current evidence and from a human decision trail. The earlier use of Zetaris
+  missing-check lists as planner priorities is superseded; H-MEM alone owns
+  historical check-order advice. Zetaris remains visible as audit context.
+- Test the existing scoped lessons before adding richer memory machinery. Both
+  fixed operational orders are strong baselines. Equal-weight recurring, cleared,
+  switched and missing-evidence cases tie at 47 planner / 38 tool calls; keep that
+  result. Prior investigations cost 45 / 37 if performed solely to teach memory.
+  Do not choose workload weights afterward to manufacture a win.
+- Both follow-up paths were requested: explicit deferral with a review date,
+  and explicit acceptance with an attributed outcome. These are application
+  records about intent and follow-through that current AWS telemetry cannot supply.
+  Outcomes are operator-reported, never automatic evidence of savings or permission
+  to mutate infrastructure. Keep live evidence integration as separate work.
+- Reuse the dedicated append-only table and transport; version 2 typed event JSON
+  uses the existing columns. Version 1 queries filter out decision events. No
+  schema DDL, new production dependency, arbitrary SQL, automatic write retry,
+  background scheduling or authenticated approval system is introduced.
+- Single-writer MVP: one immutable decision per recommendation; exact duplicate
+  input can reuse a receipt, changed input conflicts. Review results are linked
+  to a fresh validated report; partial results keep the obligation due. Bounded
+  per-instance history queries fail explicitly at the cap instead of silently
+  omitting obligations. Older readers need upgrading to interpret version 2 rows.
+
 ## Retained provider HTTP error diagnostics (2026-10-24)
 
 - User requested provider error bodies after repeated fast HTTP 500s could not be

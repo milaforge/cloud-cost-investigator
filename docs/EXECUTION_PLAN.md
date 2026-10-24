@@ -9,6 +9,72 @@
 
 ## 1. Decision change and current verification state
 
+### Distinct memory roles and decision follow-through — 2026-10-24
+
+**Gate/owner:** Milad; user-approved clarification of D and sponsor value. Preserve
+`demo:warm`, evaluate H-MEM against both fixed orders across varied workloads,
+and exercise **both** deferred-review and accepted-outcome workflows in Zetaris.
+
+- [x] H-MEM remains the source of scoped historical investigation lessons.
+  Existing account/region/instance/source-mode/window reuse conditions and fresh
+  recheck behavior remain intact. Zetaris historical records are audit context,
+  not planner ordering hints. Updated AGENTS, project context and rationale.
+- [x] `npm run --silent evaluate:memory > docs/memory-order-evaluation.json`:
+  **passed**, real local H-MEM / scripted planner / mock evidence / no Zetaris.
+  Eight equally weighted recurring, cleared, switched and missing-source workloads;
+  fresh report validation and memory-use assertions passed. Both fixed orders and
+  H-MEM matched **8/8** expected verdicts, **7 complete / 1 expected partial**,
+  **0 planner failures**, **47 planner / 38 tool calls** each. **Aggregate tie**.
+  Teaching investigations cost another **45 planner / 37 tools** if performed
+  solely for training. Preserve per-case wins/losses and the favorable-to-rules
+  best-fixed comparison; no demonstrated general advantage or model-latency claim.
+  Artifact: [memory-order-evaluation.json](memory-order-evaluation.json).
+- [x] Added `npm run followup -- --help` and documented manual `decide`, `list`,
+  `review`, `outcome` commands. Explicit operator input is required. Scoped,
+  append-only version 2 event records reuse the existing table columns and
+  permissions; version 1 recommendation queries remain separate. No DDL, new
+  production dependency, infrastructure action, background scheduler or inferred
+  human approval. Partial reviews remain due; accepted outcomes are explicitly
+  `operator_reported`, with observation time and reference, not verified savings.
+- [x] **Real Zetaris proof:** `npm run --silent demo:followup` with network access
+  passed **8/8 checks**. Seven labeled records retained under a unique synthetic
+  account. Identical initial mock scenarios produced two complete conditional
+  recommendations. Retrieved operator intent distinguished a due deferral from
+  acceptance awaiting outcome. New mock C evidence overturned the deferred
+  recommendation to `not_recommended`; the linked complete review was persisted.
+  The accepted path retained a fictional operator-reported rollback receipt.
+  A subsequent query showed `reviewed` and `outcome_reported` respectively.
+  Artifact: [follow-up-zetaris.json](follow-up-zetaris.json). All decisions are
+  explicitly synthetic, planner scripted, no H-MEM or live model call, no AWS call.
+- Initial sandboxed invocation could not authenticate/connect and returned
+  `zetaris_auth_unavailable`; retained as
+  [follow-up-transport-failure.json](follow-up-transport-failure.json).
+  The explicitly network-enabled second invocation succeeded. No automatic
+  write retry or cleanup/delete occurred; effective deployment permissions remain
+  the operator's responsibility.
+- [x] `npm test`: **157/157 passed**. Includes both end-to-end follow-up paths,
+  manual CLI JSON inputs, version separation, immutable/idempotent decisions,
+  date/scope validation, partial reviews, forged review references, disabled
+  appends, query truncation, source-role separation and memory comparison.
+  A test-only early timer wake exposed a due-date race; wait now checks the clock
+  before proceeding. Production due-date checks were not relaxed.
+- [x] `npm run typecheck`, scoped Biome lint (`src scripts tests cli.ts`), format
+  checks of changed TS/JSON source, and `git diff --check`: **passed**.
+  `npm run --silent demo:warm`: **all 15 checks passed**. Runtime validation
+  verified **27 reports** and six embedded follow-up event copies in retained
+  proof artifacts. After strengthening evaluation recall assertions, reran the
+  evaluator and `tests/memory-evaluation.test.ts`: **passed**.
+
+**Limits/next action:** current AWS/operational evidence remains mock; reported
+external outcomes are not independently verified. No measured-savings claim or
+new real-model benchmark. Single writer and at most 19 follow-up events per
+instance; fail explicitly at the 20-event cap. Decision changes and pagination
+remain outside this slice. Upgrade old history readers before version 2 rows are
+introduced in their scope. Evaluate richer H-MEM investigation knowledge only
+when actual workload evidence identifies a reusable method that beats the fixed
+baseline; prioritize direct evidence integrations.
+
+
 ### Retained provider HTTP error bodies — 2026-10-24
 
 **Gate/owner:** Milad, user-requested diagnosis of repeated HTTP 500 responses.

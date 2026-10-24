@@ -94,7 +94,27 @@ The repository's existing generic `queryZetaris(sql)` is connectivity scaffoldin
 
 Use the H-MEM reference already present in the TypeScript starter (runtime store/retrieve must be verified). Persist concise, timestamped summaries of hypotheses, rejected schedules, discovered concerns, unresolved checks, investigation IDs and provenance. Retrieve only relevant scoped memories and disclose which were used to choose a next tool. H-MEM **does not** own authoritative numeric telemetry or structured billing history. Its retrieved beliefs and confidence/ranking signals are not evidence for a current safety verdict. A changed current observation may override stale memory.
 
-**Demonstrable distinct value:** in a second execution, H-MEM changes the early safety question while Zetaris supplies typed previous observations for comparison; direct tools still decide the current verdict. Show separate success/failure handling for both stores.
+**Role clarification (Oct 24, user-approved):** H-MEM owns reusable investigation
+lessons with scope and conditions for reuse. Zetaris owns structured recommendations,
+explicit operator decisions and attributed outcomes. Direct tools establish present
+facts. Zetaris history no longer influences planner check order; it remains visible
+as historical audit context. A fresh first investigation still requires neither store.
+
+**Acceptance:** compare H-MEM with both fixed operational-check orders across
+recurring, cleared, switched and missing-evidence workloads; preserve ties and
+regressions and disclose teaching cost. Demonstrate both a deferred recommendation
+becoming due for fresh investigation and an accepted recommendation receiving an
+operator-reported outcome through actual Zetaris append/readback. Preserve the
+existing warm proof. No inferred human decisions, automatic remediation, or
+claims of measured savings from an outcome receipt.
+
+The follow-up CLI accepts explicit operator input under the configured app credential;
+actor IDs are attributed, not authenticated identities. One immutable decision per
+recommendation is supported. Version 1 investigation records and version 2 follow-up
+events share the existing validated table columns; no DDL or broader permissions.
+A review outcome references a separate fresh investigation record. Partial reviews
+remain due. Outcome receipts require an acceptance, observation time and reference;
+label them `operator_reported`. See [FOLLOW_UP.md](FOLLOW_UP.md).
 
 **Learned-check slice (Oct 24):** A validated, authoritative contradiction can
 teach an optional typed `dependency_continuous_operation` or

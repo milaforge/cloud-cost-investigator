@@ -4,7 +4,43 @@ Read-only EC2 off-hours scheduling investigation for **Track 02 — The Agent Th
 
 An engineer supplies an account and region. The CLI discovers running instances, ranks matching compute spend, inspects utilization, proposes an observed UTC window, then challenges that exact window with operational evidence. In scenario B, a critical batch job rejects the proposal. No previous investigation is required. Up to three ranked candidates share one bounded investigation. Savings are deterministic when fully justified; otherwise they remain `null`.
 
-## What Meterless improves: fewer checks, fresh conclusions
+## Memory and decision follow-through
+
+| Component | Responsibility | What it must not establish |
+| --- | --- | --- |
+| **Meterless H-MEM** | Reuse scoped investigation lessons: which operational question to verify first | Current facts or permission to shut down |
+| **Zetaris** | Query recommendations, explicit operator decisions, due reviews and reported outcomes | Current telemetry or planner check order |
+| **Direct tools** | Fetch and validate evidence for the present conclusion | A history of human intent that telemetry cannot reconstruct |
+
+**Measured honestly:** on eight equally weighted workloads, H-MEM **tied both
+fixed check orders**: each matched 8/8 expected verdicts, with 47 planner calls
+and 38 tool calls (7 complete investigations, 1 expected partial deferral).
+Recurring blockers can benefit; changed blockers can make remembered ordering
+worse. The prior investigations used to teach memory cost another 45 planner
+calls / 37 tools if run solely for training. This does not establish general
+superiority over rules. [Full comparison](docs/memory-order-evaluation.json).
+
+**Zetaris contributes a different capability:** the same current telemetry can
+correspond to a deferred recommendation or an accepted one. The database retains
+that intent and its follow-through. A [real Zetaris demonstration](docs/follow-up-zetaris.json)
+passed all eight checks: retrieve a due deferral → investigate fresh evidence →
+record the changed verdict; retrieve an acceptance → append an attributed rollback
+outcome. Evidence and operator decisions in this demonstration are **synthetic**;
+Zetaris persistence is real. Outcomes are **operator-reported**, not independently
+verified implementation or measured savings. Nothing modifies AWS.
+
+```bash
+npm run --silent evaluate:memory > /tmp/memory-evaluation.json
+# Explicit live Zetaris append/readback; retains seven labeled synthetic records:
+npm run --silent demo:followup > /tmp/follow-up.json
+npm run followup -- --help
+```
+
+[Manual decision and follow-up workflow](docs/FOLLOW_UP.md) covers both paths,
+validation, source labels and limitations. No new production dependencies or
+remote table creation are required.
+
+### Preserved warm-run demonstration
 
 **Meterless H-MEM lets an investigation remember which operational check mattered
 last time, verify it again, and reach the correct conclusion with less work.**
@@ -18,8 +54,8 @@ The deterministic evaluator still decides the outcome from current evidence.
 | Warm, recalled lesson | Dependencies first | Same rejection, backed by fresh evidence | 5 / 4 |
 | Changed evidence | Dependencies → jobs | Old conflict cleared; conditional recommendation | 6 / 5 |
 
-**Measured benefit: 16.7% fewer planner calls and 20% fewer tool calls on the
-warm case.** The scripted three-phase proof passes all 15 checks, including
+**In this recurring-dependency fixture: 16.7% fewer planner calls and 20% fewer
+tool calls on the warm case.** The scripted three-phase proof passes all 15 checks, including
 fresh citations and persisting the corrected conclusion. Real local H-MEM is
 reopened between phases; Zetaris is disabled to isolate its contribution.
 
@@ -122,7 +158,7 @@ npm run probe:hmem
 
 This performs a genuine **local Meterless H-MEM reference** store → disk persistence → new engine instance → retrieval, using a compact summary of an executed mock B investigation. It uses and removes its own temporary directory. Summaries carry scope, timestamp, hypothesis, decision reason, unresolved risks and provenance; historical IDs never become current evidence. The adapter supports caller-owned persistent directories, isolated per account/region, and validates stored data on read and write. The reference uses local deterministic embeddings and single-writer JSON persistence. This proof does **not** establish a hosted service or warm-run query-priority behavior.
 
-The CLI recalls history after fresh inventory/billing selects an instance, then persists
+The CLI reads historical recommendations for audit and recalls H-MEM lessons after fresh inventory/billing selects an instance, then persists
 a validated summary after evaluation. Set `HMEM_PERSIST_DIR=.cci-memory` for local
 reasoning memory. Setting `ZETARIS_HISTORY_TABLE` enables scoped history reads;
 appends still require the explicit opt-in below. The Zetaris adapter provides validated, account/region-scoped reads and explicitly
@@ -173,7 +209,7 @@ NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm -- --planner model
 It runs the CLI twice under a unique synthetic account, retains two labeled mock
 history records in Zetaris, and removes its temporary H-MEM directory. Run 1
 checks operations first and learns to recheck the overlapping critical job. Run 2
-recalls both stores and rechecks operations first. Both verdicts cite fresh
+reads both stores and rechecks operations first using the H-MEM lesson. Zetaris records are audit context and no longer set check order. Both verdicts cite fresh
 mock evidence. The scripted planner follows this priority deterministically;
 the model planner receives the same bounded hints and instruction, with its
 actual action visible in the trace. The earlier real-model cold/warm pair passed on

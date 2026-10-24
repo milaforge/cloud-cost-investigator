@@ -228,3 +228,14 @@ NODE_TLS_REJECT_UNAUTHORIZED=1 ZETARIS_ALLOW_HTTP=true npm run probe:zetaris:his
 
 HTTP is an explicitly authorized exception for this connection. HTTPS remains the
 default; redirects remain disabled, and raw responses and private endpoints are not logged.
+
+
+## Decision follow-through (Oct 24)
+
+The existing table also holds version 2 typed operator-decision and outcome
+records, using the same columns and append-only permissions. Version 1 continues
+to mean an investigation summary; ordinary history queries explicitly filter it.
+No table DDL is required, but all readers of a scope must understand version 2
+before introducing these rows there. Zetaris records no longer dictate planner
+check order. See [the manual follow-up workflow](FOLLOW_UP.md) for deferred
+reviews, accepted decisions, attributed outcomes, limits and real-service proof.
