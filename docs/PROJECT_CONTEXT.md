@@ -27,7 +27,7 @@ clarification does not expand the current MVP, tool permissions or safety policy
 | First optimization  | Agreed                           | EC2 **off-hours stopping schedules only**; no downsizing                                                                                                                          |
 | Safety evaluation   | Agreed                           | Mandatory targeted attempt to disprove each proposed schedule                                                                                                                     |
 | Uncertainty         | Agreed                           | Query additional relevant sources within bounds; then defer; no interactive CLI clarification required                                                                            |
-| Presentation        | Agreed                           | Detailed human-readable CLI investigation report and structured machine-readable output                                                                                           |
+| Presentation        | Agreed                           | Detailed CLI/JSON reports and a local guided demo UI with investigation, learning, follow-through and validated report loading                                                                                           |
 | Memory              | Agreed                           | Timestamped investigation summaries guiding fresh queries, not live telemetry                                                                                                     |
 | Failure             | Agreed                           | Status-specific bounded degradation and explicit uncertainty                                                                                                                      |
 | Source architecture | Agreed                           | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory         |
@@ -36,7 +36,16 @@ clarification does not expand the current MVP, tool permissions or safety policy
 | Candidate ranking   | Implemented policy                         | Descending positive matching compute spend, ties by instance ID; explain incomplete coverage                                                                       |
 | Report shape        | Runtime-validated contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                                       |
 
-Out of scope: original cost-increase explanation command; mandatory baseline or snapshot comparison; EC2 downsizing; multi-cloud; Kubernetes; automated remediation; enterprise onboarding/auth; forecasting; dashboards; complex multi-agent frameworks; extra Meterless engines. A readable CLI is sufficient for the surface; demo/slides remain required.
+Out of scope: original cost-increase explanation command; mandatory baseline or snapshot comparison; EC2 downsizing; multi-cloud; Kubernetes; automated remediation; enterprise onboarding/auth; forecasting; full dashboards; complex multi-agent frameworks; extra Meterless engines. A readable CLI is sufficient for the surface; demo/slides remain required.
+
+The team-approved local demo UI (Oct 24) runs the existing investigation,
+learning and follow-through workflows, with offline investigation/learning by
+default and explicit real-service controls. It supports A/B and failure scenarios,
+read-only AWS scope selection, configured-model calls, H-MEM cold/warm/changed
+proof and separately acknowledged synthetic Zetaris history writes. It also loads
+single generated reports. This does not add a new planner or permit AWS mutation.
+[How](HOW.md#open-the-web-demo) owns usage and
+[components](components.md#local-report-viewer) owns its boundaries.
 
 ## 3. User flows and expected dispositions
 

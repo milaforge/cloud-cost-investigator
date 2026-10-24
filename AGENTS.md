@@ -61,6 +61,13 @@ Keep the root `README.md` at most 10 lines and begin with mandatory hackathon pa
 
 ## Submission quality bar
 
+Keep the demo UI verdict-first, lean and concise: show the shutdown disposition,
+then the evidence-driven steps with honestly labeled timestamps. Put complementary
+detail behind accessible info controls or disclosures. Use green/red/amber with
+text labels; never hide conditional approval or turn missing evidence into safety.
+Start with no scenario or report selected. Loading a preview or prior completed
+result requires an explicit user choice; changing scenarios clears stale output.
+
 Implementation and documentation must make the real user, useful decision, role authority, shared state, evidence-driven revision and failure behavior easy to verify. Show exact runnable commands, captured output/trace, explicit integration modes, sponsor contributions and reused components. Keep architecture in `docs/components.md`, trace interpretation in `docs/CLI_GUIDE.md`, and the demo/deck narrative in `docs/DEMO.md`; record unfinished quality-bar gates only in `docs/EXECUTION_PLAN.md`.
 
 Do not copy the example's six-agent architecture, Meterless model routing, automatic sample fallback or invented confidence/retry metadata. Preserve this project's bounded loop, direct current-evidence tools, historical-store separation and explicit mock opt-in. A scripted fixture proves policy behavior; genuine model collaboration and sponsor calls require separately labeled execution evidence. Slides and a storyboard do not prove a recorded video or a finished submission.

@@ -1,5 +1,60 @@
 # Project Memory
 
+## Verdict-first demo presentation (2026-10-24)
+
+- Start unselected so users can see which evidence/verdict/steps their scenario
+  choice loads. Clear stale reports when changing scenario/source. Prior completed
+  jobs remain explicitly viewable; active-job recovery still avoids resubmission.
+
+- User requested visual restructuring only: the shutdown disposition takes
+  priority, followed by a concise evidence timeline. Keep existing workflows,
+  data contracts and service acknowledgments. Green means conditional review,
+  red rejects the proposed window, and amber defers; color never replaces text.
+- Use native Web Animations with reduced-motion support rather than introduce
+  a framework or dependency for a small presentation change. Supporting details
+  use hover/focus/tap info controls and disclosures; evidence remains inspectable.
+- Reports have run start/finish and evidence collection times, but no individual
+  reasoning-step timestamps. Label collection times as such and show reasoning
+  steps as time-unrecorded; animation timing must never masquerade as execution.
+
+## Runnable browser demonstrations (2026-10-24)
+
+- User judged a report-only viewer insufficient and approved offline demos by
+  default with explicit real-service controls. This supersedes the earlier
+  viewer-only/no-rerun/no-env-loading decision below. Run existing investigation,
+  H-MEM learning and real Zetaris follow-through through browser controls; keep
+  report import and progressive evidence detail. CLI defaults remain unchanged.
+- Use one isolated worker rather than global fetch/environment interception or
+  a second workflow implementation. Reuse the existing demo functions with
+  optional safe progress callbacks. Serial execution protects the single-writer
+  history contract; fixed deadlines and worker termination contain slow tasks.
+- Offline learning uses real temporary H-MEM. Do not invent an offline Zetaris
+  persistence claim: the follow-through demonstration needs explicit service and
+  append acknowledgment plus existing server configuration, and retains fictional
+  decisions under a synthetic account. Imported reports never authorize writes.
+- Poll current job state; never replay POST requests after uncertain responses.
+  Preserve failures and explain ambiguous remote writes on stop. Keep secrets and
+  endpoints server-side; configuration presence is not connectivity proof.
+
+## Local report viewer (2026-10-24)
+
+- User requested `demo:web` with A/B scenarios and loading any single generated
+  investigation report. This explicitly permits a small local presentation
+  surface; full dashboards and new investigation workflows remain out of scope.
+- Reuse the existing engine and report validator; static native browser UI plus
+  Node HTTP needs no framework or production dependency. Demo generation is
+  explicitly synthetic/scripted with history disabled, independent of `.env`.
+  This does not change the normal CLI's live-AWS default.
+- Uploaded files are untrusted. Validate bounded JSON server-side and render
+  text safely. Bind loopback, require exact Host/same-origin JSON, serve only
+  allowlisted assets, avoid persistence and expose no rerun/write endpoint.
+  Consistency validation does not authenticate uploaded evidence.
+- Keep verdict, next action and critical unknowns visible; reveal hypotheses,
+  citations, trace and historical context progressively. Show real UTC windows
+  and overlaps, not invented CPU time series or confidence. A/B switching reuses
+  this process's generated reports; refreshing discards the loaded file.
+
+
 ## Adopted submission quality bar (2026-10-24)
 
 - User adopted `the_bar.md` for implementation and especially documentation. Its useful standard is reproducible behavior, visible critique and revision, useful decisions, concrete sponsor roles and honest limitations. It is illustrative guidance, subordinate to verified event rules and approved project safety constraints.

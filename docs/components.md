@@ -31,6 +31,42 @@ flowchart TD
 
 The runner owns shared state; roles do not exchange unrestricted messages. A later planner turn sees validated observations and attempt history, so its next check depends on what happened. This supports critique, shared state, branching and evaluator authority within one loop. It does not claim several autonomous model agents. Trace capture and a real scripted B excerpt are in the [CLI walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace); bounds and failure policy are below and in the [CLI failure reference](CLI_GUIDE.md#failure-behavior).
 
+## Local report viewer
+
+`scripts/demo-web.ts` owns the dependency-free local HTTP surface and initial
+synthetic A/B previews. `src/web/` presents the report and runs three guided
+workflows. Setup and interactions live in [How](HOW.md#open-the-web-demo).
+
+`scripts/demo-web-jobs.ts` validates the allowlisted action, mode, scope and
+explicit service/write choices; it permits one isolated child worker at a time.
+`scripts/demo-web-worker.ts` calls the existing investigator, H-MEM demonstration
+or Zetaris follow-through functions directly. It never executes arbitrary shell
+commands, accepts provider URLs/credentials from the browser, or exposes SQL.
+Existing CLI entry points remain intact; their optional progress callbacks feed
+bounded browser events. Offline investigations and learning never enable remote
+history or models. Follow-through requires both server append configuration and
+an explicit browser acknowledgment and uses a unique synthetic account.
+
+Worker deadlines are 2 minutes for offline investigation/learning, 20 minutes
+when using a model, and 3 minutes for follow-through. Existing tool/model bounds
+still apply. Stop/server shutdown terminates the worker; an IPC disconnect also
+terminates an orphaned worker. Parent-owned temporary directories are cleaned on
+worker exit, including cancellation. A cancelled or failed write can leave remote
+records; no automatic retry is attempted. Latest job state and at most 160 bounded
+progress events stay in server memory. Reconnecting polls that state without
+starting another run; duplicate submissions of the current request ID reuse its
+job only when their payload matches. Additional concurrent runs are rejected.
+
+The upload boundary reuses `validateReport`; the browser renders text nodes,
+never report-authored HTML. Only fixed assets and allowlisted API routes are
+served. Exact Host/origin checks, loopback binding, restrictive content policy,
+no-store responses, 2 MiB report uploads, 4 KiB action requests and bounded HTTP
+requests protect the local boundary. Configuration status exposes booleans,
+never credential or endpoint values. Uploaded reports are returned only to their
+requesting page; they are not persisted or used to authorize actions. Validation
+proves internal consistency, not external authenticity. AWS remains read-only;
+the only remote writes are the explicit synthetic follow-through demonstration.
+
 ## Sponsor technology explanation
 
 | Technology | Integration and contribution | Recorded proof |

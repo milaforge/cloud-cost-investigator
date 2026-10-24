@@ -30,6 +30,7 @@ const operationalChecks = (report: InvestigationReport) =>
 /** Real disk-backed H-MEM, isolated from configured Zetaris and existing memory. */
 export async function demonstrateWarmLearning(
   plannerMode: 'scripted' | 'model',
+  log: (message: string) => void = console.error,
 ) {
   const directory = await mkdtemp(join(tmpdir(), 'cci-learned-check-'));
   const request: InvestigationRequest = {
@@ -46,7 +47,7 @@ export async function demonstrateWarmLearning(
   const stored: (HistoricalReasoningContext | null)[] = [];
   try {
     for (const phase of ['cold', 'warm', 'changed'] as const) {
-      console.error(
+      log(
         `[warm-demo] ${phase}: ${phase === 'changed' ? 'fresh operational clearance replaces the old conflict' : 'fresh continuous-operation dependency conflict'}`,
       );
       const report = validateReport(
@@ -60,15 +61,13 @@ export async function demonstrateWarmLearning(
           limits: { planner_interval_ms: plannerMode === 'model' ? 5000 : 0 },
           onProgress(event) {
             if (event.event === 'planner_start')
-              console.error(
+              log(
                 `[warm-demo] ${phase}: planner call ${event.call} (timeout ${event.timeout_ms}ms)`,
               );
             if (event.event === 'trace' && event.failure_code)
-              console.error(`[warm-demo] ${phase}: ${event.failure_code}`);
+              log(`[warm-demo] ${phase}: ${event.failure_code}`);
             if (event.event === 'trace' && event.phase === 'tool')
-              console.error(
-                `[warm-demo] ${phase}: ${event.tool} ${event.status}`,
-              );
+              log(`[warm-demo] ${phase}: ${event.tool} ${event.status}`);
           },
         }),
       );
@@ -79,7 +78,7 @@ export async function demonstrateWarmLearning(
         .retrieve('i-mock-primary')
         .find((r) => r.summary.investigation_id === report.investigation_id);
       stored.push(record ?? null);
-      console.error(
+      log(
         `[warm-demo] ${phase}: ${report.completion_status}, ${report.candidates[0]?.verdict ?? 'no verdict'}, ${report.budget.planner_calls} planner calls, ${report.budget.elapsed_ms}ms`,
       );
       // A failed phase cannot teach a verified lesson. Keep its report and stop honestly.

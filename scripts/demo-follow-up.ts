@@ -14,11 +14,16 @@ import { ScriptedPlanner } from '../src/investigation/planner.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
 
 /** Explicit remote append proof, using fictional decisions and mock evidence. */
-export async function demonstrateFollowUps() {
+export async function demonstrateFollowUps(
+  log: (message: string) => void = console.error,
+) {
   const scope = {
     account_id: `followup-demo-${randomUUID()}`,
     region: 'us-east-1',
   };
+  log(
+    `Synthetic follow-up account: ${scope.account_id}; region: ${scope.region}. Retained writes may require inspection if interrupted.`,
+  );
   const request = {
     ...scope,
     max_candidates: 1,
@@ -31,7 +36,7 @@ export async function demonstrateFollowUps() {
     provider: new MockProvider('A'),
     planner: new ScriptedPlanner(),
   });
-  console.error(
+  log(
     '[followup-demo] two identical current-evidence scenarios, different historical decisions',
   );
   const deferredReport = await runInvestigation(request, options());
@@ -52,7 +57,7 @@ export async function demonstrateFollowUps() {
   });
   while (Date.now() < Date.parse(reviewAt))
     await setTimeout(Math.max(1, Date.parse(reviewAt) - Date.now()));
-  console.error(
+  log(
     '[followup-demo] retrieve persisted decisions; deferred is due, accepted awaits outcome',
   );
   const before = await listFollowUps(scope, 'i-mock-primary');
@@ -60,7 +65,7 @@ export async function demonstrateFollowUps() {
     scope,
     deferred.decision.record.record_id,
   );
-  console.error(
+  log(
     '[followup-demo] deferred review: fresh dependency conflict overturns original recommendation',
   );
   const fresh = await runInvestigation(
@@ -72,7 +77,7 @@ export async function demonstrateFollowUps() {
     deferred.decision.record.record_id,
     fresh,
   );
-  console.error(
+  log(
     '[followup-demo] accepted path: append synthetic operator-reported rollback receipt',
   );
   const outcome = await recordOutcome(

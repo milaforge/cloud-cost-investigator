@@ -99,6 +99,139 @@ Apply [`the_bar.md`](../the_bar.md) as illustrative quality guidance without cha
 - **Executed checks:** `npm test` **215/215 passed**; `npm run typecheck`, `npm run typecheck:aws`, `npm run lint` passed. Documentation hierarchy/link check passed, including the 10-line root, only Why/How root links, reachable project docs, unchanged recorded rules JSON and preserved historical receipts. `git diff --check` passed.
 - **Mode/limits:** synthetic evidence, scripted planner, historical stores disabled; no AWS/model/Zetaris access. No claim of an independent clean checkout, finished slides/video, Cursor activity, new sponsor integration proof or completed release. Follow the existing live-evidence/model/permission and final-asset gates above.
 
+## Initial local A/B report viewer — 2026-10-24
+
+The execution-only restrictions in this receipt are superseded by the guided browser demo below; the original verification evidence is retained.
+
+- **Gate/owner:** release presentation surface, Milad; no advancement of the
+  populated-live-evidence or final submission gates. User approved A/B scenario
+  selection and loading generated single investigation reports.
+- **Implemented:** `npm run demo:web` generates fresh synthetic A/B reports,
+  starts a loopback server on an available port and opens a browser. The minimal
+  viewer presents verdicts, scheduling conflicts, qualified savings, human
+  actions and critical unknowns, with progressive evidence/trace/history detail.
+  Report upload/drop reuses the full runtime validator and retains the current
+  display after invalid input. No new production dependencies.
+- **Executed:** `npm test` passed **216/216** after the HTTP test was added;
+  final `node --import tsx --test tests/demo-web.test.ts` passed **2/2** after
+  adding browser-launch success/missing-opener coverage. `npm run typecheck`,
+  `npm run lint`, `node --check src/web/app.js` and `git diff --check` passed.
+  Loopback tests require execution outside this environment's network sandbox;
+  the initial sandbox startup failed with `EPERM`, not a product failure.
+- **Browser proof:** `node --import tsx /tmp/cci-web-browser.mjs` passed using
+  available external Playwright tooling and system headless Chromium. Verified
+  A/B switching, disclosures, evidence dialogs, keyboard Enter/Escape, valid,
+  malformed, oversized, partial, failed, empty, C and mixed-candidate uploads,
+  drag-and-drop, retained loaded tab, safe text rendering, 390px mobile overflow
+  and no page errors. Desktop/mobile screenshots were visually inspected.
+  The failed-report harness initially omitted its planner's required model
+  metadata; corrected the fixture and reran successfully without changing the
+  production engine. Actual `npm run demo:web` started and its default browser
+  opener exited successfully; URL fallback also has focused test coverage.
+- **Security/mode:** all demo evidence is mock, planner scripted, histories
+  disabled; no `.env` loading, AWS/model/Zetaris access or history persistence.
+  Host/origin rejection, non-allowlisted paths, invalid citations, forged
+  savings, oversized payloads and no-store/CSP headers were verified. Imported
+  reports remain untrusted evidence claims even after consistency validation.
+- **Limits/next action:** Chromium desktop/mobile emulation is not physical
+  device, Firefox/Safari or Windows verification. The browser harness/screenshots
+  are temporary verification artifacts; API/launcher tests are retained in the
+  repository. Use the viewer for the existing demo/deck gate; final recorded
+  assets, populated live evidence and independent clean-checkout proof remain
+  outstanding. Setup lives in [How](HOW.md#open-the-web-demo).
+
+## Guided browser demo — 2026-10-24
+
+- **Gate/owner:** release presentation and reproducibility, Milad. User approved
+  offline demo defaults with explicit real-service controls after judging the
+  report-only surface insufficient. Existing live-evidence gates remain open.
+- **Implemented:** browser-started A/B/C/missing/multi-candidate investigations,
+  configurable explicit live model/read-only AWS options, real local H-MEM
+  cold/warm/changed learning, and explicitly acknowledged real Zetaris synthetic
+  follow-through. Report import/export, current evidence inspection, partial
+  outcomes and progressive trace/history details are retained. One worker runs
+  at a time with deadlines, stop, bounded progress and refresh/reconnect recovery
+  that never replays writes. No new dependency or replacement investigation loop.
+- **Executed proof:** `npm test` passed **222/222**. Final focused
+  `node --import tsx --test --test-isolation=none tests/demo-web*.test.ts` passed
+  **7/7**, covering opt-ins, single-worker exclusion, request-ID reuse/conflict,
+  cancellation, actual offline investigations and H-MEM learning, local fixture
+  Zetaris append/readback (seven records), model HTTP failure without fallback,
+  HTTP boundaries, uploads and browser launching. Typecheck, lint, JS syntax,
+  documentation links/anchors and diff whitespace checks passed.
+- **Browser proof:** `node --import tsx /tmp/cci-workflow-browser.mjs` passed with
+  installed external Playwright tooling and system Chromium. Clicked through
+  investigation, actual cold/warm/changed H-MEM, report inspection/download,
+  partial outcome, explicit model/write opt-ins, follow-through via a local HTTP
+  ledger fixture, seven retained fixture records, refresh without duplicate
+  append, cancellation and 390px mobile layout. Learning desktop and follow-through
+  mobile screenshots were visually inspected. The first harness assertion read
+  a collapsed event panel; expanding it fixed the harness, not product behavior.
+- **Mode/limits:** no real remote model, AWS or Zetaris call was made by this
+  verification. H-MEM used real isolated local persistence; Zetaris used its real
+  adapter against an HTTP fixture; model failure used an HTTP fixture. This
+  proves browser integration, not new live sponsor/evidence coverage. Browser
+  simulation is not physical-device or cross-browser proof. Configuration
+  presence is deliberately labeled unverified. Interrupted remote writes can
+  remain and must be inspected before retry; no infrastructure is changed.
+- **Next action:** use [How](HOW.md#open-the-web-demo) to run the presentation,
+  explicitly opt into configured services when recording the real-service demo,
+  and continue the existing populated-evidence, permissions and release gates.
+  The local UI now loads `.env` for optional server configuration; it does not
+  contact any service until the relevant explicit browser action.
+
 ## Coordination
 
 Zayan owns data-source truth; Milad owns verdict/report truth. Agree on shared contracts before concurrent changes and preserve unrelated work. Record new executable evidence here with command, outcome, mode, owner, blocker and next action. Keep rationale in `memory.md`; historical receipts are retained, not a second active tracker.
+
+## Verdict-first visual restructuring — 2026-10-24
+
+- **Gate/owner:** release presentation, Milad. Visual-only pass on `src/web/`:
+  prominent green/red/amber verdict, concise candidate-specific timeline,
+  evidence collection times and run boundaries, accessible info controls,
+  progressive detail and native motion with reduced-motion support. Preserved
+  engine behavior, report contracts, service opt-ins and existing worktree work.
+- **Executed:** `node --import tsx --test --test-isolation=none tests/demo-web*.test.ts`
+  **7/7 passed**; `npm run typecheck`, `npm run lint`, `node --check src/web/app.js`
+  and `git diff --check` passed. Temporary `node --import tsx
+  /tmp/cci-ui-render-check.mjs` passed DOM-level A/B/C/missing/multi-candidate
+  rendering, conditional approval, timestamp provenance, proposal-before-rejection,
+  evidence-dialog wiring, tooltip focus/blur/Escape, candidate focus retention
+  and reduced-motion checks. HTML IDs and JS element bindings also checked.
+- **Mode/limits:** synthetic/scripted reports; focused existing tests additionally
+  use isolated H-MEM and local HTTP fixtures. No new live-service verification.
+  The browser connector returned no available browsers, so this pass has **no
+  browser-rendered screenshot, mobile-layout or visual verification**. Prior
+  browser receipts describe the previous layout only. No extra dependencies.
+- **Next action/blocker:** visually review desktop/mobile rendering and hover/tap
+  behavior when a browser is available; final video/deck and live-evidence gates
+  remain open. No individual reasoning timestamps were invented.
+
+## Explicit demo selection — 2026-10-24
+
+- **Gate/owner:** demo presentation, Milad. Startup has no selected scenario/report;
+  scenario/source changes clear stale output, empty mock runs prompt for selection,
+  and prior completed jobs require **View last result**. Active-job recovery and
+  independent learning/follow-through/live-AWS controls retain their behavior.
+- **Proof:** `node --import tsx /tmp/cci-ui-selection-check.mjs` passed DOM checks
+  for startup, empty-run guard, explicit preview, stale-report clearing and manual
+  prior-result display, plus the earlier rendering checks. Typecheck, lint, JS
+  syntax and diff whitespace checks passed. Synthetic DOM simulation only;
+  browser visual review remains unavailable, with no new live-service proof.
+
+## Scenario validation toast — 2026-10-24
+
+- **Gate/owner:** demo presentation, Milad. Missing-scenario feedback now appears
+  in a fixed, dismissible, politely announced toast. It clears on selection,
+  preview/import or workflow changes and retains focus guidance to the selector.
+- **Proof/mode:** `node --import tsx /tmp/cci-ui-toast-check.mjs` passed notification
+  display/dismissal/selection cleanup and existing DOM checks; lint, format, JS
+  syntax and diff whitespace checks passed. DOM simulation only; visual browser
+  verification remains pending. No backend or dependency changes.
+
+- **Toast countdown follow-up:** auto-dismiss after 10 seconds with a horizontal
+  remaining-time bar; repeat notifications restart both, manual dismissal clears
+  both, and reduced motion uses one-second steps. `node
+  /tmp/cci-toast-countdown-check.mjs` passed simulated-clock expiry, restart,
+  cleanup and focus checks; existing DOM checks, lint, formatting, JS syntax and
+  diff checks passed. Browser visual verification remains pending.
