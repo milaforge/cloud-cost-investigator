@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadProjectEnv } from '../src/config.ts';
 import type {
@@ -29,7 +31,7 @@ const operationalChecks = (report: InvestigationReport) =>
 export async function demonstrateWarmLearning(
   plannerMode: 'scripted' | 'model',
 ) {
-  const directory = await mkdtemp('/tmp/cci-learned-check-');
+  const directory = await mkdtemp(join(tmpdir(), 'cci-learned-check-'));
   const request: InvestigationRequest = {
     account_id: `lesson-demo-${randomUUID()}`,
     region: 'us-east-1',

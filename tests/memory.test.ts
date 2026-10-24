@@ -8,6 +8,7 @@ import {
   mkdir,
 } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import test, { type TestContext } from 'node:test';
 import {
   HmemReasoningMemory,
@@ -38,7 +39,9 @@ const summary: ReasoningSummary = {
   },
 };
 async function temporary(t: TestContext): Promise<string> {
-  const dir = await mkdtemp('/tmp/cloud-cost-investigator-hmem-test-');
+  const dir = await mkdtemp(
+    join(tmpdir(), 'cloud-cost-investigator-hmem-test-'),
+  );
   t.after(() => rm(dir, { recursive: true, force: true }));
   return dir;
 }

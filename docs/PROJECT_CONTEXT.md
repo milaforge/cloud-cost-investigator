@@ -5,7 +5,7 @@
 **Decision date:** 2026-10-23 (MVP discovery rounds 1–4 and corrected sponsor architecture approved).  
 **Hackathon:** Open Agent Hackathon 2026; **Track 02 — The Agent That Can Explain Why**.  
 **Deadline:** 2026-10-27 23:45 UTC per event planning notes; confirm in submission portal.  
-**Team:** Milad — orchestration, model, Meterless, CLI/report; Zayan — direct data tools, Zetaris, data correctness; both — contracts, safety evaluation.  
+**Team:** Milad — orchestration, model, Meterless, Zetaris history load/save, CLI/report; Zayan — direct AWS data tools and data correctness; both — contracts, safety evaluation.
 **Target:** AWS EC2 only. **Status:** Product decisions approved; first contradiction-first CLI slice has executable proof in `EXECUTION_PLAN.md`. Current evidence remains mock; sponsor and release gates are separate.
 
 ## 1. Product and user decision
@@ -34,7 +34,7 @@ clarification does not expand the current MVP, tool permissions or safety policy
 | Failure             | Agreed                           | Status-specific bounded degradation and explicit uncertainty                                                                                                                      |
 | Source architecture | Agreed                           | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory         |
 | Historical writes   | Approved in principle            | **Narrowly scoped investigation-history append** through Zetaris with separate authorization/allowlisted API; no arbitrary SQL or AWS writes. Technical support/access unverified |
-| Observation period  | Proposed default                 | 28 UTC days, configurable; valid granularities and billing coverage must be checked against actual APIs                                                                           |
+| Observation period  | Agreed AWS MVP                   | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. The mock CLI retains its separate 28-day default until live-provider wiring.             |
 | Candidate ranking   | Proposed                         | Measured compute-cost relevance + off-hours utilization patterns; explain selection and incomplete coverage                                                                       |
 | Report shape        | Proposed implementation contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                                       |
 
@@ -257,3 +257,14 @@ Detailed failures, latency/calls and limitations remain in the execution plan.
 Meterless reference: [Meterless repository](https://github.com/Meterless/Meterless), specifically `llms.txt`, `README.md`, `AGENTS.md`, `engines/hmem/README.md`, `engines/hmem/AGENTS.md`. These describe H-MEM's provenance-aware memory and a runnable reference, not a production hosted memory service. Zetaris reference: [documentation](https://zetaris.github.io/). Verify supported read and narrowly scoped append semantics in the deployed environment before choosing an SDK/query shape; examples in documentation are not proof of account access.
 
 Event source: [`RULES.md`](./RULES.md). Recorded judging weights: Impact 30, Technical 20, Innovation 15, Demo 15, Product & UX 10, Sponsor Tech 10; total 100. These are locally recorded notes, not independently verified portal requirements.
+
+### AWS CLI adapter integration (2026-10-24)
+
+`--evidence aws` selects Zayan’s direct `aws-agent.ts` provider through the
+existing bounded executor and report/history flow; mock remains the default.
+AWS mode accepts an actual 12-digit account ID, no synthetic scenario, and
+1–14 complete UTC days (default 14). STS verifies account scope. Read-only SDK
+clients own current inventory, attributable billing and CPU collection; Cost
+Explorer queries require explicit opt-in. Operational/dependency sources remain
+unconfigured and cannot clear scheduling safety. There is no synthetic fallback.
+Offline transport tests prove integration behavior, not populated live AWS access.

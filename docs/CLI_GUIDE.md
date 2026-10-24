@@ -79,7 +79,7 @@ See the [full methodology and retained results](#learn-a-check-finish-earlier-th
 
 ## Run
 
-Requires Node.js **24+** and npm. The repository already uses `package-lock.json`; no production dependencies were added. The H-MEM reference is checked into `vendor/hmem`; investigation runs do not require downloading or setting up H-MEM.
+Requires Node.js **24+** and npm. The repository uses `package-lock.json`; AWS SDK clients are installed from that lockfile. The H-MEM reference is checked into `vendor/hmem`; investigation runs do not require downloading or setting up H-MEM.
 
 ```bash
 npm ci
@@ -91,11 +91,12 @@ npm run investigate -- --account demo --region us-east-1 --scenario mixed --max-
 The first command shows the detailed report and trace. The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. Scenario A supplies explicit owner/calendar/recovery clearance and compute pricing for a conditional recommendation; C supplies a continuous-operation dependency. `mixed` investigates A/B/C in ranked order from four synthetic instances. Supported flags:
 
 ```text
---account ID          required, labeled scope for the synthetic provider
+--account ID          required; AWS mode requires the actual 12-digit account
 --region REGION       required
---lookback-days N     1–90; default 28 UTC days ending at invocation
+--lookback-days N     mock: 1–90, default 28; aws: 1–14, default 14 complete UTC days
 --max-candidates N    1–3 ranked candidates; default 1
---scenario A|B|C|mixed|clear|missing
+--evidence mock|aws   default mock; aws uses read-only SDK calls
+--scenario A|B|C|mixed|clear|missing   mock evidence only
 --planner scripted|model|nvidia
 --json
 ```
@@ -105,6 +106,9 @@ For machine-readable stdout without npm's script banner:
 ```bash
 node --import tsx cli.ts investigate --account demo --region us-east-1 --json
 ```
+
+For read-only AWS setup, billing opt-in and source limitations, see the
+[AWS tools guide](AWS_TOOLS.md#investigation-cli).
 
 Exit codes: **0** completed scoped recommendations/rejections/no eligible candidates; **2** partial; **1** failed investigation, invalid invocation, or planner configuration. `complete` concerns the investigated window; it does not mean the project or sponsor gates are finished.
 
@@ -129,7 +133,7 @@ raise the limit within the supported 4096-token cap if needed.
 
 With no `LLM_*` settings, `--planner model` falls back to `NVIDIA_API_KEY` and optional `NVIDIA_MODEL`. The legacy `--planner nvidia` selects that NVIDIA preset explicitly. Model IDs are configurable; the team confirmed `nvidia/nemotron-3-ultra-550b-a55b` for this event on Oct 24. Runtime access is a separate gate. The default `scripted` planner runs offline.
 
-All model paths preserve bounded requests, validated actions, trusted argument binding and deterministic verdicts. Redirects are refused. Failures return incomplete results without scripted fallback. Current evidence remains mock regardless of the selected model. See [the execution plan](EXECUTION_PLAN.md) for actual integration proof.
+All model paths preserve bounded requests, validated actions, trusted argument binding and deterministic verdicts. Redirects are refused. Failures return incomplete results without scripted fallback. Evidence selection is independent: mock by default, read-only AWS with `--evidence aws`. See [the execution plan](EXECUTION_PLAN.md) for actual integration proof.
 
 ## Safety and ownership
 

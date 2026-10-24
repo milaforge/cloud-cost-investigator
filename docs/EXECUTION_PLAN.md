@@ -642,6 +642,24 @@ unclosed gates. These fixture proofs do not advance the release milestone.
 
 ### Verification and blocker log
 
+### AWS Task 1 finalization — 2026-10-24
+
+- **Gate/owner:** Day 2 direct-evidence handoff, Zayan. User relayed Milad's approval of a 14-day AWS observation window and direct push to `main`; this supersedes the earlier no-commit/push handoff state below.
+- **Reconciliation:** saved a local safety stash and an ignored `.cache/` snapshot, then `git pull --ff-only origin main` advanced to `01e40a5`. Reapplied only AWS changes relative to the earlier reviewed upstream; resolved README, package-script and decision-note overlaps while retaining Milad's newer work. Shared `src/contracts.ts` and its verdicts remain unchanged from this latest upstream.
+- **Implementation:** all five agent interfaces return validated `Observation` values. SDK default credentials, scoped read-only discovery/metrics and opt-in attributable billing are implemented; operations/dependencies explicitly remain unavailable. Collector defaults to the last 14 complete UTC days. No AWS or other live service was called in this finalization.
+- **Executed offline proof:** `node --import tsx --test --test-isolation=none tests/*.test.ts`: **185/185 passed**, including **40 AWS tests** and the latest agent/history scenarios. Both `tsc -p tsconfig.investigation.json --noEmit` and `tsc -p tsconfig.aws.json` passed. `biome lint .` passed; scoped Biome format for AWS files, package/config and changed memory tests/demo passed. Commands used the installed Node 24 runtime. Replaced Linux-only temporary paths with `os.tmpdir()` in three memory tests and the warm demo so the full suite runs on Windows.
+- **Review:** lockfile root metadata matches package configuration; conflict-marker/credential-pattern scan and `git diff --check` pass. Cache/safety snapshots and local environment files are excluded. Full `biome format .` remains nonzero due to checkout CRLF differences and pre-existing formatting in README, this execution plan, `docs/ZETARIS_HISTORY.md` and `docs/warm-learning-user-model.json` (confirmed against pristine upstream blobs); no broad formatting rewrite is included.
+- **Remaining/next action:** authorized commit/push after staged review. Milad still needs to select the live provider and pass an aligned 14-day period in the currently mock-only CLI. Populated live metrics/billing and authoritative operations/dependency sources remain unverified/unconfigured; only authenticated empty discovery has live proof. Zetaris persistence remains Milad's responsibility. Separate opt-in live model integration tests were not run.
+
+### AWS handoff reconciliation — 2026-10-23
+
+- **Ownership confirmed by user/Milad:** Zayan's AWS tools only fetch/return evidence; Milad owns Zetaris history load/save and H-MEM integration. This supersedes older Zetaris assignments to Zayan below.
+- **Git:** fetched `origin/main` at `7771335`. Backed up the local AWS changes under ignored `.cache/`, then reconciled working files with that source. Preserved Milad's implementation and development dependencies, plus our SDK dependencies/scripts. HEAD remains `257f87e`; no commit, merge, push or index change. Upstream-only files appear untracked until branch synchronization is authorized. Do not blindly pull over this prepared working tree.
+- **Contract:** `src/contracts.ts` is byte-identical to fetched upstream. `src/tools/aws-agent.ts` exports all five names and returns runtime-validated `Observation` values. Detailed collector records remain separate; no verdict or shared-contract edits. Operations/dependencies explicitly return unavailable.
+- **Offline verification:** `node --import tsx --test --test-isolation=none tests/*.test.ts`: **111/111 passed**. `tsc -p tsconfig.investigation.json --noEmit` and `tsc -p tsconfig.aws.json`: passed. Full repository Biome lint: passed after AWS formatting/lint cleanup. Commands used the installed bundled Node 24 runtime. Fixed an upstream Linux-only `/tmp` test helper to use `os.tmpdir()` on Windows.
+- **User-executed live proof (earlier this chat):** `npm run demo:aws -- --live` equivalent using bundled Node returned `no_match`, `instanceCount: 0`, `issueCodes: []` in `eu-north-1`. This establishes authenticated empty discovery, not populated metrics or billing. No AWS, model or Zetaris network probes were run during reconciliation.
+- **Remaining:** Milad selects the provider and supported observation window when enabling it in the CLI; current CLI is still mock-only and defaults to an unaligned 28-day period, while collector limits are 14 aligned days. Billing queries are opt-in; full metrics/cost data and operations/dependency integrations remain unverified/unconfigured. AWS tools perform no persistence. Existing upstream formatting findings in this document and `docs/ZETARIS_HISTORY.md` remain separate from AWS code validation.
+
 Append after actual execution. Include date, command, result, `mock`/`fixture`/`live`/`stub` integration mode, owner and next action; sanitize secrets, account details and provider payloads. The following row records only a documentation event, **not a test**.
 
 | Date       | Gate or integration       | Command / evidence                                                              | Mode         | Result or blocker                                               | Owner / next action                              |
@@ -787,7 +805,7 @@ Append after actual execution. Include date, command, result, `mock`/`fixture`/`
 | Area                                       | Driver                         | Deliverable                                                                                                                                                  |
 | ------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Direct evidence adapters and mock datasets | **Zayan**                      | Read-only TypeScript logical tools for inventory, billing, utilization, operations/jobs and dependencies, shared typed observations with stable evidence IDs |
-| Zetaris history                            | **Zayan** (Milad integrates)   | Dedicated append-only structured history schema, authorized write boundary, allowlisted read and append, actual read-after-write proof                       |
+| Zetaris history                            | **Milad**                     | Dedicated append-only structured history schema, authorized write boundary, allowlisted read and append, actual read-after-write proof                       |
 | Planner/evaluator, approved model, H-MEM   | **Milad**                      | Bounded evidence-dependent loop, real reasoning memory round-trip, validated report, decision trace                                                          |
 | Shared data/report contract and tests      | **Both**                       | Runtime validation, scope/UTC/units/coverage, integration mode labeling, A/B/C/D fixtures, missing-source case                                               |
 | CLI, README, evaluation and submission     | **Milad** (Zayan reviews data) | Detailed readable report/JSON, repeatable commands, measured evaluation, slides and demo                                                                     |
@@ -923,3 +941,40 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
 **Priority:** Direct-tool correctness + bounded reasoning/rejection -> actual sponsor read/append and memory round-trips -> A/C/D and failure evaluation -> detailed readable report -> polish. Cut multi-cloud, Kubernetes, changing infrastructure, EC2 downsizing, elaborate viewers, enterprise auth, forecasting and extra roles, never provenance, sponsor integration or safety tests.
 
 **Parallel work protocol:** Both agree on schemas and representative tool responses before divergent implementation. Zayan owns data-source truth; Milad owns verdict/report truth. Preserve concurrent changes. When a provider is blocked, record sanitized request/error metadata and use a separately labeled mock for development; a stub is not a live integration. Keep rationale in `memory.md` and **all progress** in this execution plan; do not infer completion from documentation.
+
+### AWS merge and CLI integration verification (2026-10-24)
+
+- **Active slice/owner:** Days 3–4 direct-evidence integration; Milad integrates
+  Zayan’s `bf3f825` into the existing branch. Preserved five local commits and
+  untracked `TODO_METERLESS`; resolved the README conflict by retaining current
+  product/navigation text and adding the AWS entry point.
+- **Implemented:** `--evidence aws` selects the existing validated provider;
+  `--evidence mock` remains default. AWS requests require a 12-digit account,
+  reject synthetic scenario flags and unsupported lookbacks, and use 1–14
+  complete UTC days. The existing executor, evaluator, reports and history
+  coordinator remain shared. AWS tools get 25 seconds around the collector’s
+  20-second deadline. Region mismatch and malformed inventory/billing grouping
+  fields now fail closed in the collector. No added dependencies beyond Zayan’s
+  incoming locked AWS SDK clients; no infrastructure writes.
+- **Executed proof:** `npm test`: **204/204 passed**; `npm run typecheck`,
+  `npm run typecheck:aws`, `npm run lint`: passed. Scoped Biome format check for
+  `cli.ts`, `src/tools/aws.ts`, `tests/aws-cli.test.ts` and
+  `tests/aws-collector.test.ts`: passed. CLI integration tests exercise parsing,
+  empty inventory, denied access, billing opt-out and populated low-utilization
+  data with unavailable operations/dependencies through an injected transport.
+  Tests validate final report modes, safety deferral, null savings and sanitized
+  errors; collector regressions cover configured-region isolation and malformed
+  provider fields. Integration mode: **offline mocked AWS transport**, not live
+  AWS proof. Existing history, memory, model and scenario tests remain passing.
+- **Environment:** initial sandboxed `npm ci` could not resolve the registry;
+  authorized network execution installed the lockfile successfully. Initial
+  verification during that failed install lacked compiler binaries; all checks
+  above ran after the successful install. One new test initially assumed empty
+  inventory would complete; corrected to the existing partial semantics when
+  billing currency is unknown, without fabricating a zero-cost result.
+- **Remaining/blocker/next action:** Zayan/team verifies populated live
+  CloudWatch and opted-in Cost Explorer against intended account permissions,
+  coverage and billing availability; supplies authoritative job/dependency
+  evidence before positive live recommendations. No live AWS/model/Zetaris
+  requests were made for this slice, and no live sponsor/release gate advanced.
+  Earlier mock-only CLI wiring blockers are superseded by this integration.

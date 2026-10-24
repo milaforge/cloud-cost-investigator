@@ -8,7 +8,8 @@ windows, and checks utilization, jobs and dependencies before returning a cited
 **conditional recommendation**, **rejection**, or **needs verification**.
 No previous investigation is required. No infrastructure is changed.
 
-**Today:** a working TypeScript / Node.js CLI with **synthetic operational evidence**.
+**Today:** a working TypeScript / Node.js CLI with synthetic evidence by default
+and opt-in [read-only AWS evidence tools](docs/AWS_TOOLS.md).
 **Long term:** a **cost optimization specialist agent**, starting with EC2 scheduling
 and expanding to other optimization decisions as evidence integrations and safety
 policies are proven. That broader scope is a goal, not a current capability.

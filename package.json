@@ -20,6 +20,9 @@
     "test:integration": "node --import tsx --test --test-isolation=none tests/integration/*.test.ts",
     "probe:zetaris:history": "node --import tsx scripts/probe-zetaris.ts --history",
     "probe:zetaris:roundtrip": "node --import tsx scripts/probe-zetaris-history-roundtrip.ts",
+    "test:aws": "node --import tsx --test --test-isolation=none tests/aws*.test.ts",
+    "typecheck:aws": "tsc -p tsconfig.aws.json",
+    "demo:aws": "tsx src/aws-demo.ts",
     "probe:warm": "node --import tsx scripts/probe-warm.ts",
     "demo:warm": "node --import tsx scripts/demo-warm.ts",
     "followup": "node --import tsx scripts/follow-up.ts",
@@ -35,5 +38,11 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.1156.0",
+    "@aws-sdk/client-cost-explorer": "^3.1156.0",
+    "@aws-sdk/client-ec2": "^3.1156.0",
+    "@aws-sdk/client-sts": "^3.1156.0"
   }
 }
