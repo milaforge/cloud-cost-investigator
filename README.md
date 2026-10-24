@@ -1,5 +1,7 @@
 # Cloud Cost Investigator
 
+[Components at a glance](docs/components.md) — what we use and why.
+
 Read-only EC2 off-hours scheduling investigation for **Track 02 — The Agent That Can Explain Why**. This implements the contradiction-first loop and broader A/C scenarios in [plan.md](plan.md). Current evidence is explicitly **synthetic mock data**. No AWS API is called and no infrastructure can be changed.
 
 An engineer supplies an account and region. The CLI discovers running instances, ranks matching compute spend, inspects utilization, proposes an observed UTC window, then challenges that exact window with operational evidence. In scenario B, a critical batch job rejects the proposal. No previous investigation is required. Up to three ranked candidates share one bounded investigation. Savings are deterministic when fully justified; otherwise they remain `null`.
