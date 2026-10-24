@@ -1,19 +1,18 @@
 # AWS evidence tools
 
-[Documentation index](README.md)
+[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
 
 Framework-independent, read-only EC2 tools for the agent. Shared `src/contracts.ts`
-is unchanged from upstream. `aws-agent.ts` returns its exact runtime-validated
+defines the application boundary. `aws-agent.ts` returns its exact runtime-validated
 `Observation` shape. `aws-evidence.ts` retains detailed collector records with
 scope, periods and provenance beneath that boundary. No verdicts or persistence
 are implemented in these tools; Milad owns Zetaris load/save and H-MEM integration.
 
 ## Run
 
-Use Node.js 24 or newer and the repository's npm lockfile:
+After the [project setup](HOW.md#run-the-demo), run collector-specific checks or fixtures:
 
 ```sh
-npm ci
 npm run typecheck:aws
 npm run test:aws
 npm run demo:aws -- A
@@ -128,8 +127,7 @@ The collector accepts at most 14 days, hour-aligned metrics (or five minutes
 when configured), and UTC-day-aligned billing. AWS CLI mode defaults to 14 complete
 UTC days ending at midnight today; `--lookback-days` accepts 1–14. Mock mode
 retains its 28-day default. Unsupported AWS CLI periods and mock scenario flags
-are rejected before retrieval. Historical/live metrics and cost retrieval remain
-unverified against populated AWS resources; empty discovery was user-validated.
+are rejected before retrieval. Current populated-resource verification is tracked in the [execution plan](EXECUTION_PLAN.md).
 
 ### Detailed collector access
 
@@ -223,8 +221,7 @@ include labeled operational evidence through the same evidence structure.
 
 The CLI now selects this provider explicitly and uses the same validated report,
 Zetaris history and H-MEM flow as mock mode. The AWS module only fetches/returns
-evidence. AWS mode allows 25 seconds per tool for the collector’s bounded
-20-second call. Empty inventory remains a partial investigation when billing
+evidence. The executor budgets are defined in [runtime bounds](components.md#runtime-ownership-and-bounds). Empty inventory remains a partial investigation when billing
 currency/records are unavailable; it never invents a zero-cost billing result.
 H-MEM reasoning persistence is separate. No automatic live-to-synthetic fallback
 is allowed. Operations/dependency sources remain unconfigured. No resource launch

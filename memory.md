@@ -1,10 +1,17 @@
 # Project Memory
 
-## Progressive documentation hierarchy (2026-10-24)
+## Adopted submission quality bar (2026-10-24)
 
-- User requires a root README of at most 10 lines so judges understand the project in three seconds. This supersedes earlier decisions to put setup, outcome-learning examples and event detail directly in README.
-- Keep the pitch and entry links at the root; use `docs/README.md` to guide readers from overview and demo to learning, technical contracts and submission proof. Preserve detailed reference filenames to avoid breaking existing links; introductory pages live under `docs/guide/`.
-- Keep limitations and fixture/live distinctions available through the hierarchy. Moving documentation does not establish new integration proof or complete release gates.
+- User adopted `the_bar.md` for implementation and especially documentation. Its useful standard is reproducible behavior, visible critique and revision, useful decisions, concrete sponsor roles and honest limitations. It is illustrative guidance, subordinate to verified event rules and approved project safety constraints.
+- Extend the existing bounded loop and document actual role authority/shared state; do not add agent personas or redirect sponsor integrations to imitate the examples. Never fabricate confidence, retries, Cursor use or live-source proof. Keep explicit mock selection and the distinct history/lesson/current-evidence boundaries.
+- Root What remains at most 10 lines; How routes readers to architecture, CLI trace interpretation, evaluation and demo/deck preparation. Submission gaps and proof remain solely in EXECUTION_PLAN.
+
+## What / Why / How documentation (2026-10-24)
+
+- User corrected the previous five-step hierarchy: root README must begin with hackathon participation, answer What immediately, stay within 10 lines and link only to Why and How. This supersedes earlier README layout and duplicate guide-page decisions below.
+- The hackathon README requirement still applies within the 10-line cap: include concise dependencies, setup and usage directly at the root. Detailed setup stays in How. Components owns the explicit Zetaris/Meterless/NVIDIA explanation and links to genuine proof; public visibility requires a live metadata check. This qualifies the earlier instruction to move all setup out of README.
+- How owns first-run setup and routes to topic-specific references. Keep one maintained home per procedure, contract, learning mechanism and measurement; link instead of repeating. Runtime architecture belongs in components, safety in product context, memory reuse in MEMORY, outcome adoption in FOLLOW_UP, evaluation procedures in evaluation, current status in EXECUTION_PLAN.
+- Prior execution receipts and the initial implementation plan are under `docs/history/`, labeled historical and excluded from current instructions. Retain original failed measurements and the rules JSON. Historical rationales below explain past choices, not alternate current policies.
 
 ## Outcome feedback teaches investigation order (2026-10-24)
 

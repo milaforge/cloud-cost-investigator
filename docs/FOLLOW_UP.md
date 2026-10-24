@@ -1,6 +1,6 @@
 # Decisions and follow-through
 
-[Documentation index](README.md)
+[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
 
 H-MEM teaches scoped investigation checks. Zetaris retains the recommendation,
 what an operator decided, when to revisit it, and what was later reported or
@@ -108,8 +108,6 @@ identities. This workflow must not be used as authorization for an executor.
 
 ```bash
 npm run --silent demo:followup > /tmp/follow-up.json
-npm run --silent evaluate:memory > /tmp/memory-evaluation.json
-npm run demo:warm
 ```
 
 The follow-up demo uses the **real configured Zetaris service**, a unique synthetic
@@ -121,14 +119,7 @@ pass; the complete JSON is emitted at the end, progress on stderr. The retained
 [executed result](follow-up-zetaris.json) is actual remote persistence, not proof
 of a production human decision, live AWS integration or external change execution.
 
-The memory evaluator uses real local H-MEM and scripted planning with mock current
-evidence across eight workloads. Each case has an independent prior investigation;
-baselines use no memory. Both fixed orders use the same executor and safety policy.
-The best fixed order is selected by aggregate tool calls after measurement, favoring
-the baseline. Completion, expected deferrals, correctness and teaching cost are
-separate. The [recorded result](memory-order-evaluation.json) is a tie, not a claim
-of general superiority or a latency/cost benchmark. The warm demo remains a useful
-mechanism proof, rather than a general effectiveness claim.
+For memory comparisons and warm demonstrations, use the [evaluation guide](evaluation/README.md).
 
 ## Storage and failure boundaries
 
@@ -154,6 +145,8 @@ mechanism proof, rather than a general effectiveness claim.
   grant scheduling clearance or become current tool evidence.
 
 ## Automatic learning from outcomes
+
+Suppose a team accepts a shutdown recommendation, then rolls it back because another service needs the server running. The engineer records that rollback with the dependency check selected. On the next matching investigation, the feedback teaches H-MEM to check dependencies first. Fresh evidence decides whether the conflict still exists; cleared findings replace the old lesson.
 
 Enable both `ZETARIS_HISTORY_TABLE` and `HMEM_PERSIST_DIR` in the investigation
 CLI. Outcome recording still requires explicit append authorization. No additional

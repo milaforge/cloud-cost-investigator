@@ -2,10 +2,11 @@
 
 ## Read before work
 
-1. [`docs/RULES.md`](./docs/RULES.md): recorded hackathon requirements, judging criteria and submission materials. The single JSON block is parseable; examples and unrelated ideas are not requirements.
-2. [`docs/PROJECT_CONTEXT.md`](./docs/PROJECT_CONTEXT.md): **approved optimization-first product** scope, interfaces, safety invariants, evidence semantics and acceptance criteria.
-3. [`docs/EXECUTION_PLAN.md`](./docs/EXECUTION_PLAN.md): current milestone, owners, blockers and executable completion evidence.
-4. [`memory.md`](./memory.md): rationale for repository decisions and explicit superseded decisions.
+1. [`docs/RULES.md`](docs/RULES.md): recorded hackathon requirements, judging criteria and submission materials. The single JSON block is parseable; examples and unrelated ideas are not requirements.
+2. [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md): **approved optimization-first product** scope, interfaces, safety invariants, evidence semantics and acceptance criteria.
+3. [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md): current milestone, owners, blockers and executable completion evidence.
+4. [`memory.md`](memory.md): rationale for repository decisions and explicit superseded decisions.
+5. [`the_bar.md`](the_bar.md): team-adopted implementation and submission quality bar. Apply its recommendations to the existing architecture; illustrative agents, technology roles, trace fields and fallbacks are not mandatory designs.
 
 Keep these documents aligned when an agreed decision changes. Rules are locally recorded event notes, not independently verified portal requirements. Resolve discrepancies and material submission conflicts with the team; do not invent requirements. The README and starter code do not override the chosen track or rubric. Never infer completion from a plan, file, or elapsed day.
 
@@ -22,7 +23,7 @@ Build a functional **Track 02 — The Agent That Can Explain Why** entry: discov
 
 ## Current milestone and completion discipline
 
-At the Day 2 kickoff (2026-10-23), use the **Day 2 section and gates** in [`docs/EXECUTION_PLAN.md`](./docs/EXECUTION_PLAN.md), carrying unfinished Day 1 prerequisites forward. This is a dated checkpoint, not a permanent instruction to remain on Day 2. Advance the active milestone only after executable evidence is recorded.
+Use the active milestone, owner, status table and release gates in [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md), carrying unfinished prerequisites forward. Linked receipts under `docs/history/` preserve prior execution evidence; they do not override current defaults or blockers. Advance the active milestone only after executable evidence is recorded.
 
 For each nontrivial task:
 1. Identify the active gate, owner and smallest useful slice.
@@ -56,7 +57,13 @@ The release checklist in `docs/EXECUTION_PLAN.md` is authoritative. It must incl
 
 ## Documentation hierarchy
 
-Keep the root `README.md` at most 10 lines: a judge should understand the project in three seconds. Put setup, learning examples, architecture, limitations and other detail in Markdown files under `docs/`. Use `docs/README.md` as the progressive index: overview → demo → learning → technical references → submission evidence. Preserve detail and working relative links; do not grow the root README into a manual.
+Keep the root `README.md` at most 10 lines and begin with mandatory hackathon participation. It must answer **What** in three seconds, then link only to **Why** (`docs/WHY.md`) and **How** (`docs/HOW.md`). Include the mandatory concise runtime and external-service dependencies, setup and usage in the root README within that cap; distinguish demo prerequisites from service-dependent features. Why explains the problem; How owns the full setup and links to deeper references, including the explicit Zetaris, Meterless and NVIDIA sponsor explanation in `docs/components.md`. Verify public repository visibility before claiming that submission requirement passed. Give each detailed topic one canonical home: link instead of copying setup, contracts, learning mechanisms, results or status across pages. Use consistent What / Why / How navigation. Keep current progress only in `docs/EXECUTION_PLAN.md`; dated receipts under `docs/history/` are historical evidence, never competing instructions. Preserve the recorded rules JSON and failed measurements.
+
+## Submission quality bar
+
+Implementation and documentation must make the real user, useful decision, role authority, shared state, evidence-driven revision and failure behavior easy to verify. Show exact runnable commands, captured output/trace, explicit integration modes, sponsor contributions and reused components. Keep architecture in `docs/components.md`, trace interpretation in `docs/CLI_GUIDE.md`, and the demo/deck narrative in `docs/DEMO.md`; record unfinished quality-bar gates only in `docs/EXECUTION_PLAN.md`.
+
+Do not copy the example's six-agent architecture, Meterless model routing, automatic sample fallback or invented confidence/retry metadata. Preserve this project's bounded loop, direct current-evidence tools, historical-store separation and explicit mock opt-in. A scripted fixture proves policy behavior; genuine model collaboration and sponsor calls require separately labeled execution evidence. Slides and a storyboard do not prove a recorded video or a finished submission.
 
 ## Engineering practices
 

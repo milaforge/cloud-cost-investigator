@@ -1,5 +1,7 @@
 # Hackathon Rules and Guidance
 
+[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+
 The JSON block below is the canonical structured content of this document.
 Extract the single `json` fenced code block and parse it with a standard JSON
 parser. `schema_version` identifies the document structure version. Ordered

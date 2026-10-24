@@ -1,12 +1,10 @@
 # Cloud Cost Investigator — Project Context
 
-> Source of truth for the agreed product, interfaces, data semantics, safety policy, and acceptance criteria. See [`RULES.md`](./RULES.md) for recorded event notes, [`EXECUTION_PLAN.md`](./EXECUTION_PLAN.md) for executable gates, and [`../AGENTS.md`](../AGENTS.md) for contributor instructions.
+> Source of truth for the agreed product, interfaces, data semantics, safety policy, and acceptance criteria. See [`RULES.md`](RULES.md) for recorded event notes, [`EXECUTION_PLAN.md`](EXECUTION_PLAN.md) for executable gates, and [`../AGENTS.md`](../AGENTS.md) for contributor instructions.
 
-**Decision date:** 2026-10-23 (MVP discovery rounds 1–4 and corrected sponsor architecture approved).  
-**Hackathon:** Open Agent Hackathon 2026; **Track 02 — The Agent That Can Explain Why**.  
-**Deadline:** 2026-10-27 23:45 UTC per event planning notes; confirm in submission portal.  
-**Team:** Milad — orchestration, model, Meterless, Zetaris history load/save, CLI/report; Zayan — direct AWS data tools and data correctness; both — contracts, safety evaluation.
-**Target:** AWS EC2 only. **Status:** Product decisions approved; first contradiction-first CLI slice has executable proof in `EXECUTION_PLAN.md`. Current evidence remains mock; sponsor and release gates are separate.
+[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+
+Approved scope and contracts below are distinct from [current verification status](EXECUTION_PLAN.md).
 
 ## 1. Product and user decision
 
@@ -33,10 +31,10 @@ clarification does not expand the current MVP, tool permissions or safety policy
 | Memory              | Agreed                           | Timestamped investigation summaries guiding fresh queries, not live telemetry                                                                                                     |
 | Failure             | Agreed                           | Status-specific bounded degradation and explicit uncertainty                                                                                                                      |
 | Source architecture | Agreed                           | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory         |
-| Historical writes   | Approved in principle            | **Narrowly scoped investigation-history append** through Zetaris with separate authorization/allowlisted API; no arbitrary SQL or AWS writes. Technical support/access unverified |
-| Observation period  | Agreed AWS MVP                   | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. The mock CLI retains its separate 28-day default until live-provider wiring.             |
-| Candidate ranking   | Proposed                         | Measured compute-cost relevance + off-hours utilization patterns; explain selection and incomplete coverage                                                                       |
-| Report shape        | Proposed implementation contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                                       |
+| Historical writes | Agreed | Narrow schema-validated history append through Zetaris; no arbitrary SQL or AWS writes. Deployment proof is tracked separately. |
+| Observation period  | Agreed AWS MVP                   | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. Mock mode has a separate 28-day default.             |
+| Candidate ranking   | Implemented policy                         | Descending positive matching compute spend, ties by instance ID; explain incomplete coverage                                                                       |
+| Report shape        | Runtime-validated contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                                       |
 
 Out of scope: original cost-increase explanation command; mandatory baseline or snapshot comparison; EC2 downsizing; multi-cloud; Kubernetes; automated remediation; enterprise onboarding/auth; forecasting; dashboards; complex multi-agent frameworks; extra Meterless engines. A readable CLI is sufficient for the surface; demo/slides remain required.
 
@@ -49,24 +47,17 @@ These flows share **one bounded investigation engine**, not separate agents:
 | **A — Supported opportunity**                    | Discover an instance with eligible compute spend and repeatable inactive hours; investigate peaks, jobs, dependencies, schedules and exceptions | **Conditional recommendation** for a specific UTC shutdown window only with adequately corroborated safety evidence, stated human approval and remaining checks; deterministic compute-only savings or `null` |
 | **B — Rejected hypothesis**                      | Proposed shutdown looks attractive; an evidence-dependent query uncovers critical weekly batch/peak/dependency conflicting with that window     | **Not recommended** for that proposed window; trace records hypothesis before/after and cites contradiction                                                                                                   |
 | **C — Justified continuous operation / unknown** | Current evidence justifies uptime, or critical operational evidence is insufficient                                                             | **Not recommended** when required operation is supported; **needs verification** when evidence is missing/ambiguous. These are different conclusions                                                          |
-| **D — Reinvestigation**                          | Later run sees relevant previous history and reasoning memory                                                                                   | Zetaris supplies structured prior observations; H-MEM supplies investigation context. Both may affect query order but **all current verdicts require fresh direct evidence**                                  |
+| **D — Reinvestigation**                          | Later run sees relevant previous history and reasoning memory                                                                                   | Zetaris supplies structured prior observations; H-MEM supplies investigation context. Only H-MEM lessons may affect query order; **all current verdicts require fresh direct evidence**                                  |
 
 Additional required failure proof: unavailable/partial/invalid direct source, history-store failure, memory unavailable, model error, repeated action, or budget exhaustion should be bounded and correctly labeled. First run must work with empty Zetaris history and empty H-MEM memory.
 
-**CLI shape:** supports `--max-candidates 1` through `3` (default 1), sharing discovery and one aggregate deadline:
-
-```bash
-cloud-cost-investigator investigate --account demo --region us-east-1 \
-  --lookback-days 28 --max-candidates 3
-```
-
-Mock/live integration modes must be explicit; synthetic fixture records must never be represented as AWS live telemetry.
+[CLI flags and synthetic scenario selection](CLI_GUIDE.md#run) are documented separately.
 
 ## 4. Evidence source architecture
 
 ### Direct TypeScript tool/API boundary — source of current facts
 
-Zayan owns validated, read-only adapters; the implementation may initially use **labeled mocks** with identical result contracts. These are **logical application operations**, not promised AWS SDK endpoints:
+Zayan owns validated, read-only adapters; **labeled mocks** use the same application contract. These are **logical application operations**, not promised AWS SDK endpoints:
 
 ```text
 list_ec2_instances(scope)
@@ -78,13 +69,11 @@ get_ec2_dependencies(instance)
 
 Direct data categories: inventory (IDs, types, ownership/tags, state), billing (compute charges, currency, pricing/commitment coverage), utilization (time series, peaks, coverage and granularity), schedules/changes (jobs, deployment/config history, timezone, exceptions), and dependencies (upstream/downstream consumers, availability obligations, coverage). Some job/dependency facts may require operational integrations outside native AWS APIs. Do **not** assume such integrations exist merely because a logical tool is defined.
 
-Previous discovery described all five categories as available _via Zetaris_. The **corrected architecture** uses direct adapters; Zayan reports these are **under development**, with mocks allowed now. No executed direct-API verification is claimed.
-
 ### Zetaris — structured historical records and comparisons
 
 Use governed, scoped historical investigation data that can answer: _What was observed last time, when, with what coverage, and what changed in a later fresh observation?_ Keep timestamped compact rows for investigation ID, `(account, region, instance)`, observed interval, summarized numeric observations, evidence reference metadata, proposed schedule, verdict and reason, integration mode, and collection time. Avoid duplicate full reports, secrets, raw provider responses, or unverifiable historical conclusions.
 
-Proposed allowlisted surface:
+Allowlisted logical history surface:
 
 ```text
 query_investigation_history(scope, limit, date_range)  # read-only historical query
@@ -93,60 +82,15 @@ append_investigation_history(validated_record)          # authorized narrowly sc
 
 **Security boundary:** AWS and current-evidence tools stay strictly read-only. The **only authorized write exception** is an approved, schema-validated, append-only investigation-history operation within a dedicated non-infrastructure history namespace/table, subject to least-privilege credentials and supported Zetaris/backing-store capabilities. No model-authored SQL, general DML/DDL exposure, resource mutations, arbitrary updates/deletes, or writes to AWS. Until the write path is proven, record historical-write failures and continue the current investigation; do **not** claim the Zetaris integration gate passed.
 
-The repository's existing generic `queryZetaris(sql)` is connectivity scaffolding **not** an agent-facing API. Replace or wrap behind fixed operations. Neither a historical record nor its absence proves current operational safety. Empty history must not block a first run.
+The generic `queryZetaris(sql)` connectivity helper is **not** exposed to the agent; the history adapter owns fixed operations. Neither a historical record nor its absence proves current operational safety. Empty history must not block a first run.
 
-**Structured comparison context (Oct 24):** recalled version 1 Zetaris records
-are forwarded as `historical_context.comparisons` in CLI JSON reports and labeled
-in the readable report. Each entry contains the previous verdict, proposed and
-rejected UTC windows, record/context and investigation IDs, timestamp, instance,
-account/region and evidence mode. Recall excludes future and mismatched-mode
-records. These fields support comparing an old recommendation or rejected window
-with a fresh investigation; they never set the current proposal, planner order,
-safety clearance or current citations. Older reports without this optional field
-remain valid. No Zetaris schema change is required.
+Report fields for historical comparisons are defined in the [report contract](#8-detailed-report-and-trace-contract).
 
 ### Meterless H-MEM — reasoning memory
 
-Use the H-MEM reference already present in the TypeScript starter (runtime store/retrieve must be verified). Persist concise, timestamped summaries of hypotheses, rejected schedules, discovered concerns, unresolved checks, investigation IDs and provenance. Retrieve only relevant scoped memories and disclose which were used to choose a next tool. H-MEM **does not** own authoritative numeric telemetry or structured billing history. Its retrieved beliefs and confidence/ranking signals are not evidence for a current safety verdict. A changed current observation may override stale memory.
+Use the vendored H-MEM reference; storage details live in the [H-MEM reference](MEMORY.md). Persist concise, timestamped summaries of hypotheses, rejected schedules, discovered concerns, unresolved checks, investigation IDs and provenance. Retrieve only relevant scoped memories and disclose which were used to choose a next tool. H-MEM **does not** own authoritative numeric telemetry or structured billing history. Its retrieved beliefs and confidence/ranking signals are not evidence for a current safety verdict. A changed current observation may override stale memory.
 
-**Role clarification (Oct 24, user-approved):** H-MEM owns reusable investigation
-lessons with scope and conditions for reuse. Zetaris owns structured recommendations,
-explicit operator decisions and attributed outcomes. Direct tools establish present
-facts. Raw Zetaris history does not order planner checks. The Oct 24 outcome-learning
-extension converts linked, typed operator rollback feedback into H-MEM lessons for
-the same instance, evidence mode and UTC window. Only allowlisted check/window
-data may influence order; fresh evidence still decides. A fresh first investigation
-requires neither store. See [outcome learning](FOLLOW_UP.md#automatic-learning-from-outcomes).
-
-**Acceptance:** compare H-MEM with both fixed operational-check orders across
-recurring, cleared, switched and missing-evidence workloads; preserve ties and
-regressions and disclose teaching cost. Demonstrate both a deferred recommendation
-becoming due for fresh investigation and an accepted recommendation receiving an
-operator-reported outcome through actual Zetaris append/readback. Preserve the
-existing warm proof. No inferred human decisions, automatic remediation, or
-claims of measured savings from an outcome receipt.
-
-The follow-up CLI accepts explicit operator input under the configured app credential;
-actor IDs are attributed, not authenticated identities. One immutable decision per
-recommendation is supported. Version 1 investigation records and version 2 follow-up
-events share the existing validated table columns; no DDL or broader permissions.
-A review outcome references a separate fresh investigation record. Partial reviews
-remain due. Outcome receipts require an acceptance, observation time and reference;
-label them `operator_reported`. See [FOLLOW_UP.md](FOLLOW_UP.md).
-
-**Learned-check slice (Oct 24):** A validated, authoritative contradiction can
-teach an optional typed `dependency_continuous_operation` or
-`critical_job_overlap` check in the reasoning summary. Its original evidence ID
-remains historical provenance. Planner hints carry only the check and UTC window,
-bound to the current instance and evidence mode; they never carry historical
-evidence IDs or free-form memory instructions. The newest eligible H-MEM summary
-is active; older records remain auditable. Fresh observations explicitly confirm,
-clear or leave the remembered concern unresolved. A newer cleared investigation
-can replace a rejected conclusion only through the existing safety evaluator.
-`npm run demo:warm` isolates real local H-MEM in a cold C → warm C → changed A
-proof; `--planner model` exercises the real model. Measure fewer planner/tool
-calls separately from wall time. This extends the bounded loop and introduces no
-world graph, additional roles, remote schema changes or live evidence claims.
+H-MEM owns historical check-order advice. Raw Zetaris rows cannot directly order checks. Linked, structured rollback feedback may teach a scoped lesson through the [validated follow-up learning path](FOLLOW_UP.md#automatic-learning-from-outcomes). Detailed reuse conditions and persistence failure handling live in the [H-MEM reference](MEMORY.md#store-and-recall); event compatibility and operator attribution live in [follow-up storage boundaries](FOLLOW_UP.md#storage-and-failure-boundaries).
 
 ## 5. Shared runtime contract
 
@@ -182,9 +126,12 @@ Savings are **deterministic**, not LLM-derived. A non-null amount requires a jus
 
 Implemented conservative policy: complete authoritative discovery and both operational challenges, at least seven days of ≤5-minute low-average/peak utilization, no overlapping jobs, and matching owner/calendar/recovery clearances covering the calendar month following the observed window. Clearances explicitly carry excluded UTC dates and per-window overhead. Positive clearance never authorizes execution. Numeric savings currently support only USD on-demand marginal compute rates with explicit commitment treatment, retained-cost exclusion and pricing validity covering that month. Round avoided daily minutes down to billing granularity and the final amount down to USD cents; all unsupported cases remain `null`.
 
+Example: fixture A uses 00:00–06:00 UTC, one excluded date, 30 minutes overhead, 60-minute billing units and a **synthetic** USD 0.50/hour rate. For October, `(31 − 1) × 5 × 0.50 = USD 75`. This is a conditional planning estimate, not measured savings.
+
 ## 8. Detailed report and trace contract
 
 Output both readable CLI content and a runtime-validated JSON report (file export optional). Each report includes:
+
 - Investigation ID, question/goal, account/region, UTC observed window, integration mode, source coverage and **overall completion status** (`complete` / `partial` / `failed`).
 - Candidate discovery count/limit, selection rationale, and any discovery gaps.
 - Per-instance proposed schedule, verdict, supporting and contradicting **retrieved-current** evidence IDs, risks, unresolved checks, assumptions, next human actions, and deterministic savings or `null` (with currency when known).
@@ -192,11 +139,16 @@ Output both readable CLI content and a runtime-validated JSON report (file expor
 - Detailed decision trace: planned question, chosen validated tool and arguments, source status, evidence IDs, evaluator reason, replan/finish reason, and budget usage.
 - History/memory section with past Zetaris observation IDs and H-MEM context IDs **clearly marked as historical**, plus any read/write failures.
 
+Optional `historical_context.comparisons` rows carry prior verdict, proposed/rejected UTC windows, record/context/investigation IDs, timestamp, instance, scope and source mode. Future and mismatched-mode records are excluded. These rows are historical comparison context, never current proposals, clearance or citations; older reports without the field remain valid.
+
+Actionless planner trace entries may carry a validated `failure_code` and optional `provider_error: { body, truncated }`. Codes are fixed public values or three-digit HTTP statuses; excerpts use bounded/redacted capture. Neither field affects safety, retries or evidence. [Diagnostics](CLI_GUIDE.md#diagnostics) defines the capture limits and code meanings.
+
 Do not count a partially completed run as fully investigated. A `partial` run may include one well-supported rejection and two deferred candidates; overall status is separate from per-instance verdicts. Render errors without exposing credentials, raw provider responses, or private endpoints.
 
 ## 9. Test and release acceptance
 
 A runnable demo must prove:
+
 1. First-run candidate discovery and investigation **without prior history**; data mode truthfully labeled.
 2. Scenario A conditional scheduling opportunity under explicitly adequate evidence; otherwise correctly deferred.
 3. Scenario B evidence-dependent next query and **actual falsification** of an initially plausible window.
@@ -208,67 +160,14 @@ A runnable demo must prove:
 9. Comparison against a low-average-CPU heuristic plus measured disposition accuracy, unsafe-positive count, citation validity, runtime, tool count and available model cost. Never fabricate benchmark metrics.
 10. Fresh-checkout commands, README, reproducible fixture data, slides, sponsor explanation and **1–4 minute demo** prepared before submission.
 
-## 10. Integration status and references
+## 10. References
 
-**Diagnostic contract update (2026-10-24):** Planner failures may now carry an
-optional validated `failure_code` on actionless planner trace entries; old reports
-remain valid. Only fixed public codes or three-digit HTTP statuses are reported.
-Subsequently, by user request, HTTP failures also retain optional validated
-`provider_error: { body, truncated }` diagnostics. Body reads are limited to
-8192 bytes/one second; sanitized excerpts to 2048 characters. Request/header/stack
-objects and credentials are excluded or redacted. The excerpt appears in
-readable reports, evaluation JSON and verbose progress, without affecting the
-HTTP code, evidence, safety policy or retry behavior.
-Evaluation separates exact disposition matches from completion states and planner
-failures, including matching deferrals reached after failure. Correct deferrals
-remain partial; operational planner failures cannot pass the evaluation gate.
-This diagnostic change does not relax safety, add retries or establish the exact
-causes of older generic failures. A new real-model diagnostic measurement in
-`evaluation-model-diagnostics.json` recorded 6/8 label matches, 2 complete and
-6 partial, with three `planner_timeout` cases and one incidental matching
-deferral after timeout. These hit the unchanged 15-second per-call limit; the
-earlier five generic errors remain undiagnosed. Proof is in `EXECUTION_PLAN.md`.
+Current integration state, actual sponsor contribution and open release work live only in the [execution plan](EXECUTION_PLAN.md). Historical measurements remain in its linked receipts.
 
-**Subsequent timeout/pacing update (2026-10-24):** By user request, new live
-planner calls and HTTP requests allow five minutes. The aggregate live budget
-scales with bounded call counts and pacing plus a two-minute reserve; explicit
-shorter deadlines still apply. Evaluation supports one selected case via
-`--case`, preserving its actual denominator, and defaults to a five-second pause
-before each live planner call. Cases and calls remain sequential; no retries or
-fallback are added. Earlier timeout measurements above retain their original
-limits. An HTTP 500 alone does not establish overload.
-
-**2026-10-24 evaluation update:** Eight designed synthetic cases now have a
-reproducible scripted-policy comparison against the low-average-CPU heuristic,
-including safety/unknown positives, citation validation and per-case timing/calls.
-Results and limitations are in `evaluation-scripted.json`; executed commands are
-in `EXECUTION_PLAN.md`. In a subsequent user-requested retry, the configured
-NVIDIA-hosted `nvidia/nemotron-3-ultra-550b-a55b` passed the access diagnostic and
-real-model cold/warm proof with both historical stores and fresh mock evidence.
-The earlier HTTP 403 no longer reproduces; its cause is unknown. No fallback,
-credential or endpoint changes were made by the agent. The user confirmed this
-exact model is fine for the event. Model selection is therefore team-approved;
-independent organizer verification was not obtained. Subsequent live-model
-fixture evaluation is in `evaluation-model.json`: 5/8 matching dispositions,
-zero unsafe/unverified positives and 25/25 valid current references, but only
-1/8 complete investigations. Five planner failures include two matching
-deferrals; disposition accuracy must not be called investigation success.
-Detailed failures, latency/calls and limitations remain in the execution plan.
-
-**Executed proof:** account/region CLI discovery, mock scenario B rejection and missing-source handling, runtime/citation/failure tests, live NVIDIA-hosted planning over mock evidence, actual local H-MEM summary store/reload/query, and two-run CLI warm investigations using the configured Zetaris service plus local H-MEM with both scripted and real-model planners over mock AWS evidence. History changes query order; fresh operational evidence controls rejection. Exact commands and results belong to `EXECUTION_PLAN.md`. **Still unverified:** live Zayan current-evidence adapters, effective table-scoped least-privilege deployment permissions, real AWS accounts/billing granularity and submission portal details. Model selection is team-confirmed as recorded above. The generic Zetaris helper is connectivity scaffolding outside the agent allowlist. Earlier claims of data available through Zetaris do not establish direct API integration.
-
-Meterless reference: [Meterless repository](https://github.com/Meterless/Meterless), specifically `llms.txt`, `README.md`, `AGENTS.md`, `engines/hmem/README.md`, `engines/hmem/AGENTS.md`. These describe H-MEM's provenance-aware memory and a runnable reference, not a production hosted memory service. Zetaris reference: [documentation](https://zetaris.github.io/). Verify supported read and narrowly scoped append semantics in the deployed environment before choosing an SDK/query shape; examples in documentation are not proof of account access.
-
-Event source: [`RULES.md`](./RULES.md). Recorded judging weights: Impact 30, Technical 20, Innovation 15, Demo 15, Product & UX 10, Sponsor Tech 10; total 100. These are locally recorded notes, not independently verified portal requirements.
-
-### AWS CLI adapter integration (2026-10-24)
-
-`--evidence aws` selects Zayan’s direct `aws-agent.ts` provider through the
-existing bounded executor and report/history flow. AWS is the default; synthetic
-demos require `--evidence mock` (user correction, Oct 24).
-AWS mode accepts an actual 12-digit account ID, no synthetic scenario, and
-1–14 complete UTC days (default 14). STS verifies account scope. Read-only SDK
-clients own current inventory, attributable billing and CPU collection; Cost
-Explorer queries require explicit opt-in. Operational/dependency sources remain
-unconfigured and cannot clear scheduling safety. There is no synthetic fallback.
-Offline transport tests prove integration behavior, not populated live AWS access.
+- [AWS adapter and collector contract](AWS_TOOLS.md).
+- [Zetaris table contract and provisioning](ZETARIS_HISTORY.md).
+- [H-MEM storage and recall](MEMORY.md).
+- [Operator events and outcome learning](FOLLOW_UP.md).
+- [Model transport, diagnostics and CLI flags](CLI_GUIDE.md).
+- [Evaluation methodology](evaluation/README.md).
+- [Recorded event requirements](RULES.md).

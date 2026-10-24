@@ -1,20 +1,29 @@
-[Documentation index](README.md)
+# H-MEM reasoning memory
 
-| Aspect                             | Zetaris                                           | Meterless H-MEM                                                                       |
-| ---------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Information type                   | Structured, queryable historical facts            | Contextual and semantic memory                                                        |
-| Example                            | Instance was running 168 hours in a recorded week | Previous investigation rejected overnight shutdown because a batch job was discovered |
-| Why retrieve it?                   | Compare recorded patterns across investigations   | Prioritize relevant safety questions                                                  |
-| How to use it                      | Historical reference, comparisons, trend analysis | Guide planning and tool selection                                                     |
-| Can it prove current safety?       | No                                                | No                                                                                    |
-| Must exist before first execution? | No                                                | No                                                                                    |
+[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
 
-Avoid storing identical full reports in both systems. Zetaris should hold compact typed investigation records, metrics summaries, scope, timestamps, provenance, and verdict history. H-MEM should retain useful interpretations and unresolved concerns, linked by investigation IDs.
+## Configuration
 
----
+Set `HMEM_PERSIST_DIR=.cci-memory` to retain lessons between investigations. Leave it unset to disable local reasoning memory. Keep generated state untracked and use one writer per directory. The local store is capped at 100 records.
 
-- Zetaris: An engineer can see what changed between recorded investigations, rather than having an opaque collection of past answers.
+H-MEM uses the checked-in reference with deterministic local embeddings and JSON persistence. Direct telemetry and the operator decision ledger belong to the other [components](components.md).
 
-- Meterless: The agent carries forward relevant investigation knowledge and can select better follow-up checks rather than starting its reasoning from scratch.
+## Store and recall
 
-the first run must remain fully useful without any prior baseline. Historical comparisons are enhancements, not prerequisites or proof of optimization safety.
+The investigation recalls memory after fresh inventory/billing selects a candidate, then stores a validated summary after evaluation. Summaries retain scope, timestamps, hypothesis, decision reason, unresolved risks and provenance. Storage is isolated per account/region and validated on read and write; a failed local persistence operation prevents adoption.
+
+Only authoritative, cited contradictions teach typed `dependency_continuous_operation` or `critical_job_overlap` lessons. Recall is scoped to account, region, instance, evidence mode and matching UTC window, excluding future records. The newest eligible summary is active; older records remain auditable and legacy summaries without lessons remain readable.
+
+Planner hints contain only the allowlisted check and window. Historical evidence IDs and free-form memory text stay out of those hints. Fresh rechecks are traced as `confirmed`, `not_observed` or `unresolved`. Updated findings can supersede an old lesson; clearing one concern still requires the remaining safety checks.
+
+[Structured operator feedback](FOLLOW_UP.md#automatic-learning-from-outcomes) has a separate link-validation path before it can teach a lesson. Raw Zetaris records never directly order the planner.
+
+## Standalone persistence probe
+
+```bash
+npm run probe:hmem
+```
+
+This executes a mock B investigation, stores a compact summary through the real local H-MEM reference, reopens the engine and retrieves it. It owns and removes its temporary directory. This isolates store/reload/query behavior; it does not establish hosted memory or warm planning.
+
+[Warm-run methodology and recorded evidence](evaluation/README.md#learn-a-check-finish-earlier-then-change-the-conclusion) cover query-order behavior and changed evidence.

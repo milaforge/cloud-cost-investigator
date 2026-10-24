@@ -1,42 +1,68 @@
-# Components at a glance
+# Architecture
 
-[Documentation index](README.md)
+[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
 
-**Find EC2 scheduling opportunities. Challenge them with evidence. Explain the decision.**
-
-A TypeScript / Node.js CLI connects the components below.
+One bounded planner → executor → evaluator loop drives the TypeScript/Node.js CLI. Fresh evidence controls the decision; history informs the investigation.
 
 ```mermaid
 flowchart TD
-    M[Meterless H-MEM] -->|Lessons| P[Model planner]
-    P -->|Next check| T[Read-only tools]
-    T -->|Evidence| E[Safety evaluator]
-    E -.->|Replan| P
-    E --> R[CLI report]
-    R <-->|Decision history| Z[Zetaris]
+    U[Engineer: account and region] --> C[CLI: validate request and modes]
+    C --> S[Run state: scope, candidate, hypothesis, observations, trace, budgets]
+    S --> P[Planner: scripted or real model]
+    H[Meterless H-MEM: historical lessons] -->|Scoped check priority| P
+    P -->|Allowlisted action| X[Executor: bind and validate scope; enforce deadlines]
+    X --> T[Read-only direct tools: explicit AWS or mock mode]
+    T -->|Validated current observation| S
+    S --> E[Deterministic safety evaluator]
+    E -->|Missing checks: updated state| P
+    E -->|Contradiction: reject; adequate proof: conditional; unresolved: defer| V[Report validator: citations and policy]
+    V --> R[CLI stdout: readable report or JSON with trace]
+    Z[Zetaris: historical decision trail] -->|Historical comparison only| S
+    S -->|Configured summary persistence| H
+    S -->|Explicitly enabled history append and readback| Z
 ```
 
-| Component | Why it matters |
-| --- | --- |
-| **Model planner · NVIDIA supported** | Chooses the next investigation check as evidence arrives. |
-| **Read-only tools** | Collect inventory, cost, utilization, jobs and dependencies to challenge a shutdown window. |
-| **Safety evaluator** | Applies deterministic rules; rejects unsafe windows and defers when evidence is missing. |
-| **Meterless H-MEM** | Remembers scoped investigation lessons, including applicable structured rollback feedback, to prioritize fresh checks. |
-| **Zetaris** | Retains recommendations, operator decisions, due reviews and reported outcomes. |
-| **CLI report** | Shows the conclusion, evidence citations and decision trace for human review. |
+| Role | Responsibility and authority | Feedback visible to judges |
+| --- | --- | --- |
+| **Planner** | Chooses the next check or proposes a window. The optional real model cannot authorize a verdict or modify infrastructure; the default scripted planner exercises the same engine offline. | Receives candidate-scoped observations, current hypothesis, prior attempts and scoped lesson hints on each turn. |
+| **Executor** | Owns validated tool execution and current-evidence registration. Invalid scope, malformed observations and exhausted budgets cannot become usable facts. | Tool action, status and evidence IDs enter shared run state before the next decision. |
+| **Safety evaluator** | Trusted deterministic code can block a positive recommendation, reject a contradicted window, or defer unknown safety. It is not another model agent. | Requires targeted checks after a proposal; remaining gaps feed the next planner turn. B ends when fresh evidence disproves the proposal. |
+| **Report validator and renderer** | Revalidates citations, chronological hypotheses, positive safety proof and savings before emitting human-readable or JSON output. | Shows the proposed → supported/contradicted/unresolved transition, limitations and next human actions. |
 
-**Verified:** real NVIDIA calls, local H-MEM persistence and remote Zetaris read/write.
-**Current boundary:** live AWS evidence and scripted planning are defaults.
-[AWS tools](AWS_TOOLS.md) supply inventory, billing and utilization;
-authoritative jobs/dependency sources remain unconfigured in AWS mode.
-Synthetic demos require `--evidence mock`.
-No infrastructure is changed. Reported outcomes are not verified savings.
+The runner owns shared state; roles do not exchange unrestricted messages. A later planner turn sees validated observations and attempt history, so its next check depends on what happened. This supports critique, shared state, branching and evaluator authority within one loop. It does not claim several autonomous model agents. Trace capture and a real scripted B excerpt are in the [CLI walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace); bounds and failure policy are below and in the [CLI failure reference](CLI_GUIDE.md#failure-behavior).
 
-**Measured value:** H-MEM saves a check in the recurring-blocker demo, but ties
-fixed ordering across eight varied workloads. Zetaris proves both deferred-review
-and accepted-outcome follow-through. [Results and demos](CLI_GUIDE.md#memory-and-decision-follow-through).
+## Sponsor technology explanation
 
-## Best Meterless fit
+| Technology | Integration and contribution | Recorded proof |
+| --- | --- | --- |
+| **Zetaris** | Dedicated, schema-validated history reads and explicitly enabled append/readback retain recommendations, operator decisions, due reviews and reported outcomes. This decision trail cannot be reconstructed from current telemetry. | [Real remote append/readback and decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) |
+| **Meterless H-MEM** | The vendored local reference stores and retrieves scoped investigation lessons between runs. Relevant lessons prioritize fresh safety checks; linked structured rollback feedback can also teach a lesson. | [Real local persistence, cold/warm checks and changed-evidence correction](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24) |
+| **NVIDIA** | A configured NVIDIA-hosted Nemotron model chooses the next allowlisted evidence check through the Chat Completions planner. Trusted code binds arguments and the deterministic evaluator decides the verdict. The default scripted demo makes no NVIDIA call. | [Actual NVIDIA model access and both-store warm investigation](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24) |
+
+These sponsor proofs use **synthetic operational evidence**. Real persistence and model calls do not establish live AWS scheduling safety. Reported outcomes are operator statements; the [memory comparison](evaluation/README.md#memory-order-comparison) does not establish a general speedup. The organizer's Nightshift wording remains a separate [event-compliance question](RULES.md#online-source-check--2026-10-24).
+
+## Runtime ownership and bounds
+
+- `src/contracts.ts` validates requests, actions and observations at runtime, rejecting scope/period mismatches, stale collection times, malformed data, unsupported fields and units.
+- `src/investigation/run.ts` owns candidate ranking and the bounded planner → executor → evaluator loop. Only five read-only logical tools exist. The model chooses an allowlisted question; trusted code binds scope, window and current IDs. Model prose cannot authorize a verdict or infrastructure write.
+- `src/investigation/mock.ts` owns synthetic direct evidence and A/B/C/mixed/clear/missing scenarios. Metrics summarize the suggested daily UTC window across the observed lookback. These are application contracts, not claims about available AWS endpoints.
+- `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → supported/contradicted/unresolved transition; it renders the detailed CLI trace.
+
+Hard bounds: two discovery tool attempts; six tool attempts per candidate; two
+discovery plus seven planner calls per candidate (23 maximum); 5s per mock tool, 25s per AWS tool (around the collector’s 20s deadline).
+Scripted planning defaults to 15s per call and 120s overall. Live planning allows
+5 minutes per call, with an aggregate deadline based on the bounded call count
+and configured pacing plus two minutes. Explicit shorter limits still apply.
+Model responses are capped at 32 KiB. Every attempted call counts, including
+failures. Identical repeated tool actions defer the active candidate. A later
+failure preserves completed candidates; exhausted aggregate budgets explicitly
+defer the remainder. Missing evidence never becomes zero or proof of safety.
+Only daily same-day UTC windows are supported; overnight windows must be split
+by a future adapter.
+
+Decision and savings rules live in the [product contract](PROJECT_CONTEXT.md#6-decision-policy). Current integration proof and remaining gaps live in the [execution plan](EXECUTION_PLAN.md).
+
+## Meterless design choices
 
 **Extend reusable investigation methods through the existing H-MEM boundary.**
 Today, `memory.ts` stores two typed operational lessons; `history.ts` recalls
@@ -47,9 +73,7 @@ check can now teach H-MEM which question to verify first; raw history and prose
 never order the planner. [Outcome learning](FOLLOW_UP.md#automatic-learning-from-outcomes). This implements the useful
 core of the earlier memory recommendation.
 
-The eight-workload comparison ties both fixed orders, including cases where a
-remembered blocker changes. It supports keeping the mechanism, not claiming a
-general speedup or adding richer memory without evidence. Next, evaluate any
+The [recorded fixed-order comparison](evaluation/README.md#memory-order-comparison) does not establish a general speedup or justify richer memory. Next, evaluate any
 proposed reusable method against the same fixed baselines, counting teaching
 cost, completion, correctness and tool/model calls. Promote a method only after
 it shows a repeatable benefit without weakening fresh safety checks.
@@ -62,8 +86,8 @@ it shows a repeatable benefit without weakening fresh safety checks.
 | Markovian compression | Defer; current bounded scope has at most three candidates and capped planner calls |
 | Local Meterless runtime | Optional provider experiment; protocol, model approval and behavior need separate verification |
 
-**Immediate product priority:** replace mocked operational sources with validated
-read-only integrations. Additional engines cannot supply missing jobs or dependency
-evidence. The long-term product is a cost optimization specialist agent; EC2
-scheduling is the first niche. Broader optimization capabilities remain future
-scope, with their own evidence contracts and safety policies.
+## Reused components
+
+The product entry point is the investigation CLI. It reuses the checked-in [Meterless H-MEM reference](../vendor/hmem/README.md) and retains the inherited notebook as a separate optional tool. Model planning supports NVIDIA-compatible requests; actual sponsor use is recorded in the [execution evidence](EXECUTION_PLAN.md). The inherited `notebook.ts` and vendored H-MEM reference are reused starter components, not newly authored sponsor engines. The investigation CLI, direct evidence adapters, policy, validated report and follow-up workflow are the project-specific extension; Git history must establish exact build-window attribution before submission. The notebook is optional and is not invoked by the demo. Preserve the upstream [H-MEM attribution](../vendor/hmem/README.md).
+
+**Cursor:** actual development activity has not been established by this documentation change. The team must provide a factual account of tools used and work reviewed before making a built-in-Cursor claim. Track that evidence and any organizer wording reconciliation in the [release checklist](EXECUTION_PLAN.md).

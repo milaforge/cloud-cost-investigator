@@ -1,6 +1,6 @@
 # Dedicated investigation history
 
-[Documentation index](README.md)
+[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
 
 The app works on its first run without history. To demonstrate useful history on a
 later run, it needs one durable table containing compact, timestamped decisions.
@@ -15,19 +15,11 @@ resources. If the administrator already operates a writable JDBC database, a ded
 table there is also suitable. A Lightning database containing demo file registrations
 is not proof of an appendable backing store.
 
-The current credential can run `SELECT 1`. The initial catalog probe found no JDBC
-datasources or lakehouses; the user subsequently confirmed successful local lakehouse
-creation using the setup below; a subsequent read-only API probe independently found
-`CCI_HISTORY`. Table creation, restricted permissions and history
-append/read still need verification. An empty grant listing does not establish either
-admin access or denial. Executed evidence
-is recorded in [EXECUTION_PLAN.md](EXECUTION_PLAN.md).
+For current deployment proof and permission gaps, see the [execution plan](EXECUTION_PLAN.md). Connectivity or a lakehouse registration alone does not prove scoped append/read support.
 
 ## Required local Docker setup: history lakehouse
 
-Complete this once before configuring Zetaris investigation-history persistence.
-The user confirmed this setup works on 2026-10-23. It is not required for the
-first-run CLI over mock evidence, and does not by itself prove history append/read.
+Complete this once before enabling Zetaris persistence. It is optional for a first investigation; directory provisioning alone does not prove history append/read.
 
 The supplied Compose deployment mounts the persistent `customer-data` named volume
 read/write in both `driver` and `api`. Both services set:
@@ -43,7 +35,7 @@ access”, despite being inside the same volume. `/` is not the lakehouse storag
 
 ### Configure the provisioning path
 
-On a fresh computer, first follow [the app setup](CLI_GUIDE.md#fresh-machine-setup).
+On a fresh computer, first follow [the app setup](HOW.md#configure-your-investigation).
 Record this non-secret setting in the app's local `.env`:
 
 ```dotenv
@@ -103,9 +95,7 @@ CREATE DATALAKE CCI_HISTORY OPTIONS (
 
 Choose one registration method; do not repeat creation if the lakehouse already
 exists. Check `SHOW DATALAKES` for `CCI_HISTORY` before proceeding to the table and
-permission steps below. User-confirmed creation is recorded in
-[EXECUTION_PLAN.md](EXECUTION_PLAN.md); an independent post-creation catalog probe
-has since found the lakehouse. Actual history append/read remains outstanding.
+permission steps below.
 
 ## Required app configuration and table setup
 
@@ -115,7 +105,7 @@ retains that disk-path mapping in the registered `CCI_HISTORY` lakehouse.
 
 ### 3. Create the dedicated table as administrator
 
-The user confirmed `CCI_HISTORY` exists with no table yet. Run the CREATE TABLE
+After registering `CCI_HISTORY`, run the CREATE TABLE
 statement in [scripts/zetaris-history.sql](../scripts/zetaris-history.sql) once in the
 Zetaris SQL editor as the provisioning administrator. It creates only
 `CCI_HISTORY.investigations.records` using Iceberg; then run its DESCRIBE statement.
@@ -186,11 +176,7 @@ NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:zetaris:roundtrip
 It executes a mock B investigation, appends one labeled synthetic historical record,
 and verifies an exact scoped readback. That record is retained; no DELETE operation
 is implemented. It is separate from `npm test` and the manual LLM integration suite.
-On 2026-10-23, the user reported this probe passed with
-`history_read_write_verified: true`. This verifies real history append/read with
-their configured connection and mock investigation evidence; it does not certify
-the effective user's restricted permissions or automatic CLI history use. See
-[the execution record](EXECUTION_PLAN.md#user-executed-zetaris-history-round-trip-2026-10-23).
+See [recorded append/read proof](history/execution-log.md#user-executed-zetaris-history-round-trip-2026-10-23) for prior results; functionality does not certify least privilege.
 Missing schema, auth or write enablement fails explicitly.
 
 ## History table contract v1
@@ -220,7 +206,7 @@ is not a concurrency lock. Duplicate rows are detected as conflicts on append.
 
 The investigation CLI reads scoped history when `ZETARIS_HISTORY_TABLE` is set
 and appends validated summaries when `ZETARIS_HISTORY_ALLOW_APPEND=true`.
-See [the warm-run integration](CLI_GUIDE.md#h-mem-and-zetaris) for recorded proof.
+See the [both-store warm proof](evaluation/README.md#both-store-warm-proof) for the reproduction procedure.
 Historical IDs never become current evidence citations.
 
 Zetaris documents table-level SELECT and INSERT privileges. Its INSERT documentation
@@ -232,24 +218,6 @@ operations against real data.
 
 References: [Zetaris SQL Guide](https://kbase.zetaris.com/knowledge/sql-guide),
 [SQL Manual](https://kbase.zetaris.com/knowledge/sql-manual).
-
-## Proof after provisioning
-
-1. Verify the table schema and the app identity's effective permissions without granting new privileges.
-2. Append one synthetic, labeled history record with a unique ID; do not retry an ambiguous write blindly.
-3. Read that same ID back and validate every field, scope, timestamp and source mode.
-4. Verify duplicate handling and scope isolation with non-sensitive records. Leave probe records labeled rather than deleting them through the application.
-5. Run the configured investigation CLI to exercise historical lookup/append, retaining separate history IDs and fresh-evidence citations.
-
-Until then, a successful connectivity/catalog probe is not history integration proof:
-
-```sh
-NODE_TLS_REJECT_UNAUTHORIZED=1 ZETARIS_ALLOW_HTTP=true npm run probe:zetaris:history
-```
-
-HTTP is an explicitly authorized exception for this connection. HTTPS remains the
-default; redirects remain disabled, and raw responses and private endpoints are not logged.
-
 
 ## Decision follow-through (Oct 24)
 

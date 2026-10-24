@@ -1,9 +1,10 @@
+> Built to participate in **Open Agent Hackathon 2026 — Track 02: The Agent That Can Explain Why**.
 # Cloud Cost Investigator
 
-**Find EC2 savings. Catch the reasons a shutdown would fail.**
+**An agent that finds AWS EC2 savings and challenges proposed shutdowns with fresh evidence.** It never changes infrastructure.
 
-CCI challenges proposed off-hours shutdowns with fresh evidence and explains whether to proceed, reject, or investigate further. It never changes your infrastructure.
+**Dependencies:** Node.js 24+, npm and Git. The synthetic scripted demo needs no GPU, credentials or services; live features need AWS access, a model provider and/or Zetaris. Meterless H-MEM is vendored.
+**Setup:** clone this repository and run `npm ci`.
+**Usage (synthetic demo):** `npm run investigate -- --evidence mock --account demo --region us-east-1`
 
-[Understand the project](docs/guide/overview.md) · [Run the demo](docs/guide/getting-started.md) · [Explore the docs](docs/README.md)
-
-Track 02 — The Agent That Can Explain Why · NVIDIA · Meterless H-MEM · Zetaris
+[Why](docs/WHY.md) · [How](docs/HOW.md)
