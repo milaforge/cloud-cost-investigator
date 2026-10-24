@@ -265,6 +265,10 @@ test('model failure emits explicit failed model-dependent result without scripte
   assert.equal(r.planner.mode, 'live');
   assert.equal(r.budget.discovery_attempts, 0);
   assert.ok(!JSON.stringify(r).includes('secret-marker'));
+  assert.equal(
+    r.trace.find((t) => t.failure_code)?.failure_code,
+    'planner_unknown_failure',
+  );
 });
 
 for (const bad of ['write', 'scope', 'instance', 'fake_citation'] as const) {
@@ -330,6 +334,27 @@ test('planner timeout stops without tools or late results', async () => {
   });
   assert.equal(r.stop_reason, 'planner_unavailable_or_invalid');
   assert.equal(r.budget.planner_calls, 1);
+  assert.equal(
+    r.trace.find((t) => t.failure_code)?.failure_code,
+    'planner_timeout',
+  );
+});
+
+test('aggregate planner deadline has a distinct sanitized failure code', async () => {
+  const r = await run({
+    planner: {
+      mode: 'live',
+      model: 'test-model',
+      next: () => new Promise(() => {}),
+    },
+    limits: { planner_timeout_ms: 500, total_timeout_ms: 10 },
+  });
+  assert.equal(r.stop_reason, 'total_runtime_exhausted');
+  assert.equal(
+    r.trace.find((t) => t.failure_code)?.failure_code,
+    'investigation_deadline_exceeded',
+  );
+  assert.equal(r.budget.discovery_attempts, 0);
 });
 
 test('total runtime bound applies across individual calls', async () => {

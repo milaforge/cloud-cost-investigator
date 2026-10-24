@@ -14,6 +14,31 @@ export type SourceStatus =
   | 'unavailable'
   | 'error';
 export type Mode = 'mock' | 'fixture' | 'live' | 'stub';
+export const PLANNER_FAILURE_CODES = [
+  'planner_timeout',
+  'investigation_deadline_exceeded',
+  'planner_invalid_action',
+  'planner_unknown_failure',
+  'model_transport_unavailable',
+  'model_timeout',
+  'model_cancelled',
+  'model_invalid_response',
+  'model_incomplete_response',
+  'model_invalid_action_json',
+  'model_invalid_choice',
+  'model_tls_verification_required',
+  'model_state_too_large',
+] as const;
+export type PlannerFailureCode =
+  | (typeof PLANNER_FAILURE_CODES)[number]
+  | `model_http_${number}`;
+
+/** Only fixed public codes or a three-digit HTTP status may enter a report. */
+export function validatePlannerFailureCode(value: unknown): PlannerFailureCode {
+  if (typeof value === 'string' && /^model_http_[1-5][0-9]{2}$/.test(value))
+    return value as PlannerFailureCode;
+  return member(value, PLANNER_FAILURE_CODES);
+}
 export interface Window {
   from: string;
   to: string;
@@ -133,6 +158,7 @@ export interface TraceEntry {
   action?: Action;
   status?: SourceStatus;
   evidence_ids: string[];
+  failure_code?: PlannerFailureCode;
 }
 export interface CandidateReport {
   instance_id: string;

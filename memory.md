@@ -1,5 +1,47 @@
 # Project Memory
 
+## Slow, single-case model diagnostics (2026-10-24)
+
+- User requested five-minute model-call waits and gentler free-endpoint usage
+  after HTTP 500s. Align the adapter and runner at 300000 ms; scale the aggregate
+  live deadline by the bounded planner count plus pacing and a two-minute reserve.
+  Keep explicit shorter limits, scripted defaults, tool deadlines and call caps.
+- Evaluation already serialized cases and calls. `--case` selects one fixture;
+  denominator and methodology must reflect that selection. Five-second default
+  live pacing occurs before every call, including the first in each case; this
+  also separates requests across case boundaries. `--delay-ms` is bounded to one
+  minute. Delay consumes the aggregate budget, not the model-call timeout.
+- HTTP failures still return immediately, without retries. Slow responses and
+  immediate 500s are different evidence; neither status alone proves overload.
+
+## Evaluation progress (2026-10-24)
+
+- Evaluation writes one final JSON document after all cases; redirection creates
+  an empty file immediately, which previously made live runs look stalled.
+- Optional `--verbose` writes progress to stderr, preserving parseable stdout.
+  The investigation runner emits only selected structured metadata, including
+  planner start and bounded wait before awaiting the model. Never log model
+  reasons, tool payloads, scope, credentials, endpoints or raw exceptions.
+- Keep the existing deadlines, safety policy, result schema and history-disabled
+  evaluation path. Progress does not add retries or change completion semantics.
+
+## Sanitized planner diagnostics and independent evaluation metrics (2026-10-24)
+
+- The existing orchestrator owns wait/deadline and executor-action validation;
+  the model adapter owns transport, HTTP, response-envelope, JSON and allowed-
+  choice failures. Preserve those distinctions through a validated optional
+  planner trace `failure_code`, with fixed public strings or HTTP 100–599.
+  Unknown exception messages map to `planner_unknown_failure`; never report
+  raw messages or bodies. Optional fields keep old reports readable, but old
+  generic failures cannot be retrospectively diagnosed.
+- Keep the existing stop reason and safety/completion semantics. Report exact
+  label matches independently from complete/partial/failed counts, planner-
+  failure cases and matching labels reached after failure. Correct unknown-
+  evidence deferrals remain partial without being operational failures.
+  Evaluation passes only with all labels matching, no failed investigation and
+  no planner failure. Do not increase timeouts, add retries or change prompts
+  to make diagnostic measurements pass.
+
 ## Evaluation and warm model proof (2026-10-24)
 
 - Follow-up user confirmation accepts `nvidia/nemotron-3-ultra-550b-a55b` for

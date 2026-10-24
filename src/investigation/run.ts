@@ -22,7 +22,11 @@ import {
   InvestigationHistory,
 } from './history.ts';
 import type { CurrentEvidenceProvider } from './mock.ts';
-import type { Planner } from './planner.ts';
+import {
+  MODEL_PLANNER_TIMEOUT_MS,
+  type Planner,
+  sanitizedPlannerFailure,
+} from './planner.ts';
 import {
   schedulingProof,
   calculateSavings,
@@ -43,14 +47,30 @@ export interface RunOptions {
   planner: Planner;
   provider: CurrentEvidenceProvider;
   history?: HistoryOptions;
+  /** Safe metadata only: no model text, source payloads, scope or credentials. */
+  onProgress?: (event: InvestigationProgress) => void;
   limits?: {
     tool_timeout_ms?: number;
     planner_timeout_ms?: number;
+    planner_interval_ms?: number;
     total_timeout_ms?: number;
     candidate_attempts?: number;
     planner_calls?: number;
   };
 }
+
+export type InvestigationProgress =
+  | { event: 'planner_start'; call: number; timeout_ms: number }
+  | { event: 'planner_pause'; delay_ms: number }
+  | {
+      event: 'trace';
+      step: number;
+      phase: TraceEntry['phase'];
+      action?: Action['type'];
+      tool?: ToolAction['tool'];
+      status?: TraceEntry['status'];
+      failure_code?: TraceEntry['failure_code'];
+    };
 
 class BoundedTimeout extends Error {}
 
@@ -101,19 +121,32 @@ export async function runInvestigation(
   const started_at = new Date(start).toISOString();
   if (Date.parse(request.window.to) > start)
     throw new Error('Observation window cannot end in the future');
-  const total = limit(options.limits?.total_timeout_ms, 120_000, 120_000);
   const toolTimeout = limit(options.limits?.tool_timeout_ms, 5_000, 30_000);
   const plannerTimeout = limit(
     options.limits?.planner_timeout_ms,
-    15_000,
-    30_000,
+    options.planner.mode === 'live' ? MODEL_PLANNER_TIMEOUT_MS : 15_000,
+    MODEL_PLANNER_TIMEOUT_MS,
   );
+  const plannerInterval = options.limits?.planner_interval_ms ?? 0;
+  if (
+    !Number.isInteger(plannerInterval) ||
+    plannerInterval < 0 ||
+    plannerInterval > 60_000
+  )
+    throw new Error('Invalid planner interval');
   const maxCandidate = limit(options.limits?.candidate_attempts, 6, 6);
   const maxPlanner = limit(
     options.limits?.planner_calls,
     2 + 7 * request.max_candidates,
     2 + 7 * request.max_candidates,
   ); // 2 discovery + 7 per candidate
+  const total = limit(
+    options.limits?.total_timeout_ms,
+    options.planner.mode === 'live'
+      ? maxPlanner * (plannerTimeout + plannerInterval) + 120_000
+      : 120_000,
+    8_400_000, // 23 planner calls at maximum timeout + pacing, plus 2 minutes.
+  );
   const history = new InvestigationHistory(options.history ?? {}, {
     account_id: request.account_id,
     region: request.region,
@@ -147,6 +180,15 @@ export async function runInvestigation(
       reason,
       evidence_ids: ids,
       ...extra,
+    });
+    options.onProgress?.({
+      event: 'trace',
+      step: trace.length,
+      phase,
+      action: extra.action?.type,
+      tool: extra.action?.type === 'tool' ? extra.action.tool : undefined,
+      status: extra.status,
+      failure_code: extra.failure_code,
     });
   };
   const find = (tool: string) =>
@@ -217,12 +259,28 @@ export async function runInvestigation(
         stopReason = 'planner_budget_exhausted';
         break;
       }
+      if (plannerInterval) {
+        const delay = remaining(plannerInterval);
+        options.onProgress?.({ event: 'planner_pause', delay_ms: delay });
+        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+        if (Date.now() >= start + total) {
+          runtimeExhausted = true;
+          stopReason = 'total_runtime_exhausted';
+          break;
+        }
+      }
       plannerCalls++;
       if (candidate) candidatePlannerCalls++;
       let action: Action;
       const plannerUsesRuntimeDeadline =
         start + total - Date.now() <= plannerTimeout;
       const plannerDeadline = remaining(plannerTimeout);
+      options.onProgress?.({
+        event: 'planner_start',
+        call: plannerCalls,
+        timeout_ms: plannerDeadline,
+      });
+      let validatingAction = false;
       try {
         const value = await bounded(
           (signal) =>
@@ -254,6 +312,7 @@ export async function runInvestigation(
             ),
           plannerDeadline,
         );
+        validatingAction = true;
         action = validateAction(value);
       } catch (error) {
         runtimeExhausted =
@@ -264,6 +323,17 @@ export async function runInvestigation(
         add(
           'planner',
           'Planner failed, timed out, or returned an invalid action.',
+          [],
+          {
+            failure_code:
+              error instanceof BoundedTimeout
+                ? runtimeExhausted
+                  ? 'investigation_deadline_exceeded'
+                  : 'planner_timeout'
+                : validatingAction
+                  ? 'planner_invalid_action'
+                  : sanitizedPlannerFailure(error),
+          },
         );
         break;
       }

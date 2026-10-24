@@ -24,6 +24,7 @@ import {
   validateObservation,
   validateRequest,
   validateSchedule,
+  validatePlannerFailureCode,
 } from '../contracts.ts';
 
 const strings = (value: unknown) => array(value, 100).map((v) => textValue(v));
@@ -109,6 +110,7 @@ function traceEntry(value: unknown): TraceEntry {
     'action',
     'status',
     'evidence_ids',
+    'failure_code',
   ]);
   const entry: TraceEntry = {
     step: integer(t.step, 0, 1000),
@@ -117,6 +119,16 @@ function traceEntry(value: unknown): TraceEntry {
     evidence_ids: ids(t.evidence_ids),
   };
   if (t.action !== undefined) entry.action = validateAction(t.action);
+  if (t.failure_code !== undefined) {
+    if (
+      entry.phase !== 'planner' ||
+      t.action !== undefined ||
+      t.status !== undefined ||
+      entry.evidence_ids.length
+    )
+      throw new Error('Invalid planner failure trace');
+    entry.failure_code = validatePlannerFailureCode(t.failure_code);
+  }
   if (t.status !== undefined)
     entry.status = member(t.status, [
       'ok',
@@ -666,7 +678,7 @@ export function renderReport(value: InvestigationReport): string {
   lines.push('', 'Decision trace:');
   for (const t of r.trace) {
     lines.push(
-      `${t.step}. ${t.phase}${t.status ? ` (${t.status})` : ''}: ${t.reason} ${citations(t.evidence_ids)}`,
+      `${t.step}. ${t.phase}${t.status ? ` (${t.status})` : ''}${t.failure_code ? ` [${t.failure_code}]` : ''}: ${t.reason} ${citations(t.evidence_ids)}`,
     );
     if (t.action) lines.push(`  Validated action: ${JSON.stringify(t.action)}`);
   }

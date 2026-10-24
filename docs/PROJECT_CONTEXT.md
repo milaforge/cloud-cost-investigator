@@ -158,6 +158,28 @@ A runnable demo must prove:
 
 ## 10. Integration status and references
 
+**Diagnostic contract update (2026-10-24):** Planner failures may now carry an
+optional validated `failure_code` on actionless planner trace entries; old reports
+remain valid. Only fixed public codes or three-digit HTTP statuses are reported.
+Evaluation separates exact disposition matches from completion states and planner
+failures, including matching deferrals reached after failure. Correct deferrals
+remain partial; operational planner failures cannot pass the evaluation gate.
+This diagnostic change does not relax safety, add retries or establish the exact
+causes of older generic failures. A new real-model diagnostic measurement in
+`evaluation-model-diagnostics.json` recorded 6/8 label matches, 2 complete and
+6 partial, with three `planner_timeout` cases and one incidental matching
+deferral after timeout. These hit the unchanged 15-second per-call limit; the
+earlier five generic errors remain undiagnosed. Proof is in `EXECUTION_PLAN.md`.
+
+**Subsequent timeout/pacing update (2026-10-24):** By user request, new live
+planner calls and HTTP requests allow five minutes. The aggregate live budget
+scales with bounded call counts and pacing plus a two-minute reserve; explicit
+shorter deadlines still apply. Evaluation supports one selected case via
+`--case`, preserving its actual denominator, and defaults to a five-second pause
+before each live planner call. Cases and calls remain sequential; no retries or
+fallback are added. Earlier timeout measurements above retain their original
+limits. An HTTP 500 alone does not establish overload.
+
 **2026-10-24 evaluation update:** Eight designed synthetic cases now have a
 reproducible scripted-policy comparison against the low-average-CPU heuristic,
 including safety/unknown positives, citation validation and per-case timing/calls.

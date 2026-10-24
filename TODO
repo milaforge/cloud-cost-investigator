@@ -42,7 +42,7 @@ Driver: Zayan; Milad integrates it into the investigation. This unblocks item 2.
 
 What exists / what is missing:
 - `src/tools/zetaris.ts` is connectivity scaffolding; inspect its current helper
-  for connection readiness. It does not establish a dedicated history store,
+  and the available Zetaris probe. Neither establishes a dedicated history store,
   approved schema, append support or least-privilege permissions.
 - The investigation currently labels Zetaris history `not_configured`. Earlier
   evidence recorded missing connection configuration. Recheck readiness safely;

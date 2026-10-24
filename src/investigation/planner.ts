@@ -1,12 +1,30 @@
-import type { Action, MetricsData, ToolArgs, ToolName } from '../contracts.ts';
+import {
+  type Action,
+  type MetricsData,
+  type ToolArgs,
+  type ToolName,
+  validatePlannerFailureCode,
+} from '../contracts.ts';
 import { historicalPriority } from './history.ts';
 import type { PlannerState } from './run.ts';
 
 export type { PlannerState } from './run.ts';
+export const MODEL_PLANNER_TIMEOUT_MS = 300_000;
 export interface Planner {
   readonly mode: 'scripted' | 'live';
   readonly model: string | null;
   next(state: PlannerState, signal: AbortSignal): Promise<unknown>;
+}
+
+/** Unknown exception messages, provider bodies and stack traces are never public. */
+export function sanitizedPlannerFailure(error: unknown) {
+  try {
+    return validatePlannerFailureCode(
+      error instanceof Error ? error.message : undefined,
+    );
+  } catch {
+    return 'planner_unknown_failure' as const;
+  }
 }
 
 /** Reproducible offline policy for exercising the loop; deliberately not labeled as a model. */

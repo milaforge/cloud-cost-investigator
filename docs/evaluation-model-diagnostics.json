@@ -1,0 +1,301 @@
+{
+  "measured_at": "2026-10-24T09:22:02.344Z",
+  "evidence_mode": "mock",
+  "planner_mode": "model",
+  "request": {
+    "account_id": "evaluation-synthetic",
+    "region": "us-east-1",
+    "max_candidates": 1,
+    "window": {
+      "from": "2026-09-01T00:00:00Z",
+      "to": "2026-09-29T00:00:00Z"
+    }
+  },
+  "methodology": "Eight fixed synthetic single-candidate fixtures, one run each; independently labeled expected dispositions. CPU baseline shares discovery ranking, recommends when average CPU <=10%, ignores peaks and operational checks. Investigation uses the existing safety evaluator. Scripted runs measure deterministic policy; model runs measure real model planning. History disabled. D is measured separately by probe:warm. Citation counts cover candidate/hypothesis references and full reports pass runtime validation. No production generalization or model superiority follows from this small designed set.",
+  "model_cost": null,
+  "cost_limitation": "Planner does not record token usage or provider billing; cost is unavailable, not zero.",
+  "cpu_baseline": {
+    "disposition_correct": 2,
+    "cases": 8,
+    "unsafe_positives": 3,
+    "unsafe_cases": 3,
+    "unverified_positives": 3,
+    "unknown_cases": 3
+  },
+  "investigation": {
+    "disposition_correct": 6,
+    "cases": 8,
+    "unsafe_positives": 0,
+    "unsafe_cases": 3,
+    "unverified_positives": 0,
+    "unknown_cases": 3
+  },
+  "execution": {
+    "cases": 8,
+    "complete": 2,
+    "partial": 6,
+    "failed": 0,
+    "planner_failure_cases": 3,
+    "matching_dispositions_with_planner_failure": 1,
+    "failure_code_counts": {
+      "planner_timeout": 3
+    }
+  },
+  "rows": [
+    {
+      "case": "A",
+      "expected": "conditional_recommendation",
+      "safety": "supported",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "conditional_recommendation",
+        "completion": "complete",
+        "stop_reason": "hypothesis_supported",
+        "planner_failures": [],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "5c63ff76-e15e-4d92-9752-aad99467b468",
+        "elapsed_ms": 40328,
+        "tool_attempts": 5,
+        "planner_calls": 6,
+        "citations": {
+          "valid": 9,
+          "total": 9
+        },
+        "savings": 75
+      }
+    },
+    {
+      "case": "B",
+      "expected": "not_recommended",
+      "safety": "unsafe",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "not_recommended",
+        "completion": "complete",
+        "stop_reason": "hypothesis_contradicted",
+        "planner_failures": [],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "6f296c07-510d-4a4b-b1fe-a2c0e3b104a9",
+        "elapsed_ms": 42992,
+        "tool_attempts": 4,
+        "planner_calls": 5,
+        "citations": {
+          "valid": 6,
+          "total": 6
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "C",
+      "expected": "not_recommended",
+      "safety": "unsafe",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_unavailable_or_invalid",
+        "planner_failures": [
+          {
+            "step": 12,
+            "code": "planner_timeout"
+          }
+        ],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "8a4cb369-904d-420a-a394-55d0e121d615",
+        "elapsed_ms": 36502,
+        "tool_attempts": 4,
+        "planner_calls": 6,
+        "citations": {
+          "valid": 4,
+          "total": 4
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "missing",
+      "expected": "needs_verification",
+      "safety": "unknown",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 0,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_finished",
+        "planner_failures": [],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "84b26770-75d8-4315-85bd-45ffbf4350fe",
+        "elapsed_ms": 47732,
+        "tool_attempts": 5,
+        "planner_calls": 7,
+        "citations": {
+          "valid": 4,
+          "total": 4
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "clear_without_authority",
+      "expected": "needs_verification",
+      "safety": "unknown",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_unavailable_or_invalid",
+        "planner_failures": [
+          {
+            "step": 14,
+            "code": "planner_timeout"
+          }
+        ],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "7d50126c-323f-4622-8a24-4aa63690e741",
+        "elapsed_ms": 43769,
+        "tool_attempts": 5,
+        "planner_calls": 7,
+        "citations": {
+          "valid": 4,
+          "total": 4
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "high_peak",
+      "expected": "needs_verification",
+      "safety": "unsafe",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "unsupported_hypothesis",
+        "planner_failures": [],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "598aea41-756a-47fd-8439-84851b50dd4b",
+        "elapsed_ms": 28474,
+        "tool_attempts": 3,
+        "planner_calls": 4,
+        "citations": {
+          "valid": 2,
+          "total": 2
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "partial_operations",
+      "expected": "needs_verification",
+      "safety": "unknown",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_finished",
+        "planner_failures": [],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "27359559-f990-429e-993e-5fa9ebb2fdb2",
+        "elapsed_ms": 41556,
+        "tool_attempts": 5,
+        "planner_calls": 7,
+        "citations": {
+          "valid": 4,
+          "total": 4
+        },
+        "savings": null
+      }
+    },
+    {
+      "case": "unknown_commitments",
+      "expected": "conditional_recommendation",
+      "safety": "supported",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": "needs_verification",
+        "completion": "partial",
+        "stop_reason": "planner_unavailable_or_invalid",
+        "planner_failures": [
+          {
+            "step": 8,
+            "code": "planner_timeout"
+          }
+        ],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "investigation_id": "f5bae6f9-517d-4792-94e9-ab8f4d5011c1",
+        "elapsed_ms": 27619,
+        "tool_attempts": 3,
+        "planner_calls": 4,
+        "citations": {
+          "valid": 2,
+          "total": 2
+        },
+        "savings": null
+      }
+    }
+  ]
+}

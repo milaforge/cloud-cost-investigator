@@ -26,6 +26,149 @@ The Oct 23 MVP discovery approved four shared-engine flows: A supported off-hour
 
 **Earlier inspection had not verified:** live API calls for any of the five direct categories; historical read and append via Zetaris; H-MEM project round-trip; approved model call; CLI test execution. New executed evidence is recorded below. Team-reported prior Zetaris data availability does not verify the newly planned direct adapters. Never mark any of these complete from a written plan.
 
+### Isolated third planner-call diagnosis — 2026-10-24
+
+**Gate/owner:** Milad, investigate the user's `missing` run: inventory and billing
+succeeded, then planner call 3 returned HTTP 500 after about three seconds.
+
+- Reconstructed the checkpoint using the existing scripted planner, validated
+  mock inventory/billing tools and normal candidate selection. No live model was
+  used for the first two steps; no jobs or dependency evidence was present yet.
+  This recreates the logical state, not the original timestamped request bytes.
+- `node --import tsx /tmp/cci-isolate-third-call.mjs`: after one 15-second pause,
+  made **exactly one** live planner request with a 300000 ms deadline. Configured
+  `nvidia/nemotron-3.5-super-vl-120b-a12b` succeeded in **4305 ms**, choosing
+  **get_ec2_metrics**. Output: `/tmp/cci-third-call-result.json`. No AWS/history
+  writes and no raw provider output or credentials retained.
+- Offline comparison of reconstructed `missing`, B and C checkpoint evidence
+  matched after excluding collection timestamps and generated evidence IDs.
+  The initial comparison excluded timestamps only and differed by generated IDs;
+  the result artifact includes the normalized comparison and explanation.
+- **Conclusion/limit:** the isolated third-call state can succeed. No reproducible
+  scenario-specific defect was established; neither transient provider failure
+  nor overload can be proven from the earlier HTTP 500. This is one planner-call
+  proof, not a completed investigation or a claim of endpoint reliability.
+  No product code or model configuration was changed for this diagnosis.
+
+### Slow single-case diagnostics — 2026-10-24
+
+**Gate/owner:** Milad, user-requested free-endpoint diagnostics following HTTP
+500s in the user's evaluation. Overload remains a hypothesis, not a finding.
+
+- [x] New live calls allow **300000 ms** in both runner and HTTP adapter.
+  Aggregate live budget includes bounded calls × (timeout + pacing) plus a
+  two-minute reserve; explicit shorter deadlines still apply. Tool timeouts,
+  planner-call caps, evidence/safety handling and scripted defaults are preserved.
+- [x] `--case missing` selects just one case with one-case denominators.
+  `--delay-ms` accepts 0–60000; live evaluation defaults to a **5000 ms** pause
+  before each call, including the first call of every case. Cases/calls remain
+  sequential. No automatic retry, fallback, model or credential changes.
+- [x] README documents selected cases, pacing, longer worst-case runtime and
+  the difference between pending-request timeout and immediate HTTP 500.
+  Result metadata records selected cases, pacing and planner timeout.
+- **Offline proof:** `npm test`: **133/133 passed**. Includes simulated response
+  beyond the old aggregate deadline, five-minute runner/adapter deadlines, pacing
+  constrained by aggregate budget, selection denominators and invalid arguments.
+  `npm run typecheck`, scoped Biome lint (`src scripts tests cli.ts`), and
+  `git diff --check`: **passed**.
+- **Live attempt:** `npm run --silent evaluate -- --planner model --case missing
+  --verbose > /tmp/cci-evaluation-missing-slow.json`: exit **1**, five-second
+  pacing, one attempted model call, **model_transport_unavailable**, no tool
+  calls, no HTTP response recorded. A network-enabled attempt saved separately
+  to `/tmp/cci-evaluation-missing-slow-network.json` also exited **1** with
+  **model_transport_unavailable** after approximately 10.5 seconds in the call
+  (15.5 seconds including pacing). These attempts predate the added JSON timeout
+  metadata; verbose output confirmed **300000 ms**. No AWS/history writes.
+- **Blocker/next action:** this environment's transport failures prevent testing
+  whether paced requests fix the user's earlier HTTP 500s. Run one selected case
+  from the user's working environment and retain each result; a returned 500
+  still ends immediately. Do not infer overload or that inference ran from it.
+
+### Visible evaluation progress — 2026-10-24
+
+**Gate/owner:** Milad, evaluation usability. Final JSON remains a single stdout
+document; optional progress must appear before waiting for the model, without
+exposing provider data or changing investigation behavior.
+
+- [x] `--verbose` reports elapsed time, case index, baseline, planner call and
+  bounded timeout, tool/trace steps, safe failure codes and per-case completion
+  on stderr. Both flag orders work. Default output stays quiet until final JSON.
+- [x] README explains why the redirected file stays empty during execution and
+  provides the verbose command. Runner progress contains selected metadata only,
+  with no model reasons, source payloads, scope, credentials or endpoints.
+- **Proof:** `npm test`: **130/130 passed**, including pending mocked model-call
+  visibility, HTTP failure redaction, CLI argument validation, quiet default and
+  separate JSON/progress streams. `npm run typecheck`, scoped Biome lint of
+  `src scripts tests cli.ts`, and `git diff --check`: **passed**.
+- **CLI proof:** `npm run --silent evaluate -- --planner scripted --verbose
+  > /tmp/cci-progress-evaluation.json 2> /tmp/cci-progress-evaluation.log`:
+  exit **0**, stdout parsed as JSON, **8/8** labels, **4 complete / 4 partial**,
+  no planner failures; stderr held progress from startup through all eight cases.
+- **Limit/next action:** no new live-model run; model progress tested using mocked
+  HTTP failures. User can run the documented model command to watch live calls.
+  Existing deadlines, scoring, evidence modes and history boundaries are unchanged.
+
+### Sanitized failure diagnostics and separate execution metrics — 2026-10-24
+
+**Gate/owner:** Milad, focused model-evaluation diagnostics. Preserve the selected
+model, request limits, safety evaluator, completion labels and history boundaries.
+
+- [x] Optional runtime-validated `trace[].failure_code` distinguishes bounded
+  planner timeout, aggregate deadline, invalid executor action, recognized model
+  errors and unknown failures. HTTP status diagnostics retain only a three-digit
+  status, never provider text. Readable reports display the same safe code;
+  historical reports without it still validate. Failure codes are restricted to
+  actionless planner entries, not tool/success entries.
+- [x] Model adapter distinguishes malformed JSON from an invalid parsed choice,
+  and native deadline/caller cancellation from generic transport errors, including
+  cancellation while reading the response body. No retries, fallback, timeout
+  increases, prompt changes or new dependencies.
+- [x] Evaluation now separately reports complete/partial/failed counts, cases
+  with planner errors, incidental matching labels after errors and code counts;
+  each case records error step/code. A planner error makes the command fail even
+  if its resulting deferral label happens to match. Correct deferrals without
+  planner errors remain partial and can pass evaluation.
+
+**Executed proof:**
+
+- `npm test`: **128/128 passed**. Focused new tests cover HTTP 400/401/403/405/
+  429/500/503, transport failure, malformed envelope/JSON, incomplete output,
+  invalid choice/executor action, caller/native/orchestrator/aggregate timeouts,
+  unknown exception redaction, forged diagnostic fields, old-report compatibility,
+  readable trace output and failure-aware evaluation gating. Mock transport only.
+- `npm run typecheck`: **passed**. `node_modules/.bin/biome lint src scripts
+  tests cli.ts`: **passed**. Initial whole-repository `npm run lint` also found
+  a separate concurrently created empty root `evaluation-model.json`; that file
+  was not created or modified by this task. A new test import-style warning was
+  corrected; scoped source lint then passed.
+- `npm run --silent evaluate > /tmp/cci-evaluation-scripted-diagnostics.json`:
+  exit **0**, mock/scripted, **8/8** labels, **4 complete / 4 partial / 0 failed**,
+  **0** planner-failure cases, **0** matching labels after planner failure and an
+  empty code-count map. Preserves honest partial statuses for correct deferrals.
+- `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run --silent evaluate -- --planner model
+  > /tmp/cci-evaluation-model-diagnostics.json`: exit **1**, a new diagnostic
+  measurement, not a replacement for the earlier run. Saved separately as
+  [`evaluation-model-diagnostics.json`](./evaluation-model-diagnostics.json).
+  Real configured NVIDIA model / mock current AWS evidence / history disabled.
+  **6/8** matching dispositions, **2 complete / 6 partial / 0 failed**;
+  **3** planner-failure cases, all **`planner_timeout`**, and **1** matching
+  deferral despite planner failure. C (trace step 12), clear-without-authority
+  (step 14) and unknown commitments (step 8) exhausted the existing **15-second
+  per-planner-call wait**. No HTTP error code was recorded in this measurement;
+  this does not retrospectively diagnose older failures. A and B completed;
+  missing and partial operations deferred without planner errors; high peaks
+  were blocked as `unsupported_hypothesis`. **0/3** unsafe and **0/3** unknown-
+  safety positives, **35/35** valid current references. **308972 ms** total,
+  **46** planner calls and **34** current-tool attempts. Cost remains **null**.
+  No retry to replace these failures and no timeout/prompt/model changes.
+  This proves diagnostic capture, not reliable completion across all fixtures.
+
+**Limit:** historical generic planner failures still have unknown exact causes;
+new codes diagnose new runs only. The existing designed fixture set does not
+establish production reliability. Diagnostic acceptance is satisfied; next
+reliability work should assess model-call latency against the per-call and total
+budgets using this evidence. No infrastructure or historical schema was changed.
+
 ### Successful real-model access retry and warm proof — 2026-10-24
 
 **Gate/owner:** Milad, real-model D proof. User requested a retry after HTTP 403.

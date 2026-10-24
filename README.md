@@ -177,8 +177,93 @@ commitments. Both paths share discovery ranking and independently retrieve mock
 observations. Evaluation never enables history or remote appends. The default
 uses the existing scripted planner to measure deterministic safety policy;
 `--planner model` uses the real configured planner without fallback. Failed or
-absent predictions remain in the denominator and make the command exit nonzero.
+absent predictions remain in the denominator. The command exits nonzero for
+any label mismatch, failed investigation or planner failure, even when a failure
+incidentally produces the expected deferral label. A correct partial deferral
+without planner failure can still pass the evaluation.
 Scenario D is a separate two-run `probe:warm` proof.
+
+New evaluation output reports `execution.complete`, `execution.partial` and
+`execution.failed` independently of `investigation.disposition_correct`.
+`execution.planner_failure_cases` counts affected cases;
+`execution.matching_dispositions_with_planner_failure` exposes incidental label
+matches, and `execution.failure_code_counts` counts failure events by code.
+Each case includes `investigation.planner_failures` with trace step and code.
+Existing stored measurements predate these fields and remain unchanged.
+The [new diagnostic measurement](docs/evaluation-model-diagnostics.json) captured
+three `planner_timeout` cases at the existing 15-second per-call limit: C,
+clear-without-authority and unknown commitments. It reports 6/8 matching labels,
+2 complete, 6 partial and one matching label reached after timeout. It remains
+a failed evaluation; no retry or timeout increase was used to hide the failures.
+
+Capture a fresh diagnostic run without npm's banner in the JSON:
+
+```bash
+npm run --silent evaluate -- --planner model --verbose > /tmp/evaluation.json
+```
+
+`--verbose` prints elapsed time, case number, planner calls and their timeout,
+tool/trace steps, sanitized failure codes and each case's completion on **stderr**.
+Progress stays visible in the terminal when stdout is redirected. The JSON file
+stays empty until all eight cases finish; live-model evaluation can take several
+minutes. Without `--verbose`, the evaluator is silent until the final JSON.
+To save progress too, add `2> /tmp/evaluation-progress.log` (or watch that file
+with `tail -f`). Interrupting the run leaves no final JSON report. This switch
+also works with the default scripted planner.
+
+Run one case at a time to diagnose a free endpoint:
+
+```bash
+npm run --silent evaluate -- --planner model --case missing --verbose > /tmp/evaluation-missing.json
+```
+
+Case IDs: `A`, `B`, `C`, `missing`, `clear_without_authority`, `high_peak`,
+`partial_operations`, `unknown_commitments`. With `--case`, scores and denominators
+cover only that case; `selected_cases` records the selection. Omitting it runs
+all eight cases sequentially. Within one process there are no parallel model
+calls. Avoid starting multiple evaluation processes at once.
+
+Live evaluation now pauses **5 seconds before every planner call**, including the
+first call of each case. Use `--delay-ms 15000` for a longer pause (allowed range
+0–60000). Scripted evaluation defaults to no pause. The report records
+`planner_delay_ms`; verbose output shows each pause.
+
+Live planner and HTTP request deadlines are now **5 minutes per call**. The
+aggregate deadline scales with the bounded planner-call count and pacing, plus
+two minutes for other work (47 minutes 45 seconds for one evaluation case with
+the default pacing). Explicit shorter runner deadlines still apply; tool timeouts
+and call-count budgets are unchanged. These settings supersede the limits used
+by the historical measurements above. A five-minute timeout ends our wait; it
+does not establish that the provider stopped processing.
+
+An HTTP 500 response still fails immediately: increasing timeouts cannot repair
+an error the server has already returned. Overload is a possible cause, but the
+sanitized status alone cannot establish it. No automatic retries or fallback
+were added; preserve failed results when making a separate diagnostic run.
+
+The readable CLI trace displays `[failure_code]`; JSON reports include optional
+`trace[].failure_code`. Older reports without codes still validate. Codes are
+runtime-validated against fixed values or `model_http_NNN` (HTTP 100–599).
+No raw provider body, exception message, URL, prompt, credential or stack trace
+is copied into the diagnostic field. Relevant codes include:
+- `planner_timeout`: the investigation's per-planner-call wait expired;
+  `investigation_deadline_exceeded`: the shared total deadline expired.
+- `model_http_403`, `model_http_429`, etc.: actual non-200 HTTP status;
+  `model_transport_unavailable`: connection/transport failure.
+- `model_timeout`: the model adapter's native request deadline expired;
+  `model_cancelled`: its supplied signal was cancelled. The orchestrator reports
+  its own timeout code when its shorter deadline ends the wait.
+- `model_invalid_response`: malformed response envelope/body;
+  `model_incomplete_response`: missing or non-complete model output;
+  `model_invalid_action_json`: action content could not be parsed as JSON;
+  `model_invalid_choice`: parsed JSON violates the allowed action schema/choices.
+- `planner_invalid_action`: returned executor action fails runtime validation;
+  `planner_unknown_failure`: an exception has no recognized public code.
+
+TLS refusal and oversized input retain `model_tls_verification_required` and
+`model_state_too_large`. No retries or scripted fallback were added. These codes
+describe new runs; exact causes cannot be reconstructed from older generic
+`planner_unavailable_or_invalid` results.
 
 [Recorded scripted results](docs/evaluation-scripted.json) and
 [real-model results](docs/evaluation-model.json) include expected and

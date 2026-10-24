@@ -181,7 +181,47 @@ test('NVIDIA planner propagates caller cancellation to the request', async (t) =
     },
   );
   await assert.rejects(planner.next(state, controller.signal), {
-    message: 'model_transport_unavailable',
+    message: 'model_cancelled',
+  });
+});
+
+test('NVIDIA internal request timeout is distinct from transport failure', async (t) => {
+  const planner = configure(t);
+  t.mock.method(AbortSignal, 'timeout', (milliseconds: number) => {
+    assert.equal(milliseconds, 300_000);
+    return AbortSignal.abort();
+  });
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (_url: unknown, options?: RequestInit) => {
+      assert.equal(options?.signal?.aborted, true);
+      throw new Error('PRIVATE timeout diagnostic');
+    },
+  );
+  await assert.rejects(planner.next(state, signal()), {
+    message: 'model_timeout',
+  });
+});
+
+test('NVIDIA caller cancellation during body reading is not malformed data', async (t) => {
+  const planner = configure(t);
+  const controller = new AbortController();
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        new ReadableStream({
+          start(stream) {
+            controller.abort();
+            stream.error(new Error('PRIVATE aborted body'));
+          },
+        }),
+      ),
+  );
+  await assert.rejects(planner.next(state, controller.signal), {
+    message: 'model_cancelled',
   });
 });
 
@@ -264,6 +304,6 @@ test('NVIDIA choice refuses injected arguments and unsupported actions', async (
   );
   for (let i = 0; i < 4; i++)
     await assert.rejects(planner.next(state, signal()), {
-      message: 'model_invalid_action_json',
+      message: 'model_invalid_choice',
     });
 });

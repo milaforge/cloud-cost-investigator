@@ -12,7 +12,11 @@ import {
   textValue,
 } from '../contracts.ts';
 import { readBoundedJson } from '../http.ts';
-import type { Planner, PlannerState } from './planner.ts';
+import {
+  MODEL_PLANNER_TIMEOUT_MS,
+  type Planner,
+  type PlannerState,
+} from './planner.ts';
 
 const MAX_STATE_BYTES = 100_000;
 
@@ -166,11 +170,21 @@ export class OpenAICompatiblePlanner implements Planner {
       throw new Error('model_state_too_large');
     }
     let response: Response;
+    const requestSignal = AbortSignal.any([
+      signal,
+      AbortSignal.timeout(MODEL_PLANNER_TIMEOUT_MS),
+    ]);
+    const abortCode = () =>
+      signal.aborted
+        ? 'model_cancelled'
+        : requestSignal.aborted
+          ? 'model_timeout'
+          : null;
     try {
       response = await fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         redirect: 'error',
-        signal: AbortSignal.any([signal, AbortSignal.timeout(20_000)]),
+        signal: requestSignal,
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -214,7 +228,7 @@ export class OpenAICompatiblePlanner implements Planner {
         }),
       });
     } catch {
-      throw new Error('model_transport_unavailable');
+      throw new Error(abortCode() ?? 'model_transport_unavailable');
     }
     if (response.status !== 200) {
       await response.body?.cancel().catch(() => undefined);
@@ -224,7 +238,7 @@ export class OpenAICompatiblePlanner implements Planner {
     try {
       payload = await readBoundedJson(response);
     } catch {
-      throw new Error('model_invalid_response');
+      throw new Error(abortCode() ?? 'model_invalid_response');
     }
     if (
       !record(payload) ||
@@ -244,11 +258,17 @@ export class OpenAICompatiblePlanner implements Planner {
       typeof choice.message.content !== 'string'
     )
       throw new Error('model_incomplete_response');
+    let parsed: unknown;
     try {
-      // The loop validates this unknown action against its strict tool/action schema.
-      return bindChoice(JSON.parse(choice.message.content) as unknown, state);
+      parsed = JSON.parse(choice.message.content);
     } catch {
       throw new Error('model_invalid_action_json');
+    }
+    try {
+      // The loop separately validates the action against its strict executor schema.
+      return bindChoice(parsed, state);
+    } catch {
+      throw new Error('model_invalid_choice');
     }
   }
 }
