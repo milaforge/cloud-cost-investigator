@@ -107,11 +107,14 @@ export class ScriptedPlanner implements Planner {
           'Observed low average and peak CPU suggest this window; challenge it before any decision.',
       };
     }
-    const priority = historicalPriority(state.historical_hints);
+    const priority = historicalPriority(
+      state.historical_hints,
+      state.proposed_window,
+    );
     if (priority && !attempted(priority))
       return tool(
         priority,
-        'Historical unresolved checks prioritize this fresh query; prior verdicts are not current evidence.',
+        'Historical operational checks prioritize this fresh query; prior verdicts are not current evidence.',
       );
     if (!attempted('get_ec2_operations'))
       return tool(

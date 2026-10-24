@@ -29,7 +29,7 @@ const checks = (report: Awaited<ReturnType<typeof runInvestigation>>) =>
 const run = (
   dir?: string,
   zetaris = false,
-  scenario: 'B' | 'clear' | 'missing' = 'B',
+  scenario: 'A' | 'B' | 'C' | 'clear' | 'missing' = 'B',
 ) =>
   runInvestigation(request, {
     planner: new ScriptedPlanner(),
@@ -96,7 +96,7 @@ async function zetaris(t: TestContext) {
   return rows;
 }
 
-test('D: two runs use both stores, change query order and keep current citations separate', async (t) => {
+test('D: learned conflict takes priority over unqueried checks and keeps current citations separate', async (t) => {
   const dir = await directory(t);
   const rows = await zetaris(t);
   const cold = await run(dir, true);
@@ -112,10 +112,7 @@ test('D: two runs use both stores, change query order and keep current citations
   assert.ok(
     warm.historical_context.context_ids.some((id) => id.startsWith('zetaris:')),
   );
-  assert.deepEqual(checks(warm), [
-    'get_ec2_dependencies',
-    'get_ec2_operations',
-  ]);
+  assert.deepEqual(checks(warm), ['get_ec2_operations']);
   assert.equal(warm.candidates[0].verdict, 'not_recommended');
   assert.equal(rows.length, 2);
   assert.ok(
@@ -135,8 +132,8 @@ test('stale rejection cannot survive fresh cleared jobs or missing operational e
   await run(dir);
   const clear = await run(dir, false, 'clear');
   assert.deepEqual(checks(clear), [
-    'get_ec2_dependencies',
     'get_ec2_operations',
+    'get_ec2_dependencies',
   ]);
   assert.equal(clear.candidates[0].verdict, 'needs_verification');
   assert.deepEqual(clear.candidates[0].contradicting_evidence_ids, []);
@@ -154,10 +151,7 @@ test('history services fail independently and disclose no provider errors', asyn
   const memoryOnly = await run(dir, true);
   assert.equal(memoryOnly.historical_context.zetaris, 'unavailable');
   assert.equal(memoryOnly.historical_context.hmem, 'ok');
-  assert.deepEqual(checks(memoryOnly), [
-    'get_ec2_dependencies',
-    'get_ec2_operations',
-  ]);
+  assert.deepEqual(checks(memoryOnly), ['get_ec2_operations']);
   const blocked = `${dir}/blocked`;
   await writeFile(blocked, 'file');
   const neither = await run(blocked, true);
@@ -223,6 +217,7 @@ test('model adapter receives bounded historical hints and binds fresh prioritize
         sawHints = true;
         assert.deepEqual(Object.keys(hints[0]).sort(), [
           'context_id',
+          'lesson',
           'priority',
           'recorded_at',
           'source_mode',
@@ -261,9 +256,6 @@ test('model adapter receives bounded historical hints and binds fresh prioritize
     history: { hmem_directory: dir },
   });
   assert.ok(sawHints);
-  assert.deepEqual(checks(report), [
-    'get_ec2_dependencies',
-    'get_ec2_operations',
-  ]);
+  assert.deepEqual(checks(report), ['get_ec2_operations']);
   assert.equal(report.candidates[0].verdict, 'not_recommended');
 });

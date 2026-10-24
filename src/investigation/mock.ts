@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { estimatePeriod } from './policy.ts';
 import {
   validateAction,
@@ -12,7 +13,6 @@ export interface CurrentEvidenceProvider {
 }
 
 export type MockScenario = 'A' | 'B' | 'C' | 'mixed' | 'clear' | 'missing';
-let evidenceSequence = 0;
 
 /** Synthetic direct-source observations; this provider never contacts AWS. */
 export class MockProvider implements CurrentEvidenceProvider {
@@ -46,7 +46,8 @@ export class MockProvider implements CurrentEvidenceProvider {
       coverage: { complete: true, authoritative: true },
       missing_fields: [],
       units: 'instances',
-      evidence_id: `mock-ec2-evidence-${++evidenceSequence}`,
+      // Persisted history can outlive this process; a local counter reuses old IDs.
+      evidence_id: `mock-ec2-evidence-${randomUUID()}`,
       data: null,
     };
 

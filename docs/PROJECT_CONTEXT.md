@@ -96,6 +96,20 @@ Use the H-MEM reference already present in the TypeScript starter (runtime store
 
 **Demonstrable distinct value:** in a second execution, H-MEM changes the early safety question while Zetaris supplies typed previous observations for comparison; direct tools still decide the current verdict. Show separate success/failure handling for both stores.
 
+**Learned-check slice (Oct 24):** A validated, authoritative contradiction can
+teach an optional typed `dependency_continuous_operation` or
+`critical_job_overlap` check in the reasoning summary. Its original evidence ID
+remains historical provenance. Planner hints carry only the check and UTC window,
+bound to the current instance and evidence mode; they never carry historical
+evidence IDs or free-form memory instructions. The newest eligible H-MEM summary
+is active; older records remain auditable. Fresh observations explicitly confirm,
+clear or leave the remembered concern unresolved. A newer cleared investigation
+can replace a rejected conclusion only through the existing safety evaluator.
+`npm run demo:warm` isolates real local H-MEM in a cold C → warm C → changed A
+proof; `--planner model` exercises the real model. Measure fewer planner/tool
+calls separately from wall time. This extends the bounded loop and introduces no
+world graph, additional roles, remote schema changes or live evidence claims.
+
 ## 5. Shared runtime contract
 
 Every tool response is runtime-validated (TypeScript types alone are insufficient) and includes:

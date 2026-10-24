@@ -26,6 +26,101 @@ The Oct 23 MVP discovery approved four shared-engine flows: A supported off-hour
 
 **Earlier inspection had not verified:** live API calls for any of the five direct categories; historical read and append via Zetaris; H-MEM project round-trip; approved model call; CLI test execution. New executed evidence is recorded below. Team-reported prior Zetaris data availability does not verify the newly planned direct adapters. Never mark any of these complete from a written plan.
 
+### Learned operational check: cold, warm and changed evidence — 2026-10-24
+
+**Gate/owner:** Milad, stronger D demonstration. Acceptance: a prior C
+investigation teaches a specific check, warm C retrieves real H-MEM state and
+reaches the same correct rejection with fewer calls, then changed A rechecks and
+abandons the old rejection using fresh complete evidence. Isolate H-MEM from
+Zetaris to attribute the improvement. Keep AWS evidence explicitly synthetic.
+
+- [x] Optional typed lesson is learned only from a validated report's cited,
+  authoritative contradiction. Stores check, UTC window and historical evidence
+  reference. Planner hints exclude historical evidence IDs and free-form text.
+- [x] Recall is scoped to account/region/instance/evidence mode, excludes future
+  records and activates the newest eligible summary. Window-mismatched lessons
+  cannot influence planner choices. Old records remain auditable; legacy
+  summaries without lessons still validate.
+- [x] Fresh recheck is traced as confirmed, not_observed or unresolved with
+  current evidence citations. Existing evaluator alone controls the verdict.
+  Updated summary after changed A supersedes the old conflict in later recall.
+- [x] `npm run demo:warm` provides readable results; `--planner model --json`
+  provides live planning with stderr progress and a final full JSON artifact.
+  Real H-MEM is reopened between phases, temporary storage is removed, remote
+  history is disabled, and any model failure remains a failed measured phase.
+- [x] `npm test`: **140/140 passed**. Coverage includes end-to-end disk recall,
+  one fewer planner/tool call, changed-evidence correction, unknown/partial/
+  non-authoritative evidence, future and source-mode separation, malformed
+  lessons, historical provenance, window scope, old summaries, and HTTP failure
+  without fallback. `npm run typecheck`, scoped Biome lint (`src scripts tests
+  cli.ts`), and `git diff --check`: **passed**.
+- [x] `npm run --silent demo:warm -- --json > /tmp/cci-warm-scripted.json`:
+  exit **0**, real vendored H-MEM / scripted planner / mock evidence. Cold C:
+  **6 planner / 5 tools / 10 ms**; warm C: **5 / 4 / 6 ms**, both complete
+  rejections. Changed A: **6 / 5 / 2 ms**, complete conditional recommendation.
+  All 15 acceptance checks passed. Timings are a tiny local fixture sample,
+  not production performance evidence.
+- [x] **Live cold/warm behavior:** `npm run --silent demo:warm -- --planner
+  model --json` with network access, configured
+  `nvidia/nemotron-3.5-super-vl-120b-a12b`, five-second pacing and existing
+  300000 ms per-call limit. Cold C: **6 planner / 5 tools / 148001 ms**;
+  warm C: **5 / 4 / 55200 ms**, both complete evidence-backed rejections.
+  Warm retrieved the cold H-MEM lesson and checked dependencies first.
+  One fewer planner call (**16.7%**) and one fewer tool (**20%**); the measured
+  92801 ms latency reduction is a single pair subject to provider variability.
+  Changed A then received **model_http_500 on call 3**, correctly returned partial
+  needs_verification, and made the overall command exit **1**. Full unmodified
+  failed measurement: [warm-learning-model-attempt1.json](./warm-learning-model-attempt1.json).
+- [x] **Live changed-evidence recovery:** an explicit isolated replay restored
+  summaries from those two validated successful reports into temporary real
+  H-MEM and used the same model and pacing. The first replay completed with
+  a conditional recommendation in **84528 ms**, but its cross-process
+  disjoint-ID check failed because the mock provider restarted a numeric counter.
+  Retained as [warm-learning-recovery-id-failure.json](./warm-learning-recovery-id-failure.json).
+  Mock observations now use UUIDs; two separate Node processes verified distinct
+  IDs. A second explicitly recorded replay (`node --import tsx
+  /tmp/cci-recover-changed.mts`) passed **9/9 checks**: **6 planner / 5 tools /
+  88187 ms**, complete conditional recommendation, fresh dependency-first
+  recheck then operational clearance, no old contradiction citation, distinct
+  current IDs, and a persisted correction that supersedes the older lesson.
+  Evidence: [warm-learning-model-recovery.json](./warm-learning-model-recovery.json).
+  No model fallback, automatic retry, prompt change between attempts or remote
+  write. This is a recovered phase, not a successful uninterrupted three-run command.
+- Initial restricted-network attempt returned `model_transport_unavailable`
+  on cold call 1 (5027 ms including pacing); retained in
+  [warm-learning-transport-failure.json](./warm-learning-transport-failure.json).
+  Scripted full proof: [warm-learning-scripted.json](./warm-learning-scripted.json).
+  All retained reports and summaries pass runtime validation. Final source:
+  **140/140 tests**, typecheck, scoped lint/format and whitespace checks passed;
+  readable `npm run --silent demo:warm` passed after the UUID fix as well.
+
+**Commit verification (Oct 24):** exported the staged enhancement separately
+from unrelated provider-diagnostic work. `npm test`: **140/140 passed**;
+`npm run typecheck`, `npx biome lint src scripts tests cli.ts`, and
+`npm run --silent demo:warm`: **passed** (all 15 demo checks).
+Runtime validation passed for all **12 retained investigation reports** across
+six evidence artifacts. `git diff --cached --check`: passed. The full concurrent
+worktree separately passed 145 tests. No additional live inference was run.
+
+**Additional user-run evidence (Oct 24):** inspected `warm-learning.json` and
+retained it as [warm-learning-user-model.json](./warm-learning-user-model.json).
+The artifact records `gpt-6.1-sol`: cold complete rejection, 6 planner / 5 tools /
+49656 ms; warm complete rejection, 5 / 4 / 39336 ms. Savings: one planner call,
+one tool call, 10320 ms (20.8%) in this pair, including five-second call pacing.
+Changed phase stopped on call 5 with `model_transport_unavailable`, partial
+`needs_verification`, 47512 ms. Overall `passed: false`; no new live call was
+made to document this evidence. This is not NVIDIA proof or an uninterrupted
+three-phase live pass. Owner: Milad. Next action: complete a live three-phase
+run when provider access is reliable; live AWS integration remains separate.
+
+**Boundary:** no live AWS integration, production generalization, new roles,
+graph or remote schema changes. The separate `probe:warm` still verifies both
+stores; B now rechecks its learned job conflict first. Earlier dependency-first
+proofs below remain historical measurements, not current expected behavior.
+The stronger learned-check goal is satisfied through the complete offline proof
+and recorded live cold/warm plus changed-phase recovery. Endpoint reliability
+and live direct-evidence integration remain separate open work.
+
 ### Isolated third planner-call diagnosis — 2026-10-24
 
 **Gate/owner:** Milad, investigate the user's `missing` run: inventory and billing

@@ -2,6 +2,7 @@ import type {
   InvestigationReport,
   Mode,
   Scope,
+  Schedule,
   ToolName,
 } from '../contracts.ts';
 import {
@@ -9,7 +10,13 @@ import {
   historyRecordFromReport,
   readZetarisHistory,
 } from '../tools/zetaris-history.ts';
-import { HmemReasoningMemory, reasoningSummaryFromReport } from './memory.ts';
+import {
+  HmemReasoningMemory,
+  reasoningSummaryFromReport,
+  lessonTool,
+  type OperationalLesson,
+} from './memory.ts';
+import { sameSchedule } from './policy.ts';
 
 export interface HistoryOptions {
   hmem_directory?: string;
@@ -20,6 +27,7 @@ export interface HistoryHint {
   recorded_at: string;
   source_mode: Mode;
   priority: 'get_ec2_operations' | 'get_ec2_dependencies';
+  lesson?: Pick<OperationalLesson, 'check' | 'window'>;
 }
 
 /** History is advisory data only. No prior evidence IDs or free-form text reach the planner. */
@@ -45,6 +53,7 @@ export class InvestigationHistory {
     instance: string,
     startedAt: string,
     signal: AbortSignal,
+    mode?: Mode,
   ): Promise<HistoryHint[]> {
     const hints: HistoryHint[] = [];
     const add = (
@@ -52,15 +61,21 @@ export class InvestigationHistory {
       recorded: string,
       mode: Mode,
       missing: string[],
+      lesson?: OperationalLesson,
     ) => {
       if (Date.parse(recorded) > Date.parse(startedAt)) return;
       hints.push({
         context_id: id,
         recorded_at: recorded,
         source_mode: mode,
-        priority: missing.some((s) => s.includes('get_ec2_dependencies'))
-          ? 'get_ec2_dependencies'
-          : 'get_ec2_operations',
+        priority: lesson
+          ? lessonTool(lesson.check)
+          : missing.some((s) => s.includes('get_ec2_dependencies'))
+            ? 'get_ec2_dependencies'
+            : 'get_ec2_operations',
+        ...(lesson
+          ? { lesson: { check: lesson.check, window: lesson.window } }
+          : {}),
       });
     };
     if (this.options.zetaris) {
@@ -72,7 +87,8 @@ export class InvestigationHistory {
           instance,
         )) {
           const r = item.record;
-          if (r.instance_id !== instance) continue;
+          if (r.instance_id !== instance || (mode && r.source_mode !== mode))
+            continue;
           const summary = JSON.parse(r.summary_json) as {
             missing_checks: string[];
           };
@@ -99,13 +115,21 @@ export class InvestigationHistory {
           this.scope,
         );
         signal.throwIfAborted();
-        for (const item of this.memory.retrieve(instance)) {
+        // The newest eligible summary supersedes older lessons for this instance.
+        // Keep the old records in H-MEM for audit, but do not resurrect old conflicts.
+        const latest = this.memory.retrieve(instance, {
+          as_of: startedAt,
+          mode,
+        })[0];
+        if (latest) {
+          const item = latest;
           const s = item.summary;
           add(
             item.context_id,
             s.recorded_at,
             s.provenance.integration_mode,
             s.unresolved_risks,
+            s.lesson,
           );
         }
         this.result.hmem = 'ok';
@@ -118,6 +142,7 @@ export class InvestigationHistory {
     }
     hints.sort(
       (a, b) =>
+        Number(!!b.lesson) - Number(!!a.lesson) ||
         Date.parse(b.recorded_at) - Date.parse(a.recorded_at) ||
         a.context_id.localeCompare(b.context_id),
     );
@@ -129,7 +154,7 @@ export class InvestigationHistory {
     ];
     for (const h of hints)
       this.result.limitations.push(
-        `${h.context_id}: historical ${h.source_mode}, recorded ${h.recorded_at}; prioritize ${h.priority}.`,
+        `${h.context_id}: historical ${h.source_mode}, recorded ${h.recorded_at}; prioritize ${h.priority}${h.lesson ? `; learned check=${h.lesson.check}, window=${h.lesson.window.start_hour_utc}-${h.lesson.window.end_hour_utc} UTC; verify again` : ''}.`,
       );
     return hints;
   }
@@ -187,6 +212,16 @@ export class InvestigationHistory {
 
 export function historicalPriority(
   hints: HistoryHint[] | undefined,
+  window?: Schedule | null,
 ): ToolName | undefined {
-  return hints?.[0]?.priority;
+  return applicableHistoryHints(hints ?? [], window)[0]?.priority;
+}
+
+export function applicableHistoryHints(
+  hints: HistoryHint[],
+  window?: Schedule | null,
+): HistoryHint[] {
+  return hints.filter(
+    (h) => !h.lesson || (!!window && sameSchedule(h.lesson.window, window)),
+  );
 }

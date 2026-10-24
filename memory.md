@@ -1,5 +1,35 @@
 # Project Memory
 
+## Learned operational checks and a stronger warm proof (2026-10-24)
+
+- The previous B warm proof prioritized an unqueried dependency and used more
+  work than the cold run. Store an optional typed check derived from an actually
+  cited, complete authoritative contradiction instead. A dependency requiring
+  continuous operation or overlapping critical job is a specific question to
+  verify again, never current evidence or scheduling authority.
+- Keep lesson provenance in H-MEM; strip historical evidence IDs and free-form
+  text from model hints. Bind the check to scope, evidence mode and proposed UTC
+  window. The newest eligible summary supersedes prior lessons; keep old records
+  in the engine ledger for audit. Equal timestamps prefer a summary without a
+  conflict lesson, avoiding resurrection of a cleared conflict. Old summaries
+  without the optional field remain readable.
+- Extend the existing summary, history adapter and runner. The deterministic
+  evaluator still owns verdicts. Record the fresh check as confirmed,
+  not_observed or unresolved; absence of an old conflict alone is not approval.
+- `demo:warm` isolates H-MEM from Zetaris so changed behavior can be attributed
+  to Meterless. Cold C checks jobs then dependency; warm C checks dependency first;
+  changed A clears the dependency and must complete the remaining safety checks.
+  Reopen actual disk state between runs and verify the new summary supersedes the
+  old warning. Compare planner/tool counts separately from wall time; never
+  retry or use scripted fallback to manufacture a successful live measurement.
+- Keep `probe:warm` as the separate two-store round-trip proof. With the new B
+  lesson it rechecks the known job conflict first; its historical dependency-first
+  results remain dated evidence, not the expected current behavior.
+- Mock evidence IDs use UUIDs: a process-local counter reused old historical IDs
+  when a live recovery began in a second process. Observation timestamps were
+  fresh, but literal ID reuse broke the stronger cross-run provenance check.
+  Preserve failed measurements and verify disjoint IDs after the fix.
+
 ## Slow, single-case model diagnostics (2026-10-24)
 
 - User requested five-minute model-call waits and gentler free-endpoint usage

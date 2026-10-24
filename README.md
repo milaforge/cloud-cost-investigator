@@ -1,24 +1,47 @@
 # Cloud Cost Investigator
 
-## Linting and formatting
-
-After `npm install`, use the development-only [Biome](https://biomejs.dev/)
-toolchain:
-
-```sh
-npm run lint          # Check lint rules without changing files
-npm run lint:fix      # Apply safe lint fixes
-npm run format:check  # Check formatting without changing files
-npm run format        # Format supported project files
-```
-
-Biome respects `.gitignore` and excludes `vendor/` and `package-lock.json`.
-The initial installation preserves existing source formatting and lint findings;
-the write commands can affect existing work, so review their diff.
-
 Read-only EC2 off-hours scheduling investigation for **Track 02 — The Agent That Can Explain Why**. This implements the contradiction-first loop and broader A/C scenarios in [plan.md](plan.md). Current evidence is explicitly **synthetic mock data**. No AWS API is called and no infrastructure can be changed.
 
 An engineer supplies an account and region. The CLI discovers running instances, ranks matching compute spend, inspects utilization, proposes an observed UTC window, then challenges that exact window with operational evidence. In scenario B, a critical batch job rejects the proposal. No previous investigation is required. Up to three ranked candidates share one bounded investigation. Savings are deterministic when fully justified; otherwise they remain `null`.
+
+## What Meterless improves: fewer checks, fresh conclusions
+
+**Meterless H-MEM lets an investigation remember which operational check mattered
+last time, verify it again, and reach the correct conclusion with less work.**
+Our adapter stores a typed lesson from a cited contradiction; H-MEM persists and
+retrieves it between runs. The planner uses that lesson to order fresh checks.
+The deterministic evaluator still decides the outcome from current evidence.
+
+| Run | Operational checks | Result | Planner / tool calls |
+| --- | --- | --- | --- |
+| Cold, no memory | Jobs → dependencies | Reject: dependency requires continuous operation | 6 / 5 |
+| Warm, recalled lesson | Dependencies first | Same rejection, backed by fresh evidence | 5 / 4 |
+| Changed evidence | Dependencies → jobs | Old conflict cleared; conditional recommendation | 6 / 5 |
+
+**Measured benefit: 16.7% fewer planner calls and 20% fewer tool calls on the
+warm case.** The scripted three-phase proof passes all 15 checks, including
+fresh citations and persisting the corrected conclusion. Real local H-MEM is
+reopened between phases; Zetaris is disabled to isolate its contribution.
+
+The [user-run live-model artifact](docs/warm-learning-user-model.json), using
+`gpt-6.1-sol`, records cold **49.656 s** → warm **39.336 s**: **10.320 s (20.8%)**
+less elapsed time in one pair. Its changed phase failed with
+`model_transport_unavailable`, so the full live attempt **failed**. Separate
+[NVIDIA evidence and changed-phase recovery](#learn-a-check-finish-earlier-then-change-the-conclusion)
+are recorded below. Neither attempt establishes an uninterrupted live three-phase
+pass or a general latency guarantee; elapsed times include deliberate call pacing.
+
+```bash
+npm run demo:warm
+# Configured live model; progress on stderr, final report on stdout:
+npm run --silent demo:warm -- --planner model --json > /tmp/warm-learning.json
+```
+
+**Evidence is synthetic in both modes; H-MEM persistence is real.** This proves
+memory-guided investigation behavior, not live AWS integration, model training,
+or production accuracy. The selected fixture rewards checking dependencies first;
+this is a cold-versus-warm comparison, not a claim to beat every fixed rule order.
+See the [full methodology and retained results](#learn-a-check-finish-earlier-then-change-the-conclusion).
 
 ## Run
 
@@ -149,11 +172,11 @@ NODE_TLS_REJECT_UNAUTHORIZED=1 npm run probe:warm -- --planner model
 
 It runs the CLI twice under a unique synthetic account, retains two labeled mock
 history records in Zetaris, and removes its temporary H-MEM directory. Run 1
-checks operations first and records the unqueried dependency check. Run 2 recalls
-both stores and checks dependencies before operations. Both verdicts cite fresh
+checks operations first and learns to recheck the overlapping critical job. Run 2
+recalls both stores and rechecks operations first. Both verdicts cite fresh
 mock evidence. The scripted planner follows this priority deterministically;
 the model planner receives the same bounded hints and instruction, with its
-actual action visible in the trace. The real-model cold/warm pair passed on
+actual action visible in the trace. The earlier real-model cold/warm pair passed on
 Oct 24 with `nvidia/nemotron-3-ultra-550b-a55b`, remote Zetaris and local H-MEM
 over mock current evidence; see the execution plan for timings and calls.
 Historical text and old evidence IDs are
@@ -161,6 +184,57 @@ excluded from planner hints. A cleared or unavailable fresh job source cannot
 inherit the old rejection. Source read statuses and write outcomes are reported
 separately; unavailable history never substitutes for operational evidence.
 Do not run concurrent writers against the same local memory directory.
+
+### Learn a check, finish earlier, then change the conclusion
+
+```bash
+# Offline planner, real vendored H-MEM on disk, synthetic current evidence:
+npm run demo:warm
+# Real configured model; five-second pacing before every planner call:
+npm run --silent demo:warm -- --planner model --json > /tmp/warm-learning.json
+```
+
+Progress goes to stderr immediately; final JSON is written after the proof ends.
+The three-run demonstration uses a temporary, isolated H-MEM directory and never
+enables Zetaris or AWS calls, even if they are configured in `.env`:
+1. **Cold C:** check jobs, then discover a dependency requiring continuous
+   operation. Persist a typed `dependency_continuous_operation` lesson with
+   instance scope, the UTC shutdown window and its original evidence reference.
+2. **Warm C:** reopen H-MEM, retrieve the lesson and check that dependency first.
+   Reject from newly retrieved evidence, saving one planner call and one tool
+   call when the model follows this path. The proof fails if it does not.
+3. **Changed A:** recall the same lesson, retrieve fresh evidence that clears
+   the dependency, then verify operational clearance. Issue a conditional
+   recommendation and persist the updated summary. Reopening memory must select
+   that correction without reviving the older conflict.
+
+The default scripted demonstration measures 6 → 5 planner calls and 5 → 4 tool
+calls from cold to warm. Wall-clock improvement is measured separately and can
+vary; call savings are not a guaranteed latency reduction. The changed run needs
+both safety checks and therefore uses six planner calls. Fresh evidence IDs must
+be disjoint across runs, and every full report passes runtime validation.
+Real-model failures are retained, produce exit 1 and never trigger scripted
+fallback. Temporary memory is removed; the JSON retains the lesson, correction,
+full reports and acceptance checks. These are designed fixtures, not production
+accuracy or live operational-integration proof.
+
+Only authoritative, cited contradictions teach a lesson. Recalled lessons are
+scoped to account, region, instance, evidence mode and matching proposed window.
+Historical evidence IDs and free-form memory text stay out of model hints.
+The trace records `confirmed`, `not_observed` or `unresolved` against fresh
+evidence. Clearing one old conflict does not by itself establish scheduling
+safety; missing or partial fresh evidence still defers. Legacy summaries without
+lessons remain readable.
+
+Recorded live results with `nvidia/nemotron-3.5-super-vl-120b-a12b`: cold/warm
+rejections used **6 → 5 planner calls**, **5 → 4 tools**, and **148.0 → 55.2 s**.
+The third phase hit HTTP 500, so that [full attempt failed](docs/warm-learning-model-attempt1.json).
+An [explicit changed-phase recovery](docs/warm-learning-model-recovery.json)
+later passed all nine checks, issuing a conditional recommendation in **88.2 s**
+and persisting the correction. A first recovery exposed repeated mock IDs across
+processes; UUID evidence IDs fixed that provenance check. All failed measurements
+remain linked in the execution plan. These results demonstrate the intended
+behavior and preserve the provider reliability limitation.
 
 ### Measured fixture evaluation
 
@@ -210,6 +284,19 @@ minutes. Without `--verbose`, the evaluator is silent until the final JSON.
 To save progress too, add `2> /tmp/evaluation-progress.log` (or watch that file
 with `tail -f`). Interrupting the run leaves no final JSON report. This switch
 also works with the default scripted planner.
+
+HTTP failures now retain `provider_error: { body, truncated }` in
+`rows[].investigation.planner_failures[]` and `trace[]`. The same diagnostic
+appears immediately on stderr with `--verbose`, and in readable CLI reports.
+JSON error fields such as `message`, `detail`, `code` and `type` are retained;
+plain-text/HTML error responses are also supported. Credentials, configured
+scope identifiers, URLs, request/header objects and stack fields are redacted
+or omitted. Reads stop at 8 KiB or one second, and the sanitized excerpt is
+limited to 2048 characters. Empty or unreadable bodies are labeled explicitly;
+`truncated` flags incomplete capture. The original `model_http_NNN` code remains
+unchanged. This supersedes the earlier behavior of dropping all error bodies;
+older measurements cannot recover discarded details. No extra requests or retries
+are made to collect an error body.
 
 Run one case at a time to diagnose a free endpoint:
 
@@ -276,6 +363,22 @@ no unsafe positives, but only 1/8 investigations completed and five had planner
 failures. Two matching deferrals also had planner failures, so matching verdicts
 must not be presented as successful investigations. The real-model cold/warm
 integration proof separately passed. See the execution plan for exact evidence.
+
+## Linting and formatting
+
+After `npm install`, use the development-only [Biome](https://biomejs.dev/)
+toolchain:
+
+```sh
+npm run lint          # Check lint rules without changing files
+npm run lint:fix      # Apply safe lint fixes
+npm run format:check  # Check formatting without changing files
+npm run format        # Format supported project files
+```
+
+Biome respects `.gitignore` and excludes `vendor/` and `package-lock.json`.
+The initial installation preserves existing source formatting and lint findings;
+the write commands can affect existing work, so review their diff.
 
 ## Verify
 

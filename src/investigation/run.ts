@@ -32,8 +32,10 @@ import {
   calculateSavings,
   rankCandidates,
   overlaps,
+  sameSchedule,
 } from './policy.ts';
 import { validateReport } from './report.ts';
+import { assessOperationalCheck, lessonTool } from './memory.ts';
 
 export interface PlannerState {
   request: InvestigationRequest;
@@ -213,6 +215,7 @@ export async function runInvestigation(
             instance,
             started_at,
             AbortSignal.timeout(remaining(total)),
+            options.provider.mode,
           );
     if (historicalHints.length)
       add(
@@ -487,6 +490,25 @@ export async function runInvestigation(
         [observation.evidence_id],
         { action, status: observation.status },
       );
+      for (const hint of historicalHints) {
+        if (
+          hint.lesson &&
+          candidate?.proposed_window &&
+          sameSchedule(hint.lesson.window, candidate.proposed_window) &&
+          observation.tool === lessonTool(hint.lesson.check)
+        ) {
+          const outcome = assessOperationalCheck(
+            hint.lesson.check,
+            candidate.proposed_window,
+            observation,
+          );
+          add(
+            'evaluator',
+            `Historical lesson ${hint.context_id}: ${hint.lesson.check} ${outcome} by fresh evidence; ${outcome === 'not_observed' ? 'old conflict does not justify rejection; continue safety checks' : outcome === 'unresolved' ? 'unknown; old conflict cannot substitute for missing evidence' : 'current evidence controls the verdict'}.`,
+            [observation.evidence_id],
+          );
+        }
+      }
       if (
         (observation.status !== 'ok' && observation.status !== 'no_match') ||
         !observation.coverage.complete ||

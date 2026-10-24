@@ -97,10 +97,8 @@ async function proof() {
         (run === 2 &&
           (result.recalled_zetaris !== 1 ||
             result.recalled_hmem !== 1 ||
-            !result.queries.includes('get_ec2_dependencies') ||
-            !result.queries.includes('get_ec2_operations') ||
-            result.queries.indexOf('get_ec2_dependencies') >
-              result.queries.indexOf('get_ec2_operations')))
+            result.queries.includes('get_ec2_dependencies') ||
+            !result.queries.includes('get_ec2_operations')))
       )
         throw new Error('Warm integration proof failed');
       if (run === 1) coldEvidence = report.evidence.map((e) => e.evidence_id);

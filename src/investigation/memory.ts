@@ -13,10 +13,12 @@ import {
   validateScope,
   type InvestigationReport,
   type Mode,
+  type Observation,
   type Schedule,
   type Scope,
 } from '../contracts.ts';
 import { validateReport } from './report.ts';
+import { authoritative, overlaps, sameSchedule } from './policy.ts';
 import type { HMEM, MemoryRecord } from '../../vendor/hmem/src/index.ts';
 
 export interface ReasoningSummary {
@@ -36,6 +38,41 @@ export interface ReasoningSummary {
   reason: string;
   unresolved_risks: string[];
   provenance: { integration_mode: Mode; evidence_ids: string[] };
+  /** Historical question learned from a cited, authoritative contradiction. */
+  lesson?: OperationalLesson;
+}
+export interface OperationalLesson {
+  check: 'dependency_continuous_operation' | 'critical_job_overlap';
+  window: Schedule;
+  evidence_id: string;
+}
+
+export function lessonTool(check: OperationalLesson['check']) {
+  return check === 'dependency_continuous_operation'
+    ? ('get_ec2_dependencies' as const)
+    : ('get_ec2_operations' as const);
+}
+
+/** A remembered conflict is only a question; classify the newly retrieved observation. */
+export function assessOperationalCheck(
+  check: OperationalLesson['check'],
+  window: Schedule,
+  observation: Observation,
+): 'confirmed' | 'not_observed' | 'unresolved' {
+  if (observation.tool !== lessonTool(check) || !authoritative(observation))
+    return 'unresolved';
+  const data = observation.data;
+  if (
+    check === 'dependency_continuous_operation' &&
+    data &&
+    'requires_continuous_operation' in data
+  )
+    return data.requires_continuous_operation ? 'confirmed' : 'not_observed';
+  if (check === 'critical_job_overlap' && data && 'jobs' in data)
+    return data.jobs.some((job) => job.critical && overlaps(job.window, window))
+      ? 'confirmed'
+      : 'not_observed';
+  return 'unresolved';
 }
 export interface HistoricalReasoningContext {
   context_id: string;
@@ -55,6 +92,7 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
     'reason',
     'unresolved_risks',
     'provenance',
+    'lesson',
   ]);
   if (o.schema_version !== 1)
     throw new Error('Invalid reasoning summary version');
@@ -73,7 +111,7 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
       ]),
     };
   }
-  return {
+  const summary: ReasoningSummary = {
     schema_version: 1,
     investigation_id: identifier(o.investigation_id),
     recorded_at: utc(o.recorded_at),
@@ -99,6 +137,25 @@ export function validateReasoningSummary(value: unknown): ReasoningSummary {
       evidence_ids: array(p.evidence_ids, 15).map(identifier),
     },
   };
+  if (o.lesson !== undefined) {
+    const lesson = exact(o.lesson, ['check', 'window', 'evidence_id']);
+    summary.lesson = {
+      check: member(lesson.check, [
+        'dependency_continuous_operation',
+        'critical_job_overlap',
+      ]),
+      window: validateSchedule(lesson.window),
+      evidence_id: identifier(lesson.evidence_id),
+    };
+    if (
+      summary.verdict !== 'not_recommended' ||
+      summary.hypothesis?.state !== 'contradicted' ||
+      !sameSchedule(summary.lesson.window, summary.hypothesis.window) ||
+      !summary.provenance.evidence_ids.includes(summary.lesson.evidence_id)
+    )
+      throw new Error('Invalid historical lesson provenance');
+  }
+  return summary;
 }
 
 /** Deliberately omits telemetry, provider payloads, and complete reports. */
@@ -110,6 +167,27 @@ export function reasoningSummaryFromReport(
   const candidate = report.candidates[candidateIndex];
   if (!candidate) throw new Error('hmem_summary_candidate_required');
   const hypothesis = candidate.hypotheses.at(-1);
+  let lesson: OperationalLesson | undefined;
+  if (candidate.verdict === 'not_recommended' && candidate.proposed_window) {
+    for (const evidence of report.evidence) {
+      if (!candidate.contradicting_evidence_ids.includes(evidence.evidence_id))
+        continue;
+      for (const check of [
+        'dependency_continuous_operation',
+        'critical_job_overlap',
+      ] as const) {
+        if (
+          assessOperationalCheck(check, candidate.proposed_window, evidence) ===
+          'confirmed'
+        )
+          lesson = {
+            check,
+            window: candidate.proposed_window,
+            evidence_id: evidence.evidence_id,
+          };
+      }
+    }
+  }
   return validateReasoningSummary({
     schema_version: 1,
     investigation_id: report.investigation_id,
@@ -138,6 +216,7 @@ export function reasoningSummaryFromReport(
         )
         .map((o) => o.evidence_id),
     },
+    ...(lesson ? { lesson } : {}),
   });
 }
 
@@ -220,7 +299,10 @@ export class HmemReasoningMemory {
     }
   }
 
-  retrieve(instanceId: string): HistoricalReasoningContext[] {
+  retrieve(
+    instanceId: string,
+    options: { as_of?: string; mode?: Mode } = {},
+  ): HistoricalReasoningContext[] {
     try {
       if (this.unavailable)
         throw new Error('Reopen memory after a failed operation');
@@ -237,6 +319,19 @@ export class HmemReasoningMemory {
       return result.memories
         .map(({ memory }) => this.readRecord(memory))
         .filter((context) => context.summary.instance_id === instance)
+        .filter(
+          ({ summary }) =>
+            (!options.as_of ||
+              Date.parse(summary.recorded_at) <= Date.parse(options.as_of)) &&
+            (!options.mode ||
+              summary.provenance.integration_mode === options.mode),
+        )
+        .sort(
+          (a, b) =>
+            Date.parse(b.summary.recorded_at) -
+              Date.parse(a.summary.recorded_at) ||
+            Number(!!a.summary.lesson) - Number(!!b.summary.lesson),
+        )
         .slice(0, 5);
     } catch {
       this.unavailable = true;
