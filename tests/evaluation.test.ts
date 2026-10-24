@@ -102,7 +102,16 @@ test('real-model failure remains in every denominator without scripted fallback 
     calls++;
     // Progress must be visible while the provider call is still pending.
     assert.match(progress.at(-1) ?? '', /planner call 1 waiting/);
-    return new Response('PRIVATE provider error', { status: 403 });
+    return Response.json(
+      {
+        error: {
+          message: 'GPU capacity unavailable; token=test-key',
+          type: 'server_error',
+        },
+        request: { prompt: 'PRIVATE' },
+      },
+      { status: 403 },
+    );
   });
   const result = await evaluate('model', { verbose: true, delay_ms: 0 });
   assert.equal(calls, 8);
@@ -117,6 +126,11 @@ test('real-model failure remains in every denominator without scripted fallback 
     ),
   );
   assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+  assert.match(
+    result.rows[0].investigation.planner_failures[0].provider_error?.body ?? '',
+    /GPU capacity unavailable/,
+  );
+  assert.ok(progress.some((line) => line.includes('provider error:')));
   assert.ok(progress.some((line) => line.includes('[model_http_403]')));
   assert.ok(
     progress.some((line) => line.includes('case 8/8 unknown_commitments')),

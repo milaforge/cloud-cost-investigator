@@ -159,6 +159,7 @@ export interface TraceEntry {
   status?: SourceStatus;
   evidence_ids: string[];
   failure_code?: PlannerFailureCode;
+  provider_error?: { body: string; truncated: boolean };
 }
 export interface CandidateReport {
   instance_id: string;

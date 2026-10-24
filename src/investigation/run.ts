@@ -22,6 +22,7 @@ import {
   InvestigationHistory,
 } from './history.ts';
 import type { CurrentEvidenceProvider } from './mock.ts';
+import { ModelHttpError } from './provider-error.ts';
 import {
   MODEL_PLANNER_TIMEOUT_MS,
   type Planner,
@@ -72,6 +73,7 @@ export type InvestigationProgress =
       tool?: ToolAction['tool'];
       status?: TraceEntry['status'];
       failure_code?: TraceEntry['failure_code'];
+      provider_error?: TraceEntry['provider_error'];
     };
 
 class BoundedTimeout extends Error {}
@@ -191,6 +193,7 @@ export async function runInvestigation(
       tool: extra.action?.type === 'tool' ? extra.action.tool : undefined,
       status: extra.status,
       failure_code: extra.failure_code,
+      provider_error: extra.provider_error,
     });
   };
   const find = (tool: string) =>
@@ -336,6 +339,9 @@ export async function runInvestigation(
                 : validatingAction
                   ? 'planner_invalid_action'
                   : sanitizedPlannerFailure(error),
+            ...(error instanceof ModelHttpError
+              ? { provider_error: error.provider_error }
+              : {}),
           },
         );
         break;

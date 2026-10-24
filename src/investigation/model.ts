@@ -12,6 +12,7 @@ import {
   textValue,
 } from '../contracts.ts';
 import { readBoundedJson } from '../http.ts';
+import { ModelHttpError, readProviderError } from './provider-error.ts';
 import { applicableHistoryHints } from './history.ts';
 import {
   MODEL_PLANNER_TIMEOUT_MS,
@@ -239,8 +240,14 @@ export class OpenAICompatiblePlanner implements Planner {
       throw new Error(abortCode() ?? 'model_transport_unavailable');
     }
     if (response.status !== 200) {
-      await response.body?.cancel().catch(() => undefined);
-      throw new Error(`model_http_${response.status}`);
+      const details = await readProviderError(response, [
+        this.config.apiKey ?? '',
+        this.config.baseUrl,
+        new URL(this.config.baseUrl).hostname,
+        state.request.account_id,
+        state.candidate_id ?? '',
+      ]);
+      throw new ModelHttpError(response.status, details);
     }
     let payload: unknown;
     try {

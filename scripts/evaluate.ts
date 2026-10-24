@@ -277,6 +277,10 @@ export async function evaluate(
                 progress(
                   `${label}: step ${event.step} ${event.phase}${event.action && event.action !== 'tool' ? ` ${event.action}` : ''}${event.tool ? ` ${event.tool}` : ''}${event.status ? ` ${event.status}` : ''}${event.failure_code ? ` [${event.failure_code}]` : ''}`,
                 );
+                if (event.provider_error)
+                  progress(
+                    `${label}: provider error: ${event.provider_error.body}${event.provider_error.truncated ? ' [truncated]' : ''}`,
+                  );
               }
             }
           : undefined,
@@ -292,7 +296,17 @@ export async function evaluate(
         completion: report.completion_status,
         stop_reason: report.stop_reason,
         planner_failures: report.trace.flatMap((t) =>
-          t.failure_code ? [{ step: t.step, code: t.failure_code }] : [],
+          t.failure_code
+            ? [
+                {
+                  step: t.step,
+                  code: t.failure_code,
+                  ...(t.provider_error
+                    ? { provider_error: t.provider_error }
+                    : {}),
+                },
+              ]
+            : [],
         ),
         planner: report.planner,
         investigation_id: report.investigation_id,

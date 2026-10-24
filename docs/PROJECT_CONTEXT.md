@@ -175,6 +175,12 @@ A runnable demo must prove:
 **Diagnostic contract update (2026-10-24):** Planner failures may now carry an
 optional validated `failure_code` on actionless planner trace entries; old reports
 remain valid. Only fixed public codes or three-digit HTTP statuses are reported.
+Subsequently, by user request, HTTP failures also retain optional validated
+`provider_error: { body, truncated }` diagnostics. Body reads are limited to
+8192 bytes/one second; sanitized excerpts to 2048 characters. Request/header/stack
+objects and credentials are excluded or redacted. The excerpt appears in
+readable reports, evaluation JSON and verbose progress, without affecting the
+HTTP code, evidence, safety policy or retry behavior.
 Evaluation separates exact disposition matches from completion states and planner
 failures, including matching deferrals reached after failure. Correct deferrals
 remain partial; operational planner failures cannot pass the evaluation gate.

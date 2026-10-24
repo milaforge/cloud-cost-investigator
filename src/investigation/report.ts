@@ -7,6 +7,7 @@ import {
 import {
   type Action,
   array,
+  bool,
   type CandidateReport,
   exact,
   type Hypothesis,
@@ -111,6 +112,7 @@ function traceEntry(value: unknown): TraceEntry {
     'status',
     'evidence_ids',
     'failure_code',
+    'provider_error',
   ]);
   const entry: TraceEntry = {
     step: integer(t.step, 0, 1000),
@@ -137,6 +139,15 @@ function traceEntry(value: unknown): TraceEntry {
       'unavailable',
       'error',
     ] as const);
+  if (t.provider_error !== undefined) {
+    if (!entry.failure_code?.startsWith('model_http_'))
+      throw new Error('Provider details require HTTP failure');
+    const details = exact(t.provider_error, ['body', 'truncated']);
+    entry.provider_error = {
+      body: textValue(details.body, 2048),
+      truncated: bool(details.truncated),
+    };
+  }
   return entry;
 }
 
@@ -678,7 +689,7 @@ export function renderReport(value: InvestigationReport): string {
   lines.push('', 'Decision trace:');
   for (const t of r.trace) {
     lines.push(
-      `${t.step}. ${t.phase}${t.status ? ` (${t.status})` : ''}${t.failure_code ? ` [${t.failure_code}]` : ''}: ${t.reason} ${citations(t.evidence_ids)}`,
+      `${t.step}. ${t.phase}${t.status ? ` (${t.status})` : ''}${t.failure_code ? ` [${t.failure_code}]` : ''}: ${t.reason} ${citations(t.evidence_ids)}${t.provider_error ? ` Provider: ${t.provider_error.body}${t.provider_error.truncated ? ' [truncated]' : ''}` : ''}`,
     );
     if (t.action) lines.push(`  Validated action: ${JSON.stringify(t.action)}`);
   }

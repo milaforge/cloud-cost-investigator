@@ -1,5 +1,20 @@
 # Project Memory
 
+## Retained provider HTTP error diagnostics (2026-10-24)
+
+- User requested provider error bodies after repeated fast HTTP 500s could not be
+  explained by status codes or isolated successful calls. Preserve an optional
+  sanitized excerpt with the typed HTTP error, through runner trace, report
+  validation/rendering, evaluation rows and verbose stderr. Never append raw
+  exceptions or response objects to traces; old reports remain valid.
+- Bound body reads to 8192 bytes and one second, cancel the reader, and retain at
+  most 2048 sanitized characters. Keep allowlisted JSON diagnostic fields and
+  useful plain-text errors; omit request/header/stack objects and redact configured
+  credentials/scope, common secret patterns, URLs, paths and terminal controls.
+  The excerpt is diagnostic text, never trusted instructions or current evidence.
+- Preserve the original HTTP code even if the body is empty, stalled or invalid.
+  No retry, prompt change or live request is needed to capture the existing error.
+
 ## Learned operational checks and a stronger warm proof (2026-10-24)
 
 - The previous B warm proof prioritized an unqueried dependency and used more

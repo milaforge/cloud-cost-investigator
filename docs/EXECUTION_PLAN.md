@@ -9,6 +9,29 @@
 
 ## 1. Decision change and current verification state
 
+### Retained provider HTTP error bodies — 2026-10-24
+
+**Gate/owner:** Milad, user-requested diagnosis of repeated HTTP 500 responses.
+
+- [x] Capture a bounded sanitized error-body excerpt in typed model HTTP errors;
+  carry optional `provider_error: { body, truncated }` through validated runner
+  traces, readable reports, evaluation `planner_failures` and verbose stderr.
+  Existing HTTP codes, completion behavior and older reports remain compatible.
+- [x] JSON diagnostic fields are allowlisted; request/header/stack objects are
+  omitted. Configured credentials/scope, common credential patterns, URLs, paths
+  and terminal control characters are redacted. Reads stop at 8192 bytes or one
+  second; retained excerpts are capped at 2048 characters. Empty/unreadable bodies
+  are explicit, without changing the HTTP code or retrying the request.
+- **Proof:** `npm test`: **145/145 passed**, including mocked JSON/plain-text/
+  HTML/malformed/oversized/stalled bodies, cancellation, secret redaction,
+  report/evaluation propagation, invalid diagnostic placement and compatibility.
+  `npm run typecheck`, scoped Biome lint (`src scripts tests cli.ts`) and
+  `git diff --check`: **passed**. A warm-demo failure fixture was updated to
+  distinguish retained safe error text from an omitted private request object.
+- **Limit/next action:** no new live provider request made for this implementation.
+  Run the existing single-case verbose evaluation to capture the next actual
+  provider failure; previously discarded error bodies cannot be recovered.
+
 The Oct 23 MVP discovery approved four shared-engine flows: A supported off-hours opportunity, B an evidence-driven rejected scheduling hypothesis, C justified continuous operation or needs verification, and D a later run using both historical stores with **fresh** operational verification. First run must not require either a historical baseline or prior memory. There is no cost-increase-comparison prerequisite.
 
 **Corrected source ownership:** Zayan is building direct TypeScript evidence adapters (mock first, live later) for inventory, billing, utilization, operations/jobs and dependencies. Zetaris is for querying/storing compact structured investigation **history**, not fetching the current EC2 facts. Meterless H-MEM stores/retrieves reasoning-oriented historical summaries. Narrowly scoped Zetaris history appends have team approval in principle; they require least-privilege implementation and runnable proof. AWS and current-evidence tools remain strictly read-only.
@@ -120,6 +143,34 @@ proofs below remain historical measurements, not current expected behavior.
 The stronger learned-check goal is satisfied through the complete offline proof
 and recorded live cold/warm plus changed-phase recovery. Endpoint reliability
 and live direct-evidence integration remain separate open work.
+
+### Repeated fourth-call HTTP 500 investigation — 2026-10-24
+
+**Gate/owner:** Milad, explain the user's repeated `missing` failures after
+metrics retrieval. `evaluation-C.json` actually selects `missing`; its filename
+does not select scenario C. The recorded failure is planner call 4 / trace step 8.
+
+- Offline single-case scripted evaluation passed its gate: seven planner calls,
+  expected `needs_verification`, partial completion and no planner errors.
+  Output: `/tmp/cci-missing-scripted-diagnosis.json`. Missing-source fixture data
+  itself does not fail local validation or the scripted workflow.
+- Reconstructed the fourth-call logical state with three validated synthetic
+  observations using the normal scripted planner/executor. At this point model
+  choices are `propose` or `finish`; missing jobs are not queried yet.
+- `node --import tsx /tmp/cci-isolate-fourth-call.mjs`: one live request after a
+  15-second pause, unchanged configured model/format/options. HTTP **200**,
+  **3108 ms**, valid **propose** action using
+  `nvidia/nemotron-3.5-super-vl-120b-a12b`, text response format. Result:
+  `/tmp/cci-fourth-call-result.json`. The conditional comparison with thinking
+  disabled was **not executed**, because the unchanged request succeeded.
+- **Conclusion/limit:** no deterministic fourth-state or fixture failure was
+  reproduced. The user's 500 occurred about 0.9 seconds into the request, before
+  the five-minute deadline. Provider/gateway failure remains established only
+  at HTTP-status level; overload, rate limits, reasoning settings or internal
+  backend faults are unproven. Logical-state reconstruction does not preserve
+  original timestamps/request bytes or provider conditions. Exact cause requires
+  diagnostic detail from a failing HTTP response or provider-side logs.
+  No product code, credentials or model configuration changed for this diagnosis.
 
 ### Isolated third planner-call diagnosis — 2026-10-24
 

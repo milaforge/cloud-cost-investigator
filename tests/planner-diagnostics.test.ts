@@ -71,7 +71,7 @@ const cases: { code: PlannerFailureCode; response: () => Response | never }[] =
   [
     ...[400, 401, 403, 405, 429, 500, 503].map((status) => ({
       code: `model_http_${status}` as PlannerFailureCode,
-      response: () => new Response('PRIVATE upstream body', { status }),
+      response: () => new Response('Upstream service unavailable', { status }),
     })),
     {
       code: 'model_transport_unavailable',
@@ -182,5 +182,6 @@ test('report validator rejects arbitrary codes and failure codes attached to suc
   assert.throws(() => validateReport(action));
   // Historical reports without the new optional field still validate.
   delete report.trace[0].failure_code;
+  delete report.trace[0].provider_error;
   assert.doesNotThrow(() => validateReport(report));
 });
