@@ -39,6 +39,23 @@ Use a dedicated directory **under that configured access root**. The sibling
 access”, despite being inside the same volume. `/` is not the lakehouse storage path.
 “Local” means the filesystem visible to Zetaris inside its containers.
 
+### Configure the provisioning path
+
+On a fresh computer, first follow [the app setup](CLI_GUIDE.md#fresh-machine-setup).
+Record this non-secret setting in the app's local `.env`:
+
+```dotenv
+ZETARIS_CCI_HISTORY_PATH=/home/zetaris/customer-data/shared/cci-history
+```
+
+This is a **provisioning reference**, not a runtime app setting. The app does not
+read it, create the directory or register a lakehouse. Use the same value for
+`history_dir` in step 1 and `storagePath` in step 2 (or the UI Storage path).
+For remote Zetaris, the path belongs to the server containers, not your computer.
+The app's `.env` is not automatically loaded by the deployment shell or SQL editor;
+substitute the path explicitly in both places. Keep it under the deployment's
+configured access root and on persistent storage.
+
 ### 1. Create the directory and verify access
 
 Run from the directory containing the **Zetaris deployment's Compose file**, not
@@ -120,6 +137,7 @@ ZETARIS_AUTH_MODE=password
 ZETARIS_USERNAME=your-app-username
 ZETARIS_PASSWORD='your-app-password'
 ZETARIS_ORG_ID=
+ZETARIS_CCI_HISTORY_PATH=/home/zetaris/customer-data/shared/cci-history
 ZETARIS_HISTORY_TABLE=CCI_HISTORY.investigations.records
 ZETARIS_HISTORY_ALLOW_APPEND=false
 ```
@@ -198,9 +216,10 @@ is reused; conflicting IDs or ambiguous writes fail without automatic retry. Ice
 does not enforce a unique key here: this MVP assumes one writer, and the pre-read
 is not a concurrency lock. Duplicate rows are detected as conflicts on append.
 
-The investigation CLI still does not automatically save/recall these records. This
-adapter/probe proves the persistence boundary separately; warm-run integration remains
-a later gate. Historical IDs never become current evidence citations.
+The investigation CLI reads scoped history when `ZETARIS_HISTORY_TABLE` is set
+and appends validated summaries when `ZETARIS_HISTORY_ALLOW_APPEND=true`.
+See [the warm-run integration](CLI_GUIDE.md#h-mem-and-zetaris) for recorded proof.
+Historical IDs never become current evidence citations.
 
 Zetaris documents table-level SELECT and INSERT privileges. Its INSERT documentation
 also includes overwrite operations, so SELECT/INSERT labels alone do not certify
@@ -218,7 +237,7 @@ References: [Zetaris SQL Guide](https://kbase.zetaris.com/knowledge/sql-guide),
 2. Append one synthetic, labeled history record with a unique ID; do not retry an ambiguous write blindly.
 3. Read that same ID back and validate every field, scope, timestamp and source mode.
 4. Verify duplicate handling and scope isolation with non-sensitive records. Leave probe records labeled rather than deleting them through the application.
-5. Wire historical lookup/append into a later investigation, retaining separate history IDs and fresh-evidence citations.
+5. Run the configured investigation CLI to exercise historical lookup/append, retaining separate history IDs and fresh-evidence citations.
 
 Until then, a successful connectivity/catalog probe is not history integration proof:
 

@@ -77,6 +77,32 @@ or production accuracy. The selected fixture rewards checking dependencies first
 this is a cold-versus-warm comparison, not a claim to beat every fixed rule order.
 See the [full methodology and retained results](#learn-a-check-finish-earlier-then-change-the-conclusion).
 
+## Fresh-machine setup
+
+1. Install Node.js **24+** and npm, clone this repository, and run `npm ci`
+   from its root. H-MEM is already vendored.
+2. Create local configuration with `cp .env.example .env` **only if `.env`
+   does not exist**. Otherwise merge the needed keys; keep credentials untracked.
+   The CLI loads this file from the working directory; shell settings take precedence.
+3. For a credential-free smoke run, use
+   `npm run investigate -- --evidence mock --account demo --region us-east-1`.
+   To use AWS, configure a read-only SDK profile/SSO or workload role following
+   [AWS authentication](AWS_TOOLS.md#authentication-and-live-smoke-check).
+   For real-model planning, complete [model configuration](#model-configuration).
+4. To retain Zetaris history, complete [lakehouse provisioning](ZETARIS_HISTORY.md#required-local-docker-setup-history-lakehouse)
+   on the Zetaris server before running its probes: create persistent storage,
+   register `CCI_HISTORY`, create the dedicated table, and configure the app user.
+   Set `ZETARIS_CCI_HISTORY_PATH` in `.env` as your provisioning reference;
+   **the app does not consume this variable**. Use that path in the server setup
+   and lakehouse registration. `ZETARIS_HISTORY_TABLE` is the runtime SQL target.
+   Keep `ZETARIS_HISTORY_ALLOW_APPEND=false` until permissions are reviewed;
+   the guide explains the explicit write/readback probe and its retained record.
+
+History is optional. To run without a provisioned Zetaris service, leave
+`ZETARIS_HISTORY_TABLE` empty in `.env`; the example's nonempty table enables
+history reads. Leave `HMEM_PERSIST_DIR` unset to disable local reasoning memory.
+`LARGE_LLM_MODEL` is an unused legacy local key; use `LLM_MODEL` for the planner.
+
 ## Run
 
 Requires Node.js **24+** and npm. The repository uses `package-lock.json`; AWS SDK clients are installed from that lockfile. The H-MEM reference is checked into `vendor/hmem`; investigation runs do not require downloading or setting up H-MEM.

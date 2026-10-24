@@ -11,6 +11,19 @@ current event rules. The deadline year is `null` because the original notes do
 not specify it. Onboarding notes begin at minute 10; no earlier steps were
 provided.
 
+## Online source check — 2026-10-24
+
+The [organizer's current overview](https://academy.genai.works/courses/open-agent-hackathon-2026/details)
+confirms the three tracks, Oct 22–27 build window, explainable useful agents,
+Meterless Engines and sponsor technologies. It now describes NVIDIA execution
+through Meterless Nightshift and allows Cursor or any AI coding tool. These
+statements differ from the locally recorded notes below. The public overview does
+not expose the complete judging/submission rulebook; third-party project READMEs
+claiming to reproduce official rules are not authoritative replacements.
+Keep the recorded JSON intact pending team/portal reconciliation. The project
+currently uses H-MEM and direct NVIDIA requests; this check does not establish
+Nightshift compliance or completed submission requirements.
+
 ```json
 {
   "schema_version": 1,

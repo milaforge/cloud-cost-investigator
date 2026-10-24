@@ -1,5 +1,23 @@
 # Project Memory
 
+## README audience and event sources (2026-10-24)
+
+- README should explain what/why first, then runnable setup and usage, sponsor
+  roles, current limits and links to architecture/details. Keep internal next-task
+  planning in the execution plan. Use the credential-free mock B as the first run.
+- Link organizer-owned online event guidance; public overview wording is not a
+  complete submission rulebook. Current Nightshift wording differs from direct
+  NVIDIA/H-MEM implementation; do not infer compliance or invent Cursor usage.
+
+## Fresh-machine configuration (2026-10-24)
+
+- Document supported runtime keys and local legacy/provisioning keys distinctly.
+  `ZETARIS_CCI_HISTORY_PATH` records the server-visible persistent provisioning
+  path; the app reads only `ZETARIS_HISTORY_TABLE` for the SQL target and never
+  provisions storage. Setting a path alone cannot create a lakehouse.
+- Fresh-machine instructions must link storage creation, lakehouse registration,
+  table DDL, dedicated-user permissions and explicit retained-record write proof.
+
 ## Structured historical comparisons (2026-10-24)
 
 - Reuse validated version 1 Zetaris fields for previous verdict and proposed/

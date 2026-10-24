@@ -26,6 +26,45 @@ This summary and sections 3/5 are the current checklist. Dated entries in sectio
 
 ## 1. Decision change and current verification state
 
+### README purpose, setup and event alignment — 2026-10-24
+
+- **Gate/owner:** release documentation, Milad. README now covers the engineering
+  problem, investigation behavior, dependencies, clone/install/demo, optional
+  integrations, live invocation, current limits and architecture/detail links.
+- **Online evidence:** checked the organizer-owned GenAI Academy overview. Track
+  and useful/explainable-agent framing confirmed; current Nightshift and coding-tool
+  wording differ from recorded notes. Added a source check to `RULES.md` without
+  rewriting its JSON. Team/portal reconciliation, actual Cursor usage and submission
+  assets remain open; no full rules/compliance claim.
+- **Executed:** documented mock B command returned exit 0 and `not_recommended`
+  with cited critical-job contradiction. Existing local configuration attempted
+  Zetaris recall/append, reported unavailable/unverified, and did not prove a write.
+  Repeated with `ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR=` to isolate the demo:
+  exit 0, same rejection, both stores not configured. No live AWS/model calls.
+- **Documentation proof:** inline Node assertions passed all 16 README local
+  links/anchors and expected demo verdict; `git diff --check` passed. No runtime
+  source change; full test suite not rerun. Clone/install on a fresh computer was
+  not executed; final independent clean-checkout reproduction remains open.
+
+
+### Fresh-machine environment and Zetaris setup — 2026-10-24
+
+- **Gate/owner:** Days 3–4 reproducibility support, Milad. Updated `.env.example`,
+  README navigation, CLI setup and the Zetaris provisioning guide; rationale in
+  `memory.md`. Documented all local `.env` key names using placeholders, including
+  unused legacy/backup keys, AWS settings and the provisioning-only history path.
+- **Verified:** executed inline Node check using `node --input-type=module` with
+  `node:util.parseEnv` and assertions: local key-name coverage, template parsing,
+  append/billing opt-ins disabled, provider JSON and setup links/anchors passed.
+  `git diff --check` passed. Initial coverage check missed underscore-prefixed
+  backup keys; corrected the scan and documented them before the passing rerun.
+- **Mode/limits:** documentation/configuration only; no `.env` values changed or
+  printed, runtime tests or live service calls executed, lakehouse provisioned,
+  permissions altered or records appended. Fresh-machine live reproduction and
+  dedicated-user least privilege remain open; next action is to follow the guide
+  against the intended Zetaris deployment and retain read/append/readback proof.
+
+
 ### Structured historical window comparisons — 2026-10-24
 
 **Gate/owner:** Milad; user-authorized wiring for the team's two history scenarios.
