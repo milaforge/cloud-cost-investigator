@@ -1,5 +1,16 @@
 # Project Memory
 
+## Structured historical comparisons (2026-10-24)
+
+- Reuse validated version 1 Zetaris fields for previous verdict and proposed/
+  rejected windows. Expose typed `historical_context.comparisons` in reports,
+  alongside scoped identity, source mode, timestamps and provenance IDs.
+- Keep comparison data out of planner hints and current evidence. H-MEM still
+  owns historical query-order advice; fresh observations and the existing
+  deterministic evaluator own proposals and verdicts. No remote schema change.
+- Optional report field preserves retained-artifact compatibility. Validate scope,
+  candidate, mode, time, retrieved context linkage and window bounds on read.
+
 ## Product positioning and documentation (2026-10-24)
 
 - The user clarified the starting niche: find EC2 scheduling opportunities; the

@@ -9,6 +9,34 @@
 
 ## 1. Decision change and current verification state
 
+### Structured historical window comparisons — 2026-10-24
+
+**Gate/owner:** Milad; user-authorized wiring for the team's two history scenarios.
+Acceptance: forward prior verdict and proposed/rejected windows with scoped,
+timestamped provenance; fresh evidence still decides both changed verdicts.
+
+- [x] Added optional typed `historical_context.comparisons` to validated reports.
+  Zetaris recall forwards existing version 1 fields; CLI text labels them as
+  historical only. Context/record and investigation IDs, scope, instance, mode and
+  record time accompany the verdict/windows. Older reports remain valid.
+- [x] No remote schema change, new dependency, planner hint or safety-policy change.
+  H-MEM retains check-order ownership. Comparison context never becomes a current
+  proposal, citation or clearance; numeric CPU/cost trends remain out of scope.
+- [x] `node --import tsx --test --test-isolation=none tests/warm.test.ts`:
+  **9/9 passed**. Includes A → B and B → A transitions, unchanged query order,
+  fresh citations, historical labeling, retained-report compatibility, unavailable
+  history, future/mode exclusion and malformed/forged comparison rejection.
+- [x] `npm test`: **160/160 passed**. `npm run typecheck`, scoped Biome lint and
+  format (`src/contracts.ts`, `src/investigation/{history,report}.ts`,
+  `tests/warm.test.ts`), and `git diff --check`: **passed**.
+
+**Integration mode/limits:** offline transport fixtures / scripted planner /
+mock current evidence. No new live Zetaris, model or AWS proof, and no remote
+append performed. The team can consume the comparison array for its two scenario
+assertions; complete the direct-evidence integrations and demo separately.
+Milestone unchanged.
+
+
 ### Product positioning and README navigation — 2026-10-24
 
 **Gate/owner:** Milad; user-requested architecture assessment and concise README.

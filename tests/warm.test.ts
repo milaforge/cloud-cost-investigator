@@ -4,7 +4,7 @@ import test, { type TestContext } from 'node:test';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
-import { validateReport } from '../src/investigation/report.ts';
+import { renderReport, validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
 import { historyRecordFromReport } from '../src/tools/zetaris-history.ts';
 
@@ -156,6 +156,7 @@ test('history services fail independently and disclose no provider errors', asyn
   await writeFile(blocked, 'file');
   const neither = await run(blocked, true);
   assert.equal(neither.historical_context.hmem, 'unavailable');
+  assert.deepEqual(neither.historical_context.comparisons, []);
   assert.equal(neither.candidates[0].verdict, 'not_recommended');
   assert.ok(!JSON.stringify(neither).includes('PRIVATE'));
 });
@@ -258,4 +259,113 @@ test('model adapter receives bounded historical hints and binds fresh prioritize
   assert.ok(sawHints);
   assert.deepEqual(checks(report), ['get_ec2_operations']);
   assert.equal(report.candidates[0].verdict, 'not_recommended');
+});
+
+for (const [prior, current, previousVerdict, currentVerdict] of [
+  ['A', 'B', 'conditional_recommendation', 'not_recommended'],
+  ['B', 'A', 'not_recommended', 'conditional_recommendation'],
+] as const) {
+  test(`Zetaris comparison forwards ${prior} history while fresh ${current} decides the verdict`, async (t) => {
+    const rows = await zetaris(t);
+    const previous = await run(undefined, true, prior);
+    process.env.ZETARIS_HISTORY_ALLOW_APPEND = 'false';
+    const report = validateReport(await run(undefined, true, current));
+    const record = historyRecordFromReport(previous);
+    assert.deepEqual(report.historical_context.comparisons, [
+      {
+        historical: true,
+        context_id: `zetaris:${record.record_id}`,
+        record_id: record.record_id,
+        investigation_id: previous.investigation_id,
+        recorded_at: rows[0][Object.keys(record).indexOf('recorded_at_utc')],
+        scope: { account_id: request.account_id, region: request.region },
+        instance_id: 'i-mock-primary',
+        source_mode: 'mock',
+        verdict: previousVerdict,
+        proposed_window: previous.candidates[0].proposed_window,
+        rejected_windows: JSON.parse(record.summary_json).rejected_windows,
+      },
+    ]);
+    assert.equal(report.candidates[0].verdict, currentVerdict);
+    assert.match(
+      renderReport(report),
+      /Historical comparison .*previous verdict=/,
+    );
+    assert.deepEqual(
+      checks(report),
+      current === 'A'
+        ? ['get_ec2_operations', 'get_ec2_dependencies']
+        : ['get_ec2_operations'],
+    );
+    assert.ok(
+      report.evidence.every(
+        (e) =>
+          !previous.evidence.some((old) => old.evidence_id === e.evidence_id),
+      ),
+    );
+    const legacy = structuredClone(report);
+    delete legacy.historical_context.comparisons;
+    assert.doesNotThrow(() => validateReport(legacy));
+    for (const change of [
+      { historical: false },
+      { record_id: 'unretrieved' },
+      { instance_id: 'other-instance' },
+      { scope: { account_id: 'other-account', region: request.region } },
+      { scope: { account_id: request.account_id, region: 'us-west-2' } },
+      { source_mode: 'live' },
+      {
+        recorded_at: new Date(
+          Date.parse(report.started_at) + 86400000,
+        ).toISOString(),
+      },
+      { proposed_window: { start_hour_utc: 6, end_hour_utc: 2 } },
+      { rejected_windows: [{ start_hour_utc: -1, end_hour_utc: 2 }] },
+      { verdict: 'approved' },
+    ]) {
+      const forged = structuredClone(report);
+      const comparison = forged.historical_context.comparisons?.[0];
+      assert.ok(comparison);
+      Object.assign(comparison, change);
+      assert.throws(() => validateReport(forged));
+    }
+    const duplicate = structuredClone(report);
+    const comparisons = duplicate.historical_context.comparisons;
+    assert.ok(comparisons);
+    comparisons.push(comparisons[0]);
+    assert.throws(
+      () => validateReport(duplicate),
+      /Duplicate historical comparison/,
+    );
+    const uncited = structuredClone(report);
+    uncited.historical_context.context_ids = [];
+    assert.throws(
+      () => validateReport(uncited),
+      /Unretrieved historical comparison/,
+    );
+    const forgedCitation = structuredClone(report);
+    forgedCitation.candidates[0].supporting_evidence_ids.push(
+      `zetaris:${record.record_id}`,
+    );
+    assert.throws(() => validateReport(forgedCitation), /current citation/);
+  });
+}
+
+test('future and mismatched-mode Zetaris records never become comparison context', async (t) => {
+  const rows = await zetaris(t);
+  await run(undefined, true);
+  process.env.ZETARIS_HISTORY_ALLOW_APPEND = 'false';
+  const columns = Object.keys(historyRecordFromReport(await run()));
+  const recordedIndex = columns.indexOf('recorded_at_utc');
+  const original = rows[0][recordedIndex];
+  rows[0][recordedIndex] = new Date(Date.now() + 86400000).toISOString();
+  assert.deepEqual(
+    (await run(undefined, true)).historical_context.comparisons,
+    [],
+  );
+  rows[0][recordedIndex] = original;
+  rows[0][columns.indexOf('source_mode')] = 'live';
+  assert.deepEqual(
+    (await run(undefined, true)).historical_context.comparisons,
+    [],
+  );
 });

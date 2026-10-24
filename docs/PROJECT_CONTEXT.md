@@ -95,6 +95,16 @@ append_investigation_history(validated_record)          # authorized narrowly sc
 
 The repository's existing generic `queryZetaris(sql)` is connectivity scaffolding **not** an agent-facing API. Replace or wrap behind fixed operations. Neither a historical record nor its absence proves current operational safety. Empty history must not block a first run.
 
+**Structured comparison context (Oct 24):** recalled version 1 Zetaris records
+are forwarded as `historical_context.comparisons` in CLI JSON reports and labeled
+in the readable report. Each entry contains the previous verdict, proposed and
+rejected UTC windows, record/context and investigation IDs, timestamp, instance,
+account/region and evidence mode. Recall excludes future and mismatched-mode
+records. These fields support comparing an old recommendation or rejected window
+with a fresh investigation; they never set the current proposal, planner order,
+safety clearance or current citations. Older reports without this optional field
+remain valid. No Zetaris schema change is required.
+
 ### Meterless H-MEM — reasoning memory
 
 Use the H-MEM reference already present in the TypeScript starter (runtime store/retrieve must be verified). Persist concise, timestamped summaries of hypotheses, rejected schedules, discovered concerns, unresolved checks, investigation IDs and provenance. Retrieve only relevant scoped memories and disclose which were used to choose a next tool. H-MEM **does not** own authoritative numeric telemetry or structured billing history. Its retrieved beliefs and confidence/ranking signals are not evidence for a current safety verdict. A changed current observation may override stale memory.

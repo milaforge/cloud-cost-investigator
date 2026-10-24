@@ -181,6 +181,20 @@ export interface CandidateReport {
   estimated_monthly_savings: number | null;
   savings_calculation: SavingsCalculation | null;
 }
+/** Prior decision context only; never current evidence or scheduling clearance. */
+export interface HistoricalComparison {
+  historical: true;
+  context_id: string;
+  record_id: string;
+  investigation_id: string;
+  recorded_at: string;
+  scope: Scope;
+  instance_id: string;
+  source_mode: Mode;
+  verdict: CandidateReport['verdict'];
+  proposed_window: Schedule | null;
+  rejected_windows: Schedule[];
+}
 export interface InvestigationReport {
   investigation_id: string;
   goal: 'evaluate_ec2_off_hours_scheduling';
@@ -202,6 +216,8 @@ export interface InvestigationReport {
     zetaris: 'not_configured' | 'not_queried' | 'ok' | 'unavailable';
     hmem: 'not_configured' | 'not_queried' | 'ok' | 'unavailable';
     context_ids: string[];
+    /** Optional for compatibility with previously retained reports. */
+    comparisons?: HistoricalComparison[];
     limitations: string[];
   };
   budget: {

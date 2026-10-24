@@ -11,6 +11,7 @@ import {
   type CandidateReport,
   exact,
   type Hypothesis,
+  type HistoricalComparison,
   type InvestigationReport,
   identifier,
   integer,
@@ -25,6 +26,7 @@ import {
   validateObservation,
   validateRequest,
   validateSchedule,
+  validateScope,
   validatePlannerFailureCode,
 } from '../contracts.ts';
 
@@ -280,6 +282,7 @@ export function validateReport(value: unknown): InvestigationReport {
     'zetaris',
     'hmem',
     'context_ids',
+    'comparisons',
     'limitations',
   ]);
   const historical_context = {
@@ -295,6 +298,74 @@ export function validateReport(value: unknown): InvestigationReport {
       'ok',
       'unavailable',
     ]),
+    ...(h.comparisons === undefined
+      ? {}
+      : {
+          comparisons: array(h.comparisons, 30).map(
+            (value): HistoricalComparison => {
+              const c = exact(value, [
+                'historical',
+                'context_id',
+                'record_id',
+                'investigation_id',
+                'recorded_at',
+                'scope',
+                'instance_id',
+                'source_mode',
+                'verdict',
+                'proposed_window',
+                'rejected_windows',
+              ]);
+              const scope = validateScope(
+                exact(c.scope, ['account_id', 'region']),
+              );
+              const instance_id = identifier(c.instance_id);
+              const source_mode = member(c.source_mode, [
+                'mock',
+                'fixture',
+                'live',
+                'stub',
+              ]);
+              const recorded_at = utc(c.recorded_at);
+              const record_id = identifier(c.record_id);
+              const context_id = identifier(c.context_id);
+              if (
+                c.historical !== true ||
+                context_id !== `zetaris:${record_id}` ||
+                scope.account_id !== request.account_id ||
+                scope.region !== request.region ||
+                !candidates.some(
+                  (candidate) => candidate.instance_id === instance_id,
+                ) ||
+                source_mode !== integration_mode ||
+                Date.parse(recorded_at) > Date.parse(started_at)
+              )
+                throw new Error('Invalid historical comparison');
+              return {
+                historical: true,
+                context_id,
+                record_id,
+                investigation_id: identifier(c.investigation_id),
+                recorded_at,
+                scope,
+                instance_id,
+                source_mode,
+                verdict: member(c.verdict, [
+                  'not_recommended',
+                  'needs_verification',
+                  'conditional_recommendation',
+                ]),
+                proposed_window:
+                  c.proposed_window === null
+                    ? null
+                    : validateSchedule(c.proposed_window),
+                rejected_windows: array(c.rejected_windows, 8).map(
+                  validateSchedule,
+                ),
+              };
+            },
+          ),
+        }),
     context_ids: ids(h.context_ids),
     limitations: strings(h.limitations),
   };
@@ -306,6 +377,16 @@ export function validateReport(value: unknown): InvestigationReport {
         : null;
     if (!service || historical_context[service] !== 'ok' || registry.has(id))
       throw new Error('Invalid historical context citation');
+  }
+  const comparisons = historical_context.comparisons ?? [];
+  if (new Set(comparisons.map((c) => c.context_id)).size !== comparisons.length)
+    throw new Error('Duplicate historical comparison');
+  for (const c of comparisons) {
+    if (
+      historical_context.zetaris !== 'ok' ||
+      !historical_context.context_ids.includes(c.context_id)
+    )
+      throw new Error('Unretrieved historical comparison');
   }
   const cited = (citations: string[], instance?: string) => {
     for (const id of citations) {
@@ -697,6 +778,10 @@ export function renderReport(value: InvestigationReport): string {
     '',
     `Historical context: Zetaris ${r.historical_context.zetaris.replace('_', ' ')}; H-MEM ${r.historical_context.hmem.replace('_', ' ')}; historical IDs ${citations(r.historical_context.context_ids)}.`,
   );
+  for (const c of r.historical_context.comparisons ?? [])
+    lines.push(
+      `Historical comparison ${c.context_id}: instance=${c.instance_id}, recorded=${c.recorded_at}, mode=${c.source_mode}; previous verdict=${c.verdict}; proposed=${schedule(c.proposed_window)}; rejected=${c.rejected_windows.map(schedule).join('; ') || 'none'}. Historical only; current verdict requires fresh evidence.`,
+    );
   for (const v of r.historical_context.limitations)
     lines.push(`History limitation: ${v}`);
   for (const v of r.limitations) lines.push(`Limitation: ${v}`);

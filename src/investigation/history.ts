@@ -36,6 +36,7 @@ export class InvestigationHistory {
     zetaris: 'not_configured',
     hmem: 'not_configured',
     context_ids: [],
+    comparisons: [],
     limitations: [
       'Historical context can prioritize fresh checks; it cannot establish current facts.',
     ],
@@ -90,6 +91,21 @@ export class InvestigationHistory {
           if (Date.parse(r.recorded_at_utc) > Date.parse(startedAt)) continue;
           if (r.instance_id !== instance || (mode && r.source_mode !== mode))
             continue;
+          const summary = JSON.parse(r.summary_json);
+          // The adapter has validated the version-1 summary and scoped record.
+          this.result.comparisons?.push({
+            historical: true,
+            context_id: item.context_id,
+            record_id: r.record_id,
+            investigation_id: r.investigation_id,
+            recorded_at: r.recorded_at_utc,
+            scope: { account_id: r.account_id, region: r.region },
+            instance_id: r.instance_id,
+            source_mode: r.source_mode,
+            verdict: r.verdict,
+            proposed_window: summary.proposed_window,
+            rejected_windows: summary.rejected_windows,
+          });
           // Zetaris retains the decision trail; only H-MEM teaches query order.
           this.result.context_ids.push(item.context_id);
           this.result.limitations.push(
