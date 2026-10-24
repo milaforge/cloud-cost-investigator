@@ -261,7 +261,8 @@ Event source: [`RULES.md`](./RULES.md). Recorded judging weights: Impact 30, Tec
 ### AWS CLI adapter integration (2026-10-24)
 
 `--evidence aws` selects Zayan’s direct `aws-agent.ts` provider through the
-existing bounded executor and report/history flow; mock remains the default.
+existing bounded executor and report/history flow. AWS is the default; synthetic
+demos require `--evidence mock` (user correction, Oct 24).
 AWS mode accepts an actual 12-digit account ID, no synthetic scenario, and
 1–14 complete UTC days (default 14). STS verifies account scope. Read-only SDK
 clients own current inventory, attributable billing and CPU collection; Cost

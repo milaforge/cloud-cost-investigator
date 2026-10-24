@@ -95,8 +95,8 @@ const provider = createAwsEvidenceProvider();
 
 All five return `Promise<Observation>`. The provider implements the existing
 `CurrentEvidenceProvider.call(action, signal)` interface and propagates cancellation.
-The investigation CLI selects this provider with `--evidence aws`; its default
-remains mock. Importing these functions makes no AWS requests by itself.
+The investigation CLI selects this provider by default (`--evidence aws`);
+synthetic evidence requires `--evidence mock`. Importing these functions makes no AWS requests by itself.
 
 Billing is a discovery-level operation in the new shared contract: it discovers
 instances, then collects attributable cost for at most five instances by default,

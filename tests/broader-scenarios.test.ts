@@ -299,6 +299,8 @@ test('CLI accepts A/C/mixed and bounds candidate count at three', () => {
       'demo',
       '--region',
       'us-east-1',
+      '--evidence',
+      'mock',
       '--scenario',
       scenario,
       '--max-candidates',

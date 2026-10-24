@@ -8,8 +8,8 @@ windows, and checks utilization, jobs and dependencies before returning a cited
 **conditional recommendation**, **rejection**, or **needs verification**.
 No previous investigation is required. No infrastructure is changed.
 
-**Today:** a working TypeScript / Node.js CLI with synthetic evidence by default
-and opt-in [read-only AWS evidence tools](docs/AWS_TOOLS.md).
+**Today:** a working TypeScript / Node.js CLI using [read-only AWS evidence tools](docs/AWS_TOOLS.md) by default.
+Synthetic demos require `--evidence mock`.
 **Long term:** a **cost optimization specialist agent**, starting with EC2 scheduling
 and expanding to other optimization decisions as evidence integrations and safety
 policies are proven. That broader scope is a goal, not a current capability.
@@ -18,14 +18,14 @@ policies are proven. That broader scope is a goal, not a current capability.
 
 ## Try it
 
-Node.js **24+** and npm. The default demo needs no credentials.
+Node.js **24+** and npm. The explicit mock demo needs no credentials.
 
 ```bash
 npm ci
-npm run investigate -- --account demo --region us-east-1
+npm run investigate -- --evidence mock --account demo --region us-east-1
 ```
 
-The default scenario rejects an attractive shutdown window after finding a
+This mock scenario rejects an attractive shutdown window after finding a
 conflicting critical batch job. Account and region label the synthetic data;
 **this command does not call AWS**. [More scenarios and options](docs/CLI_GUIDE.md#run).
 
@@ -38,7 +38,8 @@ conflicting critical batch job. Account and region label the synthetic data;
 | Meterless H-MEM | Disk-backed lessons prioritize fresh checks; changed evidence can clear old warnings |
 | Zetaris | Remote history, explicit operator decisions, due reviews and reported outcomes |
 
-Operational sources remain **mocked**, including when using a real model.
+Live AWS jobs/dependency sources remain **unconfigured**; mock mode supplies
+synthetic operational evidence. Evidence selection is independent of model selection.
 Savings estimates require explicit assumptions; reported outcomes are not verified
 savings. H-MEM saves a check in the recurring-blocker demo but **ties fixed ordering**
 across the eight-workload comparison. [Evidence and limitations](docs/CLI_GUIDE.md#memory-and-decision-follow-through).

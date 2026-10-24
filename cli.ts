@@ -12,7 +12,7 @@ import type { CurrentEvidenceProvider } from './src/investigation/mock.ts';
 
 export const HELP = `Cloud Cost Investigator
 
-Usage: npm run investigate -- --account demo --region us-east-1 [options]
+Usage: npm run investigate -- --account YOUR_12_DIGIT_ACCOUNT_ID --region us-east-1 [options]
 
 Options:
   --account ID          Required investigation account scope
@@ -20,7 +20,7 @@ Options:
   --lookback-days N     UTC observation days: mock 1–90 (28), aws 1–14 (14)
   --max-candidates N    Investigate 1–3 ranked candidates (default: 1)
   --planner MODE        scripted (default), model, or nvidia (legacy alias)
-  --evidence MODE       mock (default) or aws (read-only AWS APIs)
+  --evidence MODE       aws (default, read-only AWS APIs) or mock
   --scenario MODE       A, B (default), C, mixed, clear, or missing
   --json                Write only the validated report JSON to stdout
   --help                Show this help
@@ -77,7 +77,7 @@ export function parseArgs(
       throw new Error('Missing flag value');
     values.set(flag, value);
   }
-  const evidence = values.get('--evidence') ?? 'mock';
+  const evidence = values.get('--evidence') ?? 'aws';
   if (evidence !== 'mock' && evidence !== 'aws')
     throw new Error('Invalid evidence provider');
   if (

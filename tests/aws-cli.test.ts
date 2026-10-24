@@ -15,15 +15,21 @@ const args = [
   '123456789012',
   '--region',
   'us-east-1',
-  '--evidence',
-  'aws',
 ];
 
-test('AWS CLI uses complete UTC days and rejects incompatible options before retrieval', () => {
+test('AWS CLI defaults to live evidence, uses complete UTC days and rejects incompatible options before retrieval', () => {
   const options = parseArgs(args, Date.parse('2026-10-24T13:47:00Z'));
   assert.notEqual(options, 'help');
   if (options === 'help') return;
+  assert.equal(options.evidence, 'aws');
   assert.equal(createEvidenceProvider(options).mode, 'live');
+  assert.deepEqual(
+    parseArgs(
+      [...args, '--evidence', 'aws'],
+      Date.parse('2026-10-24T13:47:00Z'),
+    ),
+    options,
+  );
   assert.deepEqual(options.request.window, {
     from: '2026-10-10T00:00:00.000Z',
     to: '2026-10-24T00:00:00.000Z',

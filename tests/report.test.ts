@@ -35,7 +35,15 @@ async function cli(...args: string[]) {
     else process.env.NVIDIA_API_KEY = originalKey;
   }
 }
-const args = ['investigate', '--account', 'demo', '--region', 'us-east-1'];
+const args = [
+  'investigate',
+  '--account',
+  'demo',
+  '--region',
+  'us-east-1',
+  '--evidence',
+  'mock',
+];
 
 test('CLI discovers a candidate and emits validated mock/scripted JSON only', async () => {
   const result = await cli(...args, '--json');

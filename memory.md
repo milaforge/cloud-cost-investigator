@@ -360,8 +360,8 @@
 
 - Reuse Zayan’s `aws-agent.ts` projection and existing evidence provider seam;
   do not add another planner tool registry or route current evidence via Zetaris.
-- Evidence and planner selection are independent. Keep mocks the default and
-  require explicit AWS selection; reject mock scenarios in AWS mode. Bind the
+- Evidence and planner selection are independent. User correction on Oct 24 supersedes the initial mock default: use live AWS
+  by default and require explicit `--evidence mock` for synthetic/demo runs; reject mock scenarios in AWS mode. Bind the
   supplied account to STS and check configured region before collecting resources.
 - Whole UTC days and the 14-day AWS cap belong at CLI parsing, so unsupported
   windows fail before API calls. Preserve mock lookbacks and never silently

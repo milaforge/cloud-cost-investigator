@@ -978,3 +978,19 @@ All sources return status `ok`/`no_match`/`partial`/`unavailable`/`error`, sourc
   evidence before positive live recommendations. No live AWS/model/Zetaris
   requests were made for this slice, and no live sponsor/release gate advanced.
   Earlier mock-only CLI wiring blockers are superseded by this integration.
+
+### Default evidence correction (2026-10-24)
+
+- **Slice/owner:** direct-evidence CLI integration, Milad; user requested live
+  AWS as the default and explicit selection for demos/mocks. This supersedes the
+  mock-default decision in the preceding integration entry.
+- **Changed:** omitted `--evidence` now selects AWS with its 14 complete UTC days
+  and account validation. Synthetic investigations require `--evidence mock`;
+  `--scenario` alone cannot switch evidence modes. Updated CLI help, examples,
+  product/context/rationale and AGENTS.md to preserve this rule.
+- **Verified:** `npm test`: **204/204 passed**, including default-AWS CLI routing
+  through injected transport, explicit AWS equivalence and explicit mock tests;
+  `npm run typecheck`, `npm run lint`, scoped Biome format check and
+  `git diff --check`: passed. Mode: offline tests; no live API calls.
+- **Remaining:** populated live AWS and operational-source gaps remain as recorded
+  above. No change to Cost Explorer opt-in, planner selection or safety policy.

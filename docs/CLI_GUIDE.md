@@ -83,9 +83,9 @@ Requires Node.js **24+** and npm. The repository uses `package-lock.json`; AWS S
 
 ```bash
 npm ci
-npm run investigate -- --account demo --region us-east-1
-npm run investigate -- --account demo --region us-east-1 --scenario missing
-npm run investigate -- --account demo --region us-east-1 --scenario mixed --max-candidates 3
+npm run investigate -- --evidence mock --account demo --region us-east-1
+npm run investigate -- --evidence mock --account demo --region us-east-1 --scenario missing
+npm run investigate -- --evidence mock --account demo --region us-east-1 --scenario mixed --max-candidates 3
 ```
 
 The first command shows the detailed report and trace. The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. Scenario A supplies explicit owner/calendar/recovery clearance and compute pricing for a conditional recommendation; C supplies a continuous-operation dependency. `mixed` investigates A/B/C in ranked order from four synthetic instances. Supported flags:
@@ -95,7 +95,7 @@ The first command shows the detailed report and trace. The missing-source variat
 --region REGION       required
 --lookback-days N     mock: 1–90, default 28; aws: 1–14, default 14 complete UTC days
 --max-candidates N    1–3 ranked candidates; default 1
---evidence mock|aws   default mock; aws uses read-only SDK calls
+--evidence mock|aws   default aws; mock requires explicit selection
 --scenario A|B|C|mixed|clear|missing   mock evidence only
 --planner scripted|model|nvidia
 --json
@@ -104,7 +104,7 @@ The first command shows the detailed report and trace. The missing-source variat
 For machine-readable stdout without npm's script banner:
 
 ```bash
-node --import tsx cli.ts investigate --account demo --region us-east-1 --json
+node --import tsx cli.ts investigate --evidence mock --account demo --region us-east-1 --json
 ```
 
 For read-only AWS setup, billing opt-in and source limitations, see the
@@ -117,7 +117,7 @@ Exit codes: **0** completed scoped recommendations/rejections/no eligible candid
 The executable loads `.env` from the current working directory automatically; existing shell variables take precedence. Copy [.env.example](../.env.example) to `.env` only if you do not already have one, then select the generic adapter:
 
 ```bash
-npm run investigate -- --account demo --region us-east-1 --planner model
+npm run investigate -- --evidence mock --account demo --region us-east-1 --planner model
 ```
 
 Set `LLM_BASE_URL` (including `/v1` when required), `LLM_MODEL`, and `LLM_API_KEY` for your OpenAI-compatible Chat Completions provider. The adapter appends `/chat/completions`. Local loopback HTTP servers can omit the key; remote endpoints require HTTPS. Generic configuration never inherits an NVIDIA key. Keep provider credentials server-side.
@@ -133,7 +133,7 @@ raise the limit within the supported 4096-token cap if needed.
 
 With no `LLM_*` settings, `--planner model` falls back to `NVIDIA_API_KEY` and optional `NVIDIA_MODEL`. The legacy `--planner nvidia` selects that NVIDIA preset explicitly. Model IDs are configurable; the team confirmed `nvidia/nemotron-3-ultra-550b-a55b` for this event on Oct 24. Runtime access is a separate gate. The default `scripted` planner runs offline.
 
-All model paths preserve bounded requests, validated actions, trusted argument binding and deterministic verdicts. Redirects are refused. Failures return incomplete results without scripted fallback. Evidence selection is independent: mock by default, read-only AWS with `--evidence aws`. See [the execution plan](EXECUTION_PLAN.md) for actual integration proof.
+All model paths preserve bounded requests, validated actions, trusted argument binding and deterministic verdicts. Redirects are refused. Failures return incomplete results without scripted fallback. Evidence selection is independent: read-only AWS by default, synthetic evidence with `--evidence mock`. See [the execution plan](EXECUTION_PLAN.md) for actual integration proof.
 
 ## Safety and ownership
 

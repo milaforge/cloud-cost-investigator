@@ -24,9 +24,10 @@ flowchart TD
 | **CLI report** | Shows the conclusion, evidence citations and decision trace for human review. |
 
 **Verified:** real NVIDIA calls, local H-MEM persistence and remote Zetaris read/write.
-**Current boundary:** mock evidence and scripted planning remain defaults.
-Opt-in [AWS tools](AWS_TOOLS.md) supply inventory, billing and utilization;
+**Current boundary:** live AWS evidence and scripted planning are defaults.
+[AWS tools](AWS_TOOLS.md) supply inventory, billing and utilization;
 authoritative jobs/dependency sources remain unconfigured in AWS mode.
+Synthetic demos require `--evidence mock`.
 No infrastructure is changed. Reported outcomes are not verified savings.
 
 **Measured value:** H-MEM saves a check in the recurring-blocker demo, but ties
