@@ -1,5 +1,10 @@
 # Project Memory
 
+## Browser AWS scope and Zetaris recall (2026-10-24)
+
+- The browser account field binds an investigation to the authenticated AWS account; it is not a credential input. Keep AWS credentials server-side in the SDK provider chain and show only safe issue codes when a source fails.
+- Investigation history recall is an explicit, read-only browser option. The existing narrow append capability requires its separate Follow through acknowledgment. Historical records stay context, never current evidence.
+
 ## Verdict-first demo presentation (2026-10-24)
 
 - Keep live execution progress visually subordinate to the verdict and evidence

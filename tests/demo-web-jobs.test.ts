@@ -24,6 +24,7 @@ const input = {
   max_candidates: 1,
   real_services: false,
   allow_append: false,
+  history: false,
 };
 async function finish<T = InvestigationReport>(jobs: DemoJobs) {
   const until = Date.now() + 20000;
@@ -44,6 +45,8 @@ test('web execution validates opt-ins and rejects unapproved input', () => {
     { max_candidates: 4 },
     { kind: 'learn', evidence: 'aws', real_services: true },
     { evidence: 'aws', real_services: true, account: 'demo' },
+    { history: true },
+    { kind: 'learn', history: true, real_services: true },
   ])
     assert.throws(() => validateDemoRun({ ...input, ...change }));
   assert.deepEqual(Object.keys(demoConfiguration()).sort(), [
@@ -139,6 +142,16 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
         e.startsWith('Synthetic follow-up account:'),
       ),
     );
+    jobs.start({
+      ...input,
+      request_id: 'history-read',
+      history: true,
+      real_services: true,
+    });
+    const historyReport = await finish(jobs);
+    assert.equal(historyReport.historical_context.zetaris, 'ok');
+    assert.equal(records.length, 7);
+    assert.ok(jobs.current?.events.some((e) => e.includes('append disabled')));
     assert.equal(JSON.stringify(jobs.current).includes('fixture-key'), false);
   } finally {
     jobs.close();

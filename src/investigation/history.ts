@@ -23,6 +23,7 @@ import { sameSchedule } from './policy.ts';
 export interface HistoryOptions {
   hmem_directory?: string;
   zetaris?: boolean;
+  zetaris_append?: boolean;
 }
 export interface HistoryHint {
   context_id: string;
@@ -230,6 +231,7 @@ export class InvestigationHistory {
     ) {
       if (
         this.options.zetaris &&
+        this.options.zetaris_append !== false &&
         process.env.ZETARIS_HISTORY_ALLOW_APPEND === 'true'
       ) {
         try {

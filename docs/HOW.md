@@ -41,7 +41,12 @@ services (or select the model checkbox on Learn). The
 [model setup](CLI_GUIDE.md#model-configuration) stays server-side; model calls may
 incur usage. Live AWS is an explicit browser option with account, region and
 candidate limit; the [AWS setup](AWS_TOOLS.md#investigation-cli) and missing-source
-limits still apply. Browser investigations use no historical stores. The normal
+limits still apply. The account ID checks the authenticated AWS scope; it does not
+authenticate the browser. Configure the server's AWS SDK credential chain or
+`AWS_PROFILE` before starting it. Select **Read Zetaris decision history** to
+query prior records for discovered instances. This investigation control is
+read-only even if server append permission is enabled. History is historical
+context and never replaces live evidence. The normal
 investigation CLI still defaults to live AWS.
 
 Follow-through requires [Zetaris setup](ZETARIS_HISTORY.md), server-side

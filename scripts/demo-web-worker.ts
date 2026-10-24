@@ -52,16 +52,16 @@ process.once('message', async (value) => {
       const options = parseArgs(args);
       if (options === 'help') throw new Error();
       progress(
-        `Evidence: ${run.evidence} · Planner: ${run.planner} · History: disabled`,
+        `Evidence: ${run.evidence} · Planner: ${run.planner} · History: ${run.history ? 'Zetaris read-only' : 'disabled'}`,
       );
-      result = validateReport(
+      const report = validateReport(
         await runInvestigation(options.request, {
           planner:
             run.planner === 'model'
               ? new OpenAICompatiblePlanner()
               : new ScriptedPlanner(),
           provider: createEvidenceProvider(options),
-          history: {},
+          history: run.history ? { zetaris: true, zetaris_append: false } : {},
           ...(run.evidence === 'aws'
             ? { limits: { tool_timeout_ms: 25000 } }
             : {}),
@@ -77,6 +77,24 @@ process.once('message', async (value) => {
           },
         }),
       );
+      if (run.evidence === 'aws') {
+        for (const observation of report.evidence.filter(
+          (item) => item.status === 'unavailable' || item.status === 'error',
+        )) {
+          const codes = observation.missing_fields.filter((field) =>
+            /^(MISSING_CREDENTIALS|ACCESS_DENIED|SCOPE_MISMATCH|NETWORK_UNAVAILABLE|AWS_REQUEST_FAILED|TIMEOUT|SOURCE_UNAVAILABLE|billing_not_enabled|cost_explorer_not_enabled)$/.test(
+              field,
+            ),
+          );
+          if (codes.length)
+            progress(`${observation.tool}: ${codes.join(', ')}`);
+        }
+      }
+      if (run.history)
+        progress(
+          `Zetaris history read: ${report.historical_context.zetaris}; append disabled`,
+        );
+      result = report;
     }
     process.send?.({ type: 'result', result }, undefined, undefined, () => {
       completed = true;

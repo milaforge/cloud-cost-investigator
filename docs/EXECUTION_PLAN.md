@@ -11,6 +11,12 @@
 
 ## Current status and next actions — reconciled 2026-10-24
 
+### Browser live-source diagnosis and history recall — 2026-10-24
+
+- **Gate/owner:** demo presentation and live-source diagnosis, Milad; AWS data-source access remains Zayan/team. The browser now explains that account ID is a scope check, adds explicit read-only Zetaris recall on Investigate, and displays allowlisted AWS source issue codes. Follow through retains the separate acknowledged append path.
+- **Proof/mode:** `npm test` passed 223/223 with loopback permission; `npm run typecheck`, `npm run lint`, and `git diff --check` passed. The browser suite verifies history read through a local HTTP fixture with zero additional append records. The default sandbox's first full run had three `listen EPERM` failures only. A live STS diagnostic failed with DNS `EAI_AGAIN` before authentication; `NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx src/aws-demo.ts --live` returned `NETWORK_UNAVAILABLE` without resource details. No live AWS investigation or remote Zetaris call was proven by this change.
+- **Next action:** run the web server where AWS SDK profile/credentials and network access are available, verify authenticated account and populated evidence, then show the Zetaris history read result and separately acknowledged follow-through in the demo. Do not interpret an account field or configured service as connectivity proof.
+
 This table summarizes the release checklist below. [Historical execution receipts](history/execution-log.md) retain original commands and failed measurements; they are not current instructions. Acceptance criteria live in the [product contract](PROJECT_CONTEXT.md#9-test-and-release-acceptance).
 
 | Gate | Verified state and proof | Remaining work / owner |

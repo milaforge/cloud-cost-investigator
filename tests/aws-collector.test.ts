@@ -209,6 +209,7 @@ test('account mismatch prevents discovery', async () => {
 for (const [name, code] of [
   ['CredentialsProviderError', 'MISSING_CREDENTIALS'],
   ['AccessDeniedException', 'ACCESS_DENIED'],
+  ['NetworkError', 'NETWORK_UNAVAILABLE'],
 ]) {
   test(`${name} is explicit and sanitized`, async () => {
     const tools = createToolsWithTransport(
@@ -217,6 +218,7 @@ for (const [name, code] of [
         identity: async () => {
           throw Object.assign(new Error('SECRET-private-provider-response'), {
             name,
+            ...(name === 'NetworkError' ? { code: 'EAI_AGAIN' } : {}),
           });
         },
       }),

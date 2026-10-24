@@ -132,7 +132,9 @@ export async function startDemoServer(port = 0) {
                   ? 'Model configuration is missing or invalid. Configure server .env and restart.'
                   : code === 'demo_zetaris_not_configured'
                     ? 'Zetaris configuration and append opt-in are required in server .env. Restart after configuring.'
-                    : 'Invalid demo request or missing explicit service opt-in.',
+                    : code === 'demo_zetaris_history_not_configured'
+                      ? 'Zetaris history configuration is required in server .env. Restart after configuring.'
+                      : 'Invalid demo request or missing explicit service opt-in.',
           });
         }
         return;

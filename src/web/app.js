@@ -288,7 +288,19 @@ function render(focusCandidate = false) {
     node('span', ' → '),
     clockTime(r.finished_at),
   );
-  meta.append(mode, runTime);
+  const zetaris = r.historical_context.zetaris;
+  const historyStatus = node(
+    'span',
+    `Zetaris history: ${human(zetaris)}`,
+    'mode',
+  );
+  historyStatus.append(
+    info(
+      'Zetaris history status',
+      'Historical decision records are queried only for discovered instances when selected. They do not replace current evidence. Browser investigations do not append records.',
+    ),
+  );
+  meta.append(mode, historyStatus, runTime);
   root.append(meta);
   if (r.completion_status !== 'complete')
     root.append(
@@ -1007,7 +1019,8 @@ async function startRun(kind) {
     return;
   }
   if (
-    (planner === 'model' || evidence === 'aws' || kind === 'followup') &&
+    (planner === 'model' || evidence === 'aws' || kind === 'followup' ||
+      (kind === 'investigate' && $('investigate-history').checked)) &&
     !real
   ) {
     $('run-state').hidden = false;
@@ -1039,6 +1052,7 @@ async function startRun(kind) {
           : 1,
     real_services: real,
     allow_append: kind === 'followup' && $('append-ack').checked,
+    history: kind === 'investigate' && $('investigate-history').checked,
   };
   try {
     const response = await fetch('/api/run', {
@@ -1093,7 +1107,7 @@ fetch('/api/config')
   .then((r) => r.json())
   .then((config) => {
     $('service-status').textContent =
-      `Model configuration: ${config.model ? 'present, unverified' : 'missing or invalid'}.`;
+      `Model configuration: ${config.model ? 'present, unverified' : 'missing or invalid'}. Zetaris history: ${config.zetaris ? 'configured, unverified' : 'missing'}. AWS uses the server credential chain; the account ID is a scope check.`;
     $('followup-config').textContent =
       `Zetaris configuration: ${config.zetaris ? 'present, unverified' : 'missing'}. Server append opt-in: ${config.zetaris_append ? 'enabled' : 'disabled'}. Configure server .env and restart if needed.`;
   })

@@ -18,6 +18,7 @@ export type DemoRun = {
   planner: 'scripted' | 'model';
   real_services: boolean;
   allow_append: boolean;
+  history: boolean;
   evidence: 'mock' | 'aws';
   scenario: 'A' | 'B' | 'C' | 'mixed' | 'missing';
   account: string;
@@ -31,6 +32,7 @@ export function validateDemoRun(value: unknown): DemoRun {
     'planner',
     'real_services',
     'allow_append',
+    'history',
     'evidence',
     'scenario',
     'account',
@@ -43,11 +45,15 @@ export function validateDemoRun(value: unknown): DemoRun {
   const scenario = member(o.scenario, ['A', 'B', 'C', 'mixed', 'missing']);
   if (
     typeof o.real_services !== 'boolean' ||
-    typeof o.allow_append !== 'boolean'
+    typeof o.allow_append !== 'boolean' ||
+    typeof o.history !== 'boolean'
   )
     throw new Error('Explicit service choices required');
   if (
-    (planner === 'model' || evidence === 'aws' || kind === 'followup') &&
+    (planner === 'model' ||
+      evidence === 'aws' ||
+      kind === 'followup' ||
+      o.history) &&
     !o.real_services
   )
     throw new Error('Real services require opt-in');
@@ -60,6 +66,8 @@ export function validateDemoRun(value: unknown): DemoRun {
     );
   if (kind !== 'followup' && o.allow_append)
     throw new Error('No history writes on this action');
+  if (kind !== 'investigate' && o.history)
+    throw new Error('History recall is an investigation option');
   if (kind !== 'investigate' && evidence !== 'mock')
     throw new Error('This demonstration requires mock evidence');
   const scope = validateScope({ account_id: o.account, region: o.region });
@@ -73,6 +81,7 @@ export function validateDemoRun(value: unknown): DemoRun {
     scenario,
     real_services: o.real_services,
     allow_append: o.allow_append,
+    history: o.history,
     account: scope.account_id,
     region: scope.region,
     max_candidates: integer(o.max_candidates, 1, 3),
@@ -128,6 +137,8 @@ export class DemoJobs {
       throw new Error('demo_model_not_configured');
     if (run.kind === 'followup' && (!config.zetaris || !config.zetaris_append))
       throw new Error('demo_zetaris_not_configured');
+    if (run.history && !config.zetaris)
+      throw new Error('demo_zetaris_history_not_configured');
     const job: DemoJob = {
       request_id: run.request_id,
       kind: run.kind,

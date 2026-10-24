@@ -130,6 +130,8 @@ class UnavailableError extends Error {
 }
 function classify(error: unknown) {
   const name = error instanceof Error ? error.name : '';
+  const networkCode =
+    error instanceof Error && 'code' in error ? error.code : undefined;
   if (error instanceof InputError)
     return {
       status: 'error' as const,
@@ -184,6 +186,18 @@ function classify(error: unknown) {
       code: 'SOURCE_UNAVAILABLE',
       message: 'Resource-level billing data is not available for this request.',
       retryable: false,
+    };
+  if (
+    typeof networkCode === 'string' &&
+    ['EAI_AGAIN', 'ENOTFOUND', 'ECONNREFUSED', 'ENETUNREACH'].includes(
+      networkCode,
+    )
+  )
+    return {
+      status: 'unavailable' as const,
+      code: 'NETWORK_UNAVAILABLE',
+      message: 'AWS endpoint or credential service could not be reached.',
+      retryable: true,
     };
   if (error instanceof DeadlineError || /AbortError|Timeout/.test(name))
     return {
