@@ -9,6 +9,35 @@
 
 ## 1. Decision change and current verification state
 
+### Product positioning and README navigation — 2026-10-24
+
+**Gate/owner:** Milad; user-requested architecture assessment and concise README.
+Acceptance: identify EC2 scheduling as today's niche and cost optimization
+specialist agent as the future direction; show current integration boundaries,
+a runnable demo and direct navigation without requiring the detailed guide.
+
+- [x] Reviewed components, H-MEM/history/planner boundaries, decision follow-up
+  and the eight-workload evaluation implementation. Best Meterless fit remains
+  reusable investigation methods through existing H-MEM, conditional on measured
+  benefit against fixed rules. Live read-only evidence integration takes priority.
+- [x] README reduced to 52 lines; detailed setup, diagnostics and retained results
+  moved to `docs/CLI_GUIDE.md`. Updated relative links and corrected its obsolete
+  hard-bounds paragraph against the current runner/model limits. Components now
+  records the recommendation and alternatives; product context and rationale
+  distinguish the longer-term direction without expanding current MVP permissions.
+- [x] Local Markdown path/heading checks passed for README, CLI guide, components
+  and product context. `git diff --check` passed.
+- [x] `npm run --silent investigate -- --account demo --region us-east-1`:
+  exit **0**, scripted planner / mock evidence, complete rejection citing a
+  critical batch conflict. Configured Zetaris was unavailable in this run;
+  history degraded explicitly. No live model/AWS verification is claimed.
+
+**Limits/next action:** documentation only; no new engine, dependency or runtime
+behavior. Five-second navigation is a content/layout target, not a timed user
+study. Broader optimization capabilities remain future scope; direct operational
+integration and measured method benefit remain separate work. Milestone unchanged.
+
+
 ### Distinct memory roles and decision follow-through — 2026-10-24
 
 **Gate/owner:** Milad; user-approved clarification of D and sponsor value. Preserve

@@ -1,5 +1,17 @@
 # Project Memory
 
+## Product positioning and documentation (2026-10-24)
+
+- The user clarified the starting niche: find EC2 scheduling opportunities; the
+  long-term product is a cost optimization specialist agent. Keep future ambition
+  separate from implemented capabilities and existing MVP exclusions.
+- README is a short entry point: use case, current integration boundary, demo and
+  navigation. Preserve setup, evidence and diagnostic detail in docs/CLI_GUIDE.md.
+- Existing H-MEM lessons are the best fit for reusable investigation methods, but
+  the eight-workload tie does not justify richer memory or a general speedup claim.
+  Require measured benefit against fixed rules; live operational evidence is the
+  immediate priority. Additional Meterless engines remain optional future work.
+
 ## Distinct memory and decision-follow-through roles (2026-10-24)
 
 - User challenged storing historical facts that must be fetched again. Keep the

@@ -16,6 +16,11 @@ The user's decision is **which opportunities warrant human approval, which must 
 
 **Superseded scope (explicit team decision, Oct 23):** Explaining _increased EC2 spending between two billing periods_ is no longer the MVP's primary or required workflow. No initial baseline investigation, two billing snapshots, previous run, or comparison-period parameter is required. This does not change the selected hackathon track; evidence-backed explanations and justified refusals satisfy its intent. Billing history can still inform marginal savings when supported.
 
+**Long-term direction (2026-10-24):** evolve into a **cost optimization specialist
+agent**. Finding EC2 scheduling opportunities is the initial niche, not the limit
+of the product vision. Broader optimization decisions remain future scope; this
+clarification does not expand the current MVP, tool permissions or safety policy.
+
 ## 2. Decisions, proposals, and exclusions
 
 | Subject             | Status                           | Policy                                                                                                                                                                            |
