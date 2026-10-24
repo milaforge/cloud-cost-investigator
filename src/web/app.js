@@ -864,6 +864,62 @@ function renderFollowup(result) {
     disclosure('Method and limits', [node('p', result.methodology)]),
   );
 }
+function renderEvents(events) {
+  const root = $('run-events');
+  const groups = [];
+  let current = null;
+  for (const value of events) {
+    const text = String(value);
+    const planner = /^Planner call (\d+) started$/.exec(text);
+    const phase = /^\[warm-demo\] (cold|warm|changed):/.exec(text);
+    if (planner || (phase && current?.key !== `phase-${phase[1]}`)) {
+      current = {
+        key: planner ? `planner-${planner[1]}` : `phase-${phase[1]}`,
+        title: planner ? `Planner call ${planner[1]}` : `${human(phase[1])} run`,
+        events: planner ? [] : [text],
+      };
+      groups.push(current);
+    } else if (current) current.events.push(text);
+    else groups.push({ events: [text] });
+  }
+  $('event-count').textContent = `${events.length}`;
+  const tree = document.createDocumentFragment();
+  for (const group of groups) {
+    if (!group.key) {
+      const line = node('div', group.events[0], 'event-leaf event-context');
+      tree.append(line);
+      continue;
+    }
+    const branch = node('div', undefined, 'event-branch');
+    const heading = node('div', undefined, 'event-branch-heading');
+    heading.append(node('span', group.title, 'event-title'));
+    const children = node('div', undefined, 'event-children');
+    for (const entry of group.events) {
+      const step = /^(\d+)\. (.*)$/.exec(entry);
+      const line = node('div', undefined, 'event-leaf');
+      if (step) line.append(node('span', step[1], 'event-step'));
+      const parts = (step ? step[2] : entry).split(' · ');
+      for (const [index, part] of parts.entries()) {
+        if (index) line.append(document.createTextNode(' · '));
+        if (['ok', 'no_match', 'partial', 'unavailable', 'error'].includes(part)) {
+          const mark = node(
+            'span',
+            part === 'ok' ? '✓' : '✕',
+            `event-result ${part === 'ok' ? 'event-ok' : 'event-not-ok'}`,
+          );
+          mark.setAttribute('role', 'img');
+          mark.setAttribute('aria-label', part.replace('_', ' '));
+          mark.title = part;
+          line.append(mark);
+        } else line.append(document.createTextNode(part));
+      }
+      children.append(line);
+    }
+    branch.append(heading, children);
+    tree.append(branch);
+  }
+  root.replaceChildren(tree);
+}
 function paintJob(job) {
   if (!job) {
     currentJob = null;
@@ -882,9 +938,7 @@ function paintJob(job) {
   $('view-last-result').hidden = job.status !== 'complete' || !job.result;
   $('run-status').textContent =
     `${human(job.kind)} · ${job.status}${job.error ? ` — ${job.error}` : ''}${running && job.events.length ? ` · ${job.events.at(-1)}` : ''}`;
-  $('run-events').replaceChildren(
-    ...job.events.map((text) => node('li', text)),
-  );
+  renderEvents(job.events);
   if (
     job.status === 'complete' &&
     job.result &&

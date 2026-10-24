@@ -2,6 +2,12 @@
 
 ## Verdict-first demo presentation (2026-10-24)
 
+- Keep live execution progress visually subordinate to the verdict and evidence
+  narrative. Group the existing bounded planner progress by call in an expanded
+  plain tree. Replace explicit status words with inline symbols while preserving
+  their exact values for accessibility and in source events; leave unknown steps
+  unmarked. Other workflow events remain visible without inventing a trace
+  schema or per-event timestamps.
 - Start unselected so users can see which evidence/verdict/steps their scenario
   choice loads. Clear stale reports when changing scenario/source. Prior completed
   jobs remain explicitly viewable; active-job recovery still avoids resubmission.

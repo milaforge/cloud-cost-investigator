@@ -140,6 +140,31 @@ The execution-only restrictions in this receipt are superseded by the guided bro
   assets, populated live evidence and independent clean-checkout proof remain
   outstanding. Setup lives in [How](HOW.md#open-the-web-demo).
 
+## Execution-event tree presentation — 2026-10-24
+
+- **Gate/owner:** release demo presentation, Milad. This is a browser-only
+  presentation change; the underlying investigation and progress contract are
+  unchanged. Planner calls now render as expanded branches with indented
+  steps, while other event text remains visible.
+- **Proof/mode:** `node --check src/web/app.js`, `npm run lint`, `npm run
+  typecheck`, and `git diff --check` passed. Focused
+  `node --import tsx --test --test-isolation=none tests/demo-web*.test.ts`
+  passed **7/7** with loopback access; its first sandbox run had three
+  environment-only `listen EPERM` failures. Headless Chromium ran the mock B
+  investigation, rendered five planner branches, showed the first branch's two
+  child steps without a second click, and reported no page errors; screenshot
+  visually inspected.
+- **Limits/next action:** this verifies local synthetic presentation, not live
+  AWS/model/Zetaris evidence. Final demo recording and release gates remain open.
+- **Presentation refinement:** removed planner boxes and per-call counts. An
+  expanded plain tree now replaces explicit `ok` with an inline green tick and
+  other explicit statuses with an inline red cross; the exact status remains in
+  accessible text and the source event. Unreported results have no mark.
+  `node --check src/web/app.js`, `npm run lint`, `npm run typecheck`, and
+  `git diff --check` passed. Local Chromium verified the mock B green ticks,
+  missing-evidence red cross, absence of branch borders, and no page errors;
+  screenshot inspected. Live integration gates are unchanged.
+
 ## Guided browser demo — 2026-10-24
 
 - **Gate/owner:** release presentation and reproducibility, Milad. User approved
