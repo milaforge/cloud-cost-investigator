@@ -11,6 +11,42 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Task 2 scenario integration on `4fa83ff` — 2026-10-25
+
+- **Gate/owner/mode:** six reproducible EC2 scenarios, Zayan; synthetic current
+  evidence and mocked Zetaris HTTP transport. Existing engine, policy, contracts,
+  planner, history schema and native SSM/ELBv2 implementation remain unchanged.
+  Upstream receipts below retain their original status and provenance.
+- **Coverage:** six cases / seven variants, including separate unavailable
+  operations/dependency cases and both historical verdict reversals. All use
+  14 complete UTC days; policy still enforces only a seven-day minimum.
+  [Runbook and test mapping](SCENARIOS.md) explain the scenario identifiers.
+- **Executed verification:** `node --import tsx --test --test-isolation=none tests/*.test.ts`
+  reported **271 passed, 3 failed, 1 skipped (275 total)** on Windows.
+  All three failures are in unchanged upstream `tests/model-request-timing.test.ts`:
+  its absolute Windows preload path is rejected with
+  `ERR_UNSUPPORTED_ESM_URL_SCHEME`. The suite is **not fully passing** here;
+  this does not supersede upstream platform-specific receipts.
+- **Task 2 proof:** the same test runner with `tests/investigation.test.ts`,
+  `tests/broader-scenarios.test.ts`, `tests/warm.test.ts` and
+  `tests/scenario-export.test.ts` passed **75/75**. The `demo:scenarios`
+  underlying command passed **7/7**. `node --import tsx scripts/export-scenarios.ts`
+  regenerated six valid JSONL rows / seven variants; replay, retained-fact drift,
+  actual reproduction-command execution and invalid-export rejection passed.
+- **Static checks:** both TypeScript projects passed (`tsc -p tsconfig.investigation.json --noEmit`
+  and `tsc -p tsconfig.aws.json`); `biome lint .` passed across 167 files.
+  Scoped formatting and `git diff --check` passed after reconciliation.
+- **Environment:** installed the unchanged upstream lockfile with
+  `pnpm dlx npm@11 ci --no-audit --no-fund` because npm is absent from PATH.
+  An old project demo server initially locked esbuild; after stopping that specific
+  process the install succeeded. No global install or dependency-file change.
+  Two existing Task 2 temporary-directory portability fixes remain included.
+- **Limits/next action:** synthetic results do not prove live AWS coverage or model
+  reliability. Native operations remain incomplete; no guest cron inspection is
+  claimed. No live model/AWS calls were made for this integration. Submit the
+  Task 2 branch for review; upstream request-timing Windows portability remains
+  a separate follow-up. Both Task 2 safety stashes remain retained locally.
+
 ### Native operational evidence collection — 2026-10-25
 
 - **Gate/owner/mode:** direct operational integration, Zayan source boundary /
@@ -238,7 +274,6 @@
 **Current provider gate: CLOSED with OpenAI, 9/9 complete.** See the
 [executed OpenAI gate](#openai-reliability-gate-closed--2026-10-25) below. The NVIDIA
 measurements and focused comparison remain separately retained historical evidence.
-
 - **Gate/owner:** repeated real-model A/B/C completion, Milad. **Historical NVIDIA initial measurement:**
   [three-round CLI measurement](evaluation/model-reliability-2026-10-25/summary.json)
   exited **1**, with **8/9 complete, 1/9 partial**; A **3/3**, B **3/3**, C
@@ -502,14 +537,14 @@ measurements and focused comparison remain separately retained historical eviden
 
 This table summarizes the release checklist below. [Historical execution receipts](history/execution-log.md) retain original commands and failed measurements; they are not current instructions. Acceptance criteria live in the [product contract](PROJECT_CONTEXT.md#9-test-and-release-acceptance).
 
-| Gate | Verified state and proof | Remaining work / owner |
-| --- | --- | --- |
-| Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
-| AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). Live proof is limited to authenticated empty discovery. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
+| Gate                                  | Verified state and proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Remaining work / owner                                                                                                                                                                                                                                                             |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Day 2 engine and B                    | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23).                                                                                                                                                                                                                                                                                                                             | Live operational coverage is separate; Zayan.                                                                                                                                                                                                                                      |
+| AWS CLI                               | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). Live proof is limited to authenticated empty discovery.                                                                                                                                                                                                                                 | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports.                                                                                                           |
 | Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Current admin identity fails least privilege; user provisions the dedicated account and Milad verifies it ([permission review](#zetaris-deployment-permission-review--2026-10-25)). Live evidence and event eligibility remain separate. |
-| Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
-| Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
-| Release | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**. | Independent reproducer/visual review, README policy reconciliation, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
+| Learned investigation checks          | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained.                                                                                                                                                                                                                                                                                                           | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad.                                                                                                                                                                      |
+| Evaluation and reporting              | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators.                                                                                                                                                                                             | Do not claim reliable real-model completion or live pricing from fixture results. Milad.                                                                                                                                                                                           |
+| Release                               | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**.                                                                                                                                                                                                                                                                                                                                                                                                                       | Independent reproducer/visual review, README policy reconciliation, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources.                                               |
 
 **Next slice:** Zayan/team verifies populated live CloudWatch and opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. The repeated OpenAI A/B/C gate is closed; retain prior failures and complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
 
@@ -518,7 +553,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 | Area                                       | Driver                         | Deliverable                                                                                                                                                  |
 | ------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Direct evidence adapters and mock datasets | **Zayan**                      | Read-only TypeScript logical tools for inventory, billing, utilization, operations/jobs and dependencies, shared typed observations with stable evidence IDs |
-| Zetaris history                            | **Milad**                     | Dedicated append-only structured history schema, authorized write boundary, allowlisted read and append, actual read-after-write proof                       |
+| Zetaris history                            | **Milad**                      | Dedicated append-only structured history schema, authorized write boundary, allowlisted read and append, actual read-after-write proof                       |
 | Planner/evaluator, approved model, H-MEM   | **Milad**                      | Bounded evidence-dependent loop, real reasoning memory round-trip, validated report, decision trace                                                          |
 | Shared data/report contract and tests      | **Both**                       | Runtime validation, scope/UTC/units/coverage, integration mode labeling, A/B/C/D fixtures, missing-source case                                               |
 | CLI, README, evaluation and submission     | **Milad** (Zayan reviews data) | Detailed readable report/JSON, repeatable commands, measured evaluation, slides and demo                                                                     |
@@ -553,12 +588,12 @@ This table summarizes the release checklist below. [Historical execution receipt
 
 Apply [`the_bar.md`](../the_bar.md) as illustrative quality guidance without changing the approved architecture or safety constraints. This table adds review criteria to the existing release gates; it is not a second milestone.
 
-| Review criterion | Acceptance evidence / owner |
-| --- | --- |
-| Understandable agent behavior | [Role authority/shared state diagram](components.md), real-model trace showing evidence-dependent choices and evaluator critique; Milad. Scripted policy proof alone is insufficient for model behavior. |
+| Review criterion                 | Acceptance evidence / owner                                                                                                                                                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Understandable agent behavior    | [Role authority/shared state diagram](components.md), real-model trace showing evidence-dependent choices and evaluator critique; Milad. Scripted policy proof alone is insufficient for model behavior.                                      |
 | Reproducible output and failures | [CLI trace walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace), A/B/C examples, missing-source result, exact modes and exits; local isolated clean-checkout proof recorded above; separate reproducer review remains; Milad/Zayan. |
-| Sponsor and development claims | [Canonical explanation and reused components](components.md#sponsor-technology-explanation), real service receipts, actual development-tool attribution, permission and portal verification; existing open gates remain open; both. |
-| Final presentation | Exported eight-topic slide deck and reviewed 1–4 minute video showing run, critique, sponsor proof, output and limitations; [storyboard](DEMO.md) is preparation only; Milad. |
+| Sponsor and development claims   | [Canonical explanation and reused components](components.md#sponsor-technology-explanation), real service receipts, actual development-tool attribution, permission and portal verification; existing open gates remain open; both.           |
+| Final presentation               | Exported eight-topic slide deck and reviewed 1–4 minute video showing run, critique, sponsor proof, output and limitations; [storyboard](DEMO.md) is preparation only; Milad.                                                                 |
 
 ## Documentation review — 2026-10-24
 
@@ -591,7 +626,6 @@ Apply [`the_bar.md`](../the_bar.md) as illustrative quality guidance without cha
 ## Initial local A/B report viewer — 2026-10-24
 
 The execution-only restrictions in this receipt are superseded by the guided browser demo below; the original verification evidence is retained.
-
 - **Gate/owner:** release presentation surface, Milad; no advancement of the
   populated-live-evidence or final submission gates. User approved A/B scenario
   selection and loading generated single investigation reports.

@@ -44,11 +44,10 @@ Model selection (`--planner model`) is independent of evidence selection.
 
 ## Authentication and live smoke check
 
-AWS SDK v3 clients use the default Node credential chain, including local profiles,
-SSO, environment credentials or workload roles. Do not pass credentials through
-tool arguments. Select a profile with `AWS_PROFILE` if needed and provide region
-through SDK configuration or `AWS_REGION`. Do not commit credentials or exports.
-`AWS_EXPECTED_ACCOUNT_ID` optionally guards the CLI against using the wrong account.
+Follow [Authenticate to AWS](HOW.md#authenticate-to-aws) for profile/environment
+setup, identity and region checks, permissions and common failures.
+`AWS_EXPECTED_ACCOUNT_ID` optionally guards the smoke script’s STS account check.
+The investigation CLI uses its required `--account` argument as the guard.
 
 ```sh
 npm run demo:aws -- --live
@@ -226,7 +225,6 @@ savings calculation is done here. Unknown estimated/final billing status is null
 
 `getOperationalEvidence(instanceId, { kind: 'operations' | 'dependencies' })`
 defaults to operations. The agent-facing tools select the corresponding source:
-
 - **Operations:** [SSM DescribeMaintenanceWindowSchedule](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_DescribeMaintenanceWindowSchedule.html)
   targets the exact instance, then [GetMaintenanceWindow](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_GetMaintenanceWindow.html)
   verifies ID, enabled state and duration. AWS expands schedule/timezone rules;

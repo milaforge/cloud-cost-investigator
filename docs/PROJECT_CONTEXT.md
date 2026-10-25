@@ -21,20 +21,20 @@ clarification does not expand the current MVP, tool permissions or safety policy
 
 ## 2. Decisions, proposals, and exclusions
 
-| Subject             | Status                           | Policy                                                                                                                                                                            |
-| ------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Goal and scope      | Agreed                           | Optimization-first, account/region, discover at most three candidates                                                                                                             |
-| First optimization  | Agreed                           | EC2 **off-hours stopping schedules only**; no downsizing                                                                                                                          |
-| Safety evaluation   | Agreed                           | Mandatory targeted attempt to disprove each proposed schedule                                                                                                                     |
-| Uncertainty         | Agreed                           | Query additional relevant sources within bounds; then defer; no interactive CLI clarification required                                                                            |
-| Presentation        | Agreed                           | Detailed CLI/JSON reports and a local guided demo UI with investigation, learning, follow-through and validated report loading                                                                                           |
-| Memory              | Agreed                           | Timestamped investigation summaries guiding fresh queries, not live telemetry                                                                                                     |
-| Failure             | Agreed                           | Status-specific bounded degradation and explicit uncertainty                                                                                                                      |
-| Source architecture | Agreed                           | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory         |
-| Historical writes | Agreed | Narrow schema-validated history append through Zetaris; no arbitrary SQL or AWS writes. Deployment proof is tracked separately. |
-| Observation period  | Agreed AWS MVP                   | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. Mock mode has a separate 28-day default.             |
-| Candidate ranking   | Implemented policy                         | Descending positive matching compute spend, ties by instance ID; explain incomplete coverage                                                                       |
-| Report shape        | Runtime-validated contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                                       |
+| Subject             | Status                     | Policy                                                                                                                                                                    |
+| ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Goal and scope      | Agreed                     | Optimization-first, account/region, discover at most three candidates                                                                                                     |
+| First optimization  | Agreed                     | EC2 **off-hours stopping schedules only**; no downsizing                                                                                                                  |
+| Safety evaluation   | Agreed                     | Mandatory targeted attempt to disprove each proposed schedule                                                                                                             |
+| Uncertainty         | Agreed                     | Query additional relevant sources within bounds; then defer; no interactive CLI clarification required                                                                    |
+| Presentation        | Agreed                     | Detailed CLI/JSON reports and a local guided demo UI with investigation, learning, follow-through and validated report loading                                            |
+| Memory              | Agreed                     | Timestamped investigation summaries guiding fresh queries, not live telemetry                                                                                             |
+| Failure             | Agreed                     | Status-specific bounded degradation and explicit uncertainty                                                                                                              |
+| Source architecture | Agreed                     | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory |
+| Historical writes   | Agreed                     | Narrow schema-validated history append through Zetaris; no arbitrary SQL or AWS writes. Deployment proof is tracked separately.                                           |
+| Observation period  | Agreed AWS MVP             | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. Mock mode has a separate 28-day default.                                         |
+| Candidate ranking   | Implemented policy         | Descending positive matching compute spend, ties by instance ID; explain incomplete coverage                                                                              |
+| Report shape        | Runtime-validated contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                               |
 
 Out of scope: original cost-increase explanation command; mandatory baseline or snapshot comparison; EC2 downsizing; multi-cloud; Kubernetes; automated remediation; enterprise onboarding/auth; forecasting; full dashboards; complex multi-agent frameworks; extra Meterless engines. A readable CLI is sufficient for the surface; demo/slides remain required.
 
@@ -56,7 +56,7 @@ These flows share **one bounded investigation engine**, not separate agents:
 | **A — Supported opportunity**                    | Discover an instance with eligible compute spend and repeatable inactive hours; investigate peaks, jobs, dependencies, schedules and exceptions | **Conditional recommendation** for a specific UTC shutdown window only with adequately corroborated safety evidence, stated human approval and remaining checks; deterministic compute-only savings or `null` |
 | **B — Rejected hypothesis**                      | Proposed shutdown looks attractive; an evidence-dependent query uncovers critical weekly batch/peak/dependency conflicting with that window     | **Not recommended** for that proposed window; trace records hypothesis before/after and cites contradiction                                                                                                   |
 | **C — Justified continuous operation / unknown** | Current evidence justifies uptime, or critical operational evidence is insufficient                                                             | **Not recommended** when required operation is supported; **needs verification** when evidence is missing/ambiguous. These are different conclusions                                                          |
-| **D — Reinvestigation**                          | Later run sees relevant previous history and reasoning memory                                                                                   | Zetaris supplies structured prior observations; H-MEM supplies investigation context. Only H-MEM lessons may affect query order; **all current verdicts require fresh direct evidence**                                  |
+| **D — Reinvestigation**                          | Later run sees relevant previous history and reasoning memory                                                                                   | Zetaris supplies structured prior observations; H-MEM supplies investigation context. Only H-MEM lessons may affect query order; **all current verdicts require fresh direct evidence**                       |
 
 Additional required failure proof: unavailable/partial/invalid direct source, history-store failure, memory unavailable, model error, repeated action, or budget exhaustion should be bounded and correctly labeled. First run must work with empty Zetaris history and empty H-MEM memory.
 
@@ -142,10 +142,16 @@ Implemented conservative policy: complete authoritative discovery and both opera
 
 Example: fixture A uses 00:00–06:00 UTC, one excluded date, 30 minutes overhead, 60-minute billing units and a **synthetic** USD 0.50/hour rate. For October, `(31 − 1) × 5 × 0.50 = USD 75`. This is a conditional planning estimate, not measured savings.
 
+Task 2's six submission scenarios use 14 complete UTC days (September 15–29,
+with September 1–15 for prior synthetic investigations). This dataset choice
+does not change the seven-day policy minimum: tests explicitly distinguish
+6-day deferral from eligible 7-, 13- and 14-day windows. Existing contracts and
+Zetaris history fields are reused; numeric history trends remain out of scope.
+See [the scenario reproduction and demo runbook](SCENARIOS.md).
+
 ## 8. Detailed report and trace contract
 
 Output both readable CLI content and a runtime-validated JSON report (file export optional). Each report includes:
-
 - Investigation ID, question/goal, account/region, UTC observed window, integration mode, source coverage and **overall completion status** (`complete` / `partial` / `failed`).
 - Candidate discovery count/limit, selection rationale, and any discovery gaps.
 - Per-instance proposed schedule, verdict, supporting and contradicting **retrieved-current** evidence IDs, risks, unresolved checks, assumptions, next human actions, and deterministic savings or `null` (with currency when known).
@@ -162,7 +168,6 @@ Do not count a partially completed run as fully investigated. A `partial` run ma
 ## 9. Test and release acceptance
 
 A runnable demo must prove:
-
 1. First-run candidate discovery and investigation **without prior history**; data mode truthfully labeled.
 2. Scenario A conditional scheduling opportunity under explicitly adequate evidence; otherwise correctly deferred.
 3. Scenario B evidence-dependent next query and **actual falsification** of an initially plausible window.
@@ -177,7 +182,6 @@ A runnable demo must prove:
 ## 10. References
 
 Current integration state, actual sponsor contribution and open release work live only in the [execution plan](EXECUTION_PLAN.md). Historical measurements remain in its linked receipts.
-
 - [AWS adapter and collector contract](AWS_TOOLS.md).
 - [Zetaris table contract and provisioning](ZETARIS_HISTORY.md).
 - [H-MEM storage and recall](MEMORY.md).
