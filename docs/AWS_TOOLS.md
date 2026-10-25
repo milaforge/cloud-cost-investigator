@@ -52,16 +52,25 @@ through SDK configuration or `AWS_REGION`. Do not commit credentials or exports.
 
 ```sh
 npm run demo:aws -- --live
+# Also probe native operational facts for one retrieved running instance:
+npm run demo:aws -- --live --operations
 ```
 
-This only calls STS identity and EC2 discovery. It prints status, count and issue
-codes, not instance IDs, account IDs or tags. No live CloudWatch or Cost Explorer
-query is performed by the demo command.
+The live demo loads project `.env` without overriding shell variables. By default
+it calls only STS identity and EC2 discovery. `--operations` additionally probes
+SSM and ELBv2 for one retrieved running instance; if none is retrieved, it reports
+that the operational probe did not run. Output contains status, counts and issue
+codes, never instance/account IDs, ARNs or tags. No CloudWatch or Cost Explorer
+query is performed by either demo command.
 
 Required permissions for the corresponding features:
 - `ec2:DescribeInstances`
 - `cloudwatch:GetMetricData`
 - `ce:GetCostAndUsageWithResources`
+- `ssm:DescribeMaintenanceWindowSchedule`
+- `ssm:GetMaintenanceWindow`
+- `elasticloadbalancing:DescribeTargetGroups`
+- `elasticloadbalancing:DescribeTargetHealth`
 
 The tools also call `sts:GetCallerIdentity` to resolve/verify account scope. No
 infrastructure mutations, billing-feature enablement, IAM changes or new resources
@@ -114,10 +123,10 @@ yield `unavailable` because the exact shared contract requires average, peak and
 suggested window and does not accept null/no-match metric payloads. Network data
 and sample counts remain available in the detailed collector records.
 
-Operations/dependencies return `unavailable`, `data: null`, false coverage and
-explicit missing fields. They do not promote synthetic cron strings or tags into
-an authoritative source. The original detailed synthetic scenarios remain usable
-for collector tests; the agent integration tests verify honest safety deferral.
+Operations/dependencies collect native facts through the read-only sources below.
+Even a completed empty native scan has `partial` status, false coverage and
+explicit unknowns: it cannot establish workload-wide absence or owner clearance.
+Legacy synthetic cron strings and tags are never promoted to authority.
 
 Agent observations use the contract's snake_case fields, `integration_mode`, a
 source identifier and a content-derived `evidence_id`. Collector-only fields are
@@ -213,9 +222,41 @@ These costs are not savings: commitments, retained EBS resources, availability a
 schedule assumptions require further evidence. No currency conversion or monthly
 savings calculation is done here. Unknown estimated/final billing status is null.
 
-Live `getOperationalEvidence` returns `unavailable/SOURCE_NOT_CONFIGURED`. It does
-not infer dependencies from EC2 tags or claim no jobs exist. Synthetic scenarios
-include labeled operational evidence through the same evidence structure.
+## Native operational evidence
+
+`getOperationalEvidence(instanceId, { kind: 'operations' | 'dependencies' })`
+defaults to operations. The agent-facing tools select the corresponding source:
+
+- **Operations:** [SSM DescribeMaintenanceWindowSchedule](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_DescribeMaintenanceWindowSchedule.html)
+  targets the exact instance, then [GetMaintenanceWindow](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_GetMaintenanceWindow.html)
+  verifies ID, enabled state and duration. AWS expands schedule/timezone rules;
+  CCI preserves dated execution intervals without parsing cron or inventing daily
+  critical jobs. The query covers the policy's planning month following the
+  observed window, starting one day earlier to catch cross-midnight maintenance.
+  A dated overlap can reject the proposed daily shutdown window in that month.
+  It does not establish task criticality or the absence of jobs outside SSM.
+- **Dependencies:** ELBv2 DescribeTargetGroups and
+  [DescribeTargetHealth](https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/API_DescribeTargetHealth.html)
+  retain matching instance-ID registrations, ports and actual health states.
+  Returned ARNs must match authenticated account/region before a health read.
+  Registration requires service-owner and traffic-draining review; it never
+  fabricates a continuous-operation requirement. IP, Lambda and ALB target groups
+  remain explicitly unresolved. Other consumers are outside this source's coverage.
+
+Each call allows at most 20 operational API requests (plus identity), five pages
+by default and 100 facts, under the existing 20-second deadline and two-attempt
+SDK limit. Target-group pages contain at most 20 groups; at most 1,000 target rows
+are inspected per response. Repeated tokens and caps report `TRUNCATED`. Later
+failures retain previously collected facts as partial; denial/malformed output
+never clears safety. Missing transport sources remain `SOURCE_NOT_CONFIGURED`.
+No task payloads, command parameters, credentials or raw provider error bodies
+are retained.
+
+Planned execution intervals are distinct from the utilization observation window
+and collection timestamp. Reports retain these facts with source provenance and
+validated evidence IDs. Both native sources always disclose missing broader
+coverage and owner/calendar/recovery clearance. Empty results cannot support a
+conditional recommendation; workload-specific authority is still required.
 
 ## Remaining integration
 
@@ -224,5 +265,6 @@ Zetaris history and H-MEM flow as mock mode. The AWS module only fetches/returns
 evidence. The executor budgets are defined in [runtime bounds](components.md#runtime-ownership-and-bounds). Empty inventory remains a partial investigation when billing
 currency/records are unavailable; it never invents a zero-cost billing result.
 H-MEM reasoning persistence is separate. No automatic live-to-synthetic fallback
-is allowed. Operations/dependency sources remain unconfigured. No resource launch
-or paid-feature provisioning is needed to demonstrate the empty-discovery path.
+is allowed. Native operational coverage is deliberately incomplete; live populated-source
+verification remains a separate gate. No resource launch or paid-feature provisioning
+is needed to demonstrate the empty-discovery path.

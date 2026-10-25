@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
+import type { LoadBalancerTarget, ScheduledMaintenance } from '../contracts.ts';
 
 // Detailed collector records. The agent-facing adapter projects these into the
-// current shared Observation contract without changing src/contracts.ts.
+// runtime-validated shared Observation contract.
 export type Window = { from: string; to: string };
 export type Status = 'ok' | 'no_match' | 'partial' | 'unavailable' | 'error';
 export type Scope = { accountId: string; region: string };
@@ -49,6 +50,7 @@ export type BillingData = {
 };
 export type OperationalData = {
   description: string;
+  maintenance_window?: ScheduledMaintenance;
   scheduleExpression?: string;
   timeZone?: string;
   requiredAvailability?: string;
@@ -61,6 +63,7 @@ type Payloads = {
   billing: BillingData;
   schedule: OperationalData;
   deployment: OperationalData;
+  dependency: LoadBalancerTarget;
 };
 export type Kind = keyof Payloads;
 export type Evidence<K extends Kind = Kind> = {
@@ -102,8 +105,8 @@ export interface EC2Tools {
   ): Promise<ToolResult<'billing'>>;
   getOperationalEvidence(
     instanceId: string,
-    options?: WindowOptions,
-  ): Promise<ToolResult<'schedule' | 'deployment'>>;
+    options?: WindowOptions & { kind?: 'operations' | 'dependencies' },
+  ): Promise<ToolResult<'schedule' | 'deployment' | 'dependency'>>;
   close(): void;
 }
 export class InputError extends Error {}

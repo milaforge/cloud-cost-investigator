@@ -131,15 +131,13 @@ test('missing CPU peaks never become zero or an invented complete summary', asyn
   );
 });
 
-test('unsupported operations and dependencies do not construct AWS clients', async () => {
-  const operation = await get_ec2_operations(action('get_ec2_operations').args);
-  const dependency = await get_ec2_dependencies(
-    action('get_ec2_dependencies').args,
-  );
+test('legacy operational fixture strings never become authoritative facts', async () => {
+  const operation = await call('get_ec2_operations');
+  const dependency = await call('get_ec2_dependencies');
   for (const o of [operation, dependency]) {
     assert.equal(o.status, 'unavailable');
     assert.equal(o.data, null);
-    assert.equal(o.integration_mode, 'live');
+    assert.equal(o.integration_mode, 'fixture');
   }
 });
 

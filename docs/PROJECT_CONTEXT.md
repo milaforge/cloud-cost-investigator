@@ -78,6 +78,11 @@ get_ec2_dependencies(instance)
 
 Direct data categories: inventory (IDs, types, ownership/tags, state), billing (compute charges, currency, pricing/commitment coverage), utilization (time series, peaks, coverage and granularity), schedules/changes (jobs, deployment/config history, timezone, exceptions), and dependencies (upstream/downstream consumers, availability obligations, coverage). Some job/dependency facts may require operational integrations outside native AWS APIs. Do **not** assume such integrations exist merely because a logical tool is defined.
 
+Native AWS operational reads collect dated SSM maintenance intervals and ELBv2
+instance registrations. These facts can contradict a proposed window or prompt
+owner review; neither source provides workload-wide negative proof or owner
+clearance. Exact coverage, timestamps and bounds live in [AWS tools](AWS_TOOLS.md#native-operational-evidence).
+
 ### Zetaris — structured historical records and comparisons
 
 Use governed, scoped historical investigation data that can answer: _What was observed last time, when, with what coverage, and what changed in a later fresh observation?_ Keep timestamped compact rows for investigation ID, `(account, region, instance)`, observed interval, summarized numeric observations, evidence reference metadata, proposed schedule, verdict and reason, integration mode, and collection time. Avoid duplicate full reports, secrets, raw provider responses, or unverifiable historical conclusions.

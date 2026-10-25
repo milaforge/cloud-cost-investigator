@@ -1,4 +1,5 @@
 import {
+  schedulingConflict,
   schedulingProof,
   calculateSavings,
   rankCandidates,
@@ -480,22 +481,6 @@ export function validateReport(value: unknown): InvestigationReport {
   }
   if (retrieved.size !== registry.size)
     throw new Error('Unregistered evidence');
-  const conflicts = (e: Observation, window: Schedule) => {
-    if (!usable(e) || e.scope.instance_id === undefined || !e.data)
-      return false;
-    if (e.tool === 'get_ec2_operations' && 'jobs' in e.data)
-      return e.data.jobs.some(
-        (j) =>
-          j.critical &&
-          j.window.start_hour_utc < window.end_hour_utc &&
-          j.window.end_hour_utc > window.start_hour_utc,
-      );
-    return (
-      e.tool === 'get_ec2_dependencies' &&
-      'requires_continuous_operation' in e.data &&
-      e.data.requires_continuous_operation
-    );
-  };
   for (const c of candidates) {
     const expectedSavings = calculateSavings(request, c, evidence);
     if (
@@ -602,7 +587,7 @@ export function validateReport(value: unknown): InvestigationReport {
         const e = evidenceById(id);
         if (
           e.scope.instance_id !== c.instance_id ||
-          !conflicts(e, proposedWindow) ||
+          !schedulingConflict(request, proposedWindow, e) ||
           retrievalStep(id) <= proposal.step
         )
           throw new Error('Invalid contradictory evidence');

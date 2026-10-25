@@ -128,10 +128,10 @@ test('B: low average coexists with real peak and required batch counter-evidence
   assert.ok(peak);
   assert.ok(avg.reduce((sum, p) => sum + p.value, 0) / avg.length < 5);
   assert.equal(Math.max(...peak.map((p) => p.value)), 99);
-  assert.deepEqual(
-    (await tools.getOperationalEvidence(id)).evidence[0].data.dependencies,
-    ['settlement-batch'],
-  );
+  const operation = (await tools.getOperationalEvidence(id)).evidence[0];
+  assert.equal(operation.kind, 'schedule');
+  assert.ok('dependencies' in operation.data);
+  assert.deepEqual(operation.data.dependencies, ['settlement-batch']);
 });
 
 test('C: cost and workload increase match capacity-change evidence', async () => {

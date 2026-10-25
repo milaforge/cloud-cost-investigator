@@ -16,6 +16,12 @@ documents component authority, runtime boundaries and integration details.
 
 The runner owns shared state; roles do not exchange unrestricted messages. A later planner turn sees validated observations and attempt history, so its next check depends on what happened. This supports critique, shared state, branching and evaluator authority within one loop. It does not claim several autonomous model agents. Trace capture and a real scripted B excerpt are in the [CLI walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace); bounds and failure policy are below and in the [CLI failure reference](CLI_GUIDE.md#failure-behavior).
 
+`aws-operational.ts` owns bounded SSM and ELBv2 fact collection beneath the
+existing AWS adapter. Shared contracts validate dated maintenance and target
+registrations; the policy owns overlap decisions, reused by the runner and final
+report validation. Native negative scans never supply positive safety proof.
+[Source coverage and limits](AWS_TOOLS.md#native-operational-evidence) are canonical.
+
 ## Local report viewer
 
 `scripts/demo-web.ts` owns the dependency-free local HTTP surface and initial

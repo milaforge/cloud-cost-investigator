@@ -120,10 +120,28 @@ export interface SavingsCalculation {
 export interface OperationsData {
   scheduling_clearance?: SchedulingClearance;
   jobs: { job_id: string; critical: boolean; window: Schedule }[];
+  scheduled_maintenance?: ScheduledMaintenance[];
 }
 export interface DependenciesData {
   scheduling_clearance?: SchedulingClearance;
   requires_continuous_operation: boolean;
+  load_balancer_targets?: LoadBalancerTarget[];
+}
+export interface ScheduledMaintenance {
+  window_id: string;
+  execution_window: Window;
+}
+export interface LoadBalancerTarget {
+  target_group_arn: string;
+  port: number;
+  state:
+    | 'initial'
+    | 'healthy'
+    | 'unhealthy'
+    | 'unhealthy.draining'
+    | 'unused'
+    | 'draining'
+    | 'unavailable';
 }
 export type ToolData =
   | InventoryData
@@ -522,8 +540,15 @@ export function validateObservation(
           throw new Error('Peak below average');
         break;
       case 'get_ec2_operations':
-        exact(d, ['jobs', 'scheduling_clearance']);
+        exact(d, ['jobs', 'scheduling_clearance', 'scheduled_maintenance']);
         data = {
+          ...(d.scheduled_maintenance === undefined
+            ? {}
+            : {
+                scheduled_maintenance: array(d.scheduled_maintenance).map(
+                  validateScheduledMaintenance,
+                ),
+              }),
           ...(d.scheduling_clearance === undefined
             ? {}
             : {
@@ -540,9 +565,20 @@ export function validateObservation(
         };
         break;
       case 'get_ec2_dependencies':
-        exact(d, ['requires_continuous_operation', 'scheduling_clearance']);
+        exact(d, [
+          'requires_continuous_operation',
+          'scheduling_clearance',
+          'load_balancer_targets',
+        ]);
         data = {
           requires_continuous_operation: bool(d.requires_continuous_operation),
+          ...(d.load_balancer_targets === undefined
+            ? {}
+            : {
+                load_balancer_targets: array(d.load_balancer_targets).map(
+                  (target) => validateLoadBalancerTarget(target, scope),
+                ),
+              }),
           ...(d.scheduling_clearance === undefined
             ? {}
             : {
@@ -579,6 +615,57 @@ export function validateObservation(
     evidence_id: identifier(o.evidence_id),
     data,
   };
+}
+export function validateScheduledMaintenance(
+  value: unknown,
+): ScheduledMaintenance {
+  const m = exact(value, ['window_id', 'execution_window']);
+  const window_id = identifier(m.window_id);
+  if (!/^mw-[a-f0-9]{17}$/.test(window_id))
+    throw new Error('Invalid maintenance window');
+  const execution_window = validateWindow(m.execution_window);
+  if (
+    Date.parse(execution_window.to) - Date.parse(execution_window.from) >
+    86400000
+  )
+    throw new Error('Invalid maintenance duration');
+  return { window_id, execution_window };
+}
+export function validateLoadBalancerTarget(
+  value: unknown,
+  scope: Scope,
+): LoadBalancerTarget {
+  const t = exact(value, ['target_group_arn', 'port', 'state']);
+  return {
+    target_group_arn: validateTargetGroupArn(t.target_group_arn, scope),
+    port: integer(t.port, 1, 65535),
+    state: member(t.state, [
+      'initial',
+      'healthy',
+      'unhealthy',
+      'unhealthy.draining',
+      'unused',
+      'draining',
+      'unavailable',
+    ]),
+  };
+}
+export function validateTargetGroupArn(value: unknown, scope: Scope): string {
+  const target_group_arn = textValue(value, 2048);
+  const partition = scope.region.startsWith('cn-')
+    ? 'aws-cn'
+    : scope.region.startsWith('us-gov-')
+      ? 'aws-us-gov'
+      : 'aws';
+  const prefix = `arn:${partition}:elasticloadbalancing:${scope.region}:${scope.account_id}:targetgroup/`;
+  if (
+    !target_group_arn.startsWith(prefix) ||
+    !/^[a-zA-Z0-9-]{1,32}\/[a-f0-9]{16}$/.test(
+      target_group_arn.slice(prefix.length),
+    )
+  )
+    throw new Error('Target group scope mismatch');
+  return target_group_arn;
 }
 
 function validatePricing(value: unknown): ComputePricing {

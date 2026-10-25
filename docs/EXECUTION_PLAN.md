@@ -11,6 +11,36 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Native operational evidence collection — 2026-10-25
+
+- **Gate/owner/mode:** direct operational integration, Zayan source boundary /
+  Milad policy boundary; implemented using the two user-approved AWS SDK packages.
+  Read-only SSM maintenance executions and ELBv2 instance registrations enter
+  validated observations with explicit incomplete coverage. Shared overlap policy
+  is reused by the runner and report validator. No positive eligibility threshold,
+  clearance requirement or infrastructure permission was relaxed.
+- **Verification:** `npm test` passed **267/267** (including 21 new native-source
+  tests), using local loopback/subprocess permission. `npm run typecheck`,
+  `npm run typecheck:aws`, scoped `npx biome lint` and `npx biome format` across
+  all 12 changed source/test files, and `git diff --check` passed. Fixtures prove
+  cited dated-conflict rejection, empty-read deferral, owner/draining actions,
+  scope/malformed-data rejection, denial/redaction, partial retention, pagination/
+  request bounds, midnight overlap and cancellation. The initial sandbox test
+  attempt lacked local fixture permissions; the permitted full run passed.
+- **Live attempt:** `NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx
+  src/aws-demo.ts --live --operations`, with intended project `.env` and the
+  configured SDK profile. The sandbox first returned `NETWORK_UNAVAILABLE`;
+  the network-enabled retry exited **1**, inventory `unavailable/ACCESS_DENIED`,
+  zero retrieved instances. Operational probe explicitly reported **not_run**,
+  `no_running_instance_retrieved`. Sanitized output only; no paid calls, remote
+  writes, guessed resource IDs or infrastructure changes.
+- **Blocker/next action:** populated live SSM/ELBv2 proof remains **OPEN**.
+  Obtain read-only inventory access in the intended scope, then rerun the
+  documented `npm run demo:aws -- --live --operations` with the permissions in
+  [AWS tools](AWS_TOOLS.md#authentication-and-live-smoke-check). Native empty scans
+  still cannot prove absence of workload jobs/consumers or owner/calendar/recovery
+  clearance. Separate workload authority remains necessary for recommendations.
+
 ### Recommendation policy and validation regression proof — 2026-10-25
 
 - **Gate/owner/mode:** preservation of safety policy, Milad; local synthetic and

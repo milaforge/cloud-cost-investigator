@@ -44,6 +44,8 @@
     "@aws-sdk/client-cloudwatch": "^3.1156.0",
     "@aws-sdk/client-cost-explorer": "^3.1156.0",
     "@aws-sdk/client-ec2": "^3.1156.0",
+    "@aws-sdk/client-elastic-load-balancing-v2": "^3.1156.0",
+    "@aws-sdk/client-ssm": "^3.1156.0",
     "@aws-sdk/client-sts": "^3.1156.0"
   }
 }

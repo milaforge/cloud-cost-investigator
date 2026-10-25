@@ -15,6 +15,7 @@ import type {
   EC2Tools,
   Evidence,
   ToolResult,
+  Kind,
   UtilizationData,
 } from './aws-evidence.ts';
 
@@ -178,15 +179,7 @@ export function createAwsEvidenceProvider(
             options.config.expectedAccountId !== args.account_id)
         )
           throw new Error('configured_scope_mismatch');
-        if (tool === 'get_ec2_operations' || tool === 'get_ec2_dependencies') {
-          // Do not reinterpret EC2 tags, absent jobs, or fixture schedule strings
-          // as authoritative operations/dependency knowledge.
-          unavailable(o, [
-            tool === 'get_ec2_operations'
-              ? 'operational_source_not_configured'
-              : 'dependency_source_not_configured',
-          ]);
-        } else {
+        {
           if (!options.tools) loadProjectEnv();
           if (!options.tools)
             owned = createAwsTools({
@@ -201,15 +194,69 @@ export function createAwsEvidenceProvider(
             });
           const tools = options.tools ?? owned;
           if (!tools) throw new Error('tools_unavailable');
-          const check = <K extends 'inventory' | 'billing' | 'utilization'>(
-            r: ToolResult<K>,
-          ) => {
+          const check = <K extends Kind>(r: ToolResult<K>) => {
             signal.throwIfAborted();
             compatible(r, action, mode);
             rawIds.push(...r.evidenceIds);
             return r;
           };
-          if (tool === 'list_ec2_instances') {
+          if (
+            tool === 'get_ec2_operations' ||
+            tool === 'get_ec2_dependencies'
+          ) {
+            const result = check(
+              await tools.getOperationalEvidence(args.instance_id ?? '', {
+                window: args.window,
+                kind:
+                  tool === 'get_ec2_operations' ? 'operations' : 'dependencies',
+              }),
+            );
+            o.source = `${mode === 'live' ? 'aws' : 'fixture'}-${tool === 'get_ec2_operations' ? 'ssm-maintenance-windows' : 'elbv2-target-health'}`;
+            if (result.status === 'unavailable' || result.status === 'error')
+              unavailable(o, gaps(result), result.status);
+            else {
+              const maintenance = result.evidence.flatMap((e) =>
+                e.kind === 'schedule' && e.data.maintenance_window
+                  ? [e.data.maintenance_window]
+                  : [],
+              );
+              const targets = result.evidence.flatMap((e) =>
+                e.kind === 'dependency' ? [e.data] : [],
+              );
+              // Legacy fixture cron strings/tags are never interpreted as facts.
+              if (
+                mode === 'fixture' &&
+                !maintenance.length &&
+                !targets.length &&
+                result.status !== 'partial'
+              )
+                unavailable(o, [
+                  tool === 'get_ec2_operations'
+                    ? 'operational_source_not_configured'
+                    : 'dependency_source_not_configured',
+                ]);
+              else {
+                o.status = 'partial';
+                o.coverage = { complete: false, authoritative: false };
+                o.missing_fields = [
+                  ...new Set([
+                    ...gaps(result),
+                    tool === 'get_ec2_operations'
+                      ? 'JOBS_OUTSIDE_SSM_UNKNOWN'
+                      : 'DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN',
+                    'OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED',
+                  ]),
+                ].slice(0, 30);
+                o.data =
+                  tool === 'get_ec2_operations'
+                    ? { jobs: [], scheduled_maintenance: maintenance }
+                    : {
+                        requires_continuous_operation: false,
+                        load_balancer_targets: targets,
+                      };
+              }
+            }
+          } else if (tool === 'list_ec2_instances') {
             const result = check(await tools.getEC2Instances());
             setResult(o, result);
             if (result.status === 'error' || result.status === 'unavailable')

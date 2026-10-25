@@ -22,6 +22,25 @@ import {
   type GetCallerIdentityCommandOutput,
 } from '@aws-sdk/client-sts';
 import {
+  SSMClient,
+  DescribeMaintenanceWindowScheduleCommand,
+  GetMaintenanceWindowCommand,
+  type DescribeMaintenanceWindowScheduleCommandInput,
+  type DescribeMaintenanceWindowScheduleCommandOutput,
+  type GetMaintenanceWindowCommandInput,
+  type GetMaintenanceWindowCommandOutput,
+} from '@aws-sdk/client-ssm';
+import {
+  ElasticLoadBalancingV2Client,
+  DescribeTargetGroupsCommand,
+  DescribeTargetHealthCommand,
+  type DescribeTargetGroupsCommandInput,
+  type DescribeTargetGroupsCommandOutput,
+  type DescribeTargetHealthCommandInput,
+  type DescribeTargetHealthCommandOutput,
+} from '@aws-sdk/client-elastic-load-balancing-v2';
+import { collectOperationalEvidence } from './aws-operational.ts';
+import {
   type EC2Tools,
   type Kind,
   type Scope,
@@ -39,6 +58,22 @@ import {
 
 // SDK operations are injected as functions, independently of any agent framework.
 export interface AwsTransport {
+  maintenanceSchedule?(
+    input: DescribeMaintenanceWindowScheduleCommandInput,
+    signal: AbortSignal,
+  ): Promise<DescribeMaintenanceWindowScheduleCommandOutput>;
+  maintenanceWindow?(
+    input: GetMaintenanceWindowCommandInput,
+    signal: AbortSignal,
+  ): Promise<GetMaintenanceWindowCommandOutput>;
+  targetGroups?(
+    input: DescribeTargetGroupsCommandInput,
+    signal: AbortSignal,
+  ): Promise<DescribeTargetGroupsCommandOutput>;
+  targetHealth?(
+    input: DescribeTargetHealthCommandInput,
+    signal: AbortSignal,
+  ): Promise<DescribeTargetHealthCommandOutput>;
   region(): Promise<string>;
   identity(signal: AbortSignal): Promise<GetCallerIdentityCommandOutput>;
   inventory(
@@ -101,7 +136,34 @@ function sdkTransport(config: AwsToolConfig): AwsTransport {
   const cloudwatch = new CloudWatchClient(settings);
   const sts = new STSClient(settings);
   const ce = new CostExplorerClient({ region: 'us-east-1', maxAttempts: 2 });
+  // Operational clients are created only for the corresponding read path.
+  let ssm: SSMClient | undefined;
+  let elb: ElasticLoadBalancingV2Client | undefined;
   return {
+    maintenanceSchedule: (input, signal) => {
+      ssm ??= new SSMClient(settings);
+      return ssm.send(new DescribeMaintenanceWindowScheduleCommand(input), {
+        abortSignal: signal,
+      });
+    },
+    maintenanceWindow: (input, signal) => {
+      ssm ??= new SSMClient(settings);
+      return ssm.send(new GetMaintenanceWindowCommand(input), {
+        abortSignal: signal,
+      });
+    },
+    targetGroups: (input, signal) => {
+      elb ??= new ElasticLoadBalancingV2Client(settings);
+      return elb.send(new DescribeTargetGroupsCommand(input), {
+        abortSignal: signal,
+      });
+    },
+    targetHealth: (input, signal) => {
+      elb ??= new ElasticLoadBalancingV2Client(settings);
+      return elb.send(new DescribeTargetHealthCommand(input), {
+        abortSignal: signal,
+      });
+    },
     region: () => ec2.config.region(),
     identity: (signal) =>
       sts.send(new GetCallerIdentityCommand({}), { abortSignal: signal }),
@@ -118,6 +180,8 @@ function sdkTransport(config: AwsToolConfig): AwsTransport {
       cloudwatch.destroy();
       sts.destroy();
       ce.destroy();
+      ssm?.destroy();
+      elb?.destroy();
     },
   };
 }
@@ -759,14 +823,31 @@ export function createToolsWithTransport(
     },
     getOperationalEvidence: (instanceId, options = {}) => {
       const window = options.window ?? defaultWindow;
-      return run(
+      return run<'schedule' | 'deployment' | 'dependency'>(
         window,
         () => {
           checkInstance(instanceId);
           validatePeriod(window);
-          throw new UnavailableError('SOURCE_NOT_CONFIGURED');
+          if (
+            options.kind !== undefined &&
+            options.kind !== 'operations' &&
+            options.kind !== 'dependencies'
+          )
+            throw new InputError('Invalid operational evidence kind');
         },
-        async () => {},
+        (result, scope, signal) =>
+          collectOperationalEvidence({
+            instanceId,
+            kind: options.kind ?? 'operations',
+            window,
+            result,
+            scope,
+            signal,
+            transport,
+            maxPages,
+            clock,
+            synthetic,
+          }),
       );
     },
   };

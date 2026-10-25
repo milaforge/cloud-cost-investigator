@@ -674,3 +674,18 @@
 - Keep progress stderr separate from JSON stdout. Missing-source exit 2 is an
   expected safe partial result. Local runtime proof, browser visual review,
   remote clone availability and live services remain separate evidence classes.
+
+## Native operational facts and recommendation authority (2026-10-25)
+
+- Use AWS-expanded, dated SSM maintenance executions, corroborated by enabled
+  window duration. A dated conflict rejects the proposed daily window in the
+  planning month; it is not an invented recurring critical job or an H-MEM lesson.
+- ELBv2 instance registration is a consumer fact requiring owner/draining review,
+  not proof of continuous operation. Native empty scans remain partial because
+  external jobs/consumers and owner/calendar/recovery clearance are unknown.
+- Keep overlap logic in policy and reuse it in execution and report validation.
+  Extend the existing bounded read-only adapter with the two explicitly approved
+  SDK packages; never add write actions or parse arbitrary operational payloads.
+- The live smoke probe logs only statuses/counts/codes and uses a running instance
+  actually retrieved from inventory. Missing inventory prevents operational proof;
+  fabricated IDs or resource provisioning would not remedy that evidence gap.

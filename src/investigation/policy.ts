@@ -24,6 +24,56 @@ export const authoritative = (o: Observation | undefined): o is Observation =>
   o.coverage.complete &&
   o.coverage.authoritative &&
   o.missing_fields.length === 0;
+
+/** A daily proposal conflicts if any dated execution overlaps it in the planning month. */
+export function schedulingConflict(
+  request: InvestigationRequest,
+  window: Schedule,
+  observation: Observation,
+): 'critical_job' | 'scheduled_maintenance' | 'continuous_operation' | null {
+  if (
+    !['ok', 'no_match', 'partial'].includes(observation.status) ||
+    !observation.data
+  )
+    return null;
+  if (observation.tool === 'get_ec2_operations' && 'jobs' in observation.data) {
+    if (
+      observation.data.jobs.some(
+        (j) => j.critical && overlaps(j.window, window),
+      )
+    )
+      return 'critical_job';
+    const period = estimatePeriod(request);
+    for (const maintenance of observation.data.scheduled_maintenance ?? []) {
+      const from = Math.max(
+        Date.parse(maintenance.execution_window.from),
+        Date.parse(period.from),
+      );
+      const to = Math.min(
+        Date.parse(maintenance.execution_window.to),
+        Date.parse(period.to),
+      );
+      for (
+        let day = Math.floor(from / 86400000) * 86400000;
+        day < to;
+        day += 86400000
+      ) {
+        if (
+          from < day + window.end_hour_utc * 3600000 &&
+          to > day + window.start_hour_utc * 3600000
+        )
+          return 'scheduled_maintenance';
+      }
+    }
+  }
+  if (
+    observation.tool === 'get_ec2_dependencies' &&
+    'requires_continuous_operation' in observation.data &&
+    observation.data.requires_continuous_operation
+  )
+    return 'continuous_operation';
+  return null;
+}
 /** Shared deterministic discovery order for execution and report validation. */
 export function rankCandidates(
   inventory: InventoryData,
@@ -148,6 +198,14 @@ export function assessScheduling(
   }
   const period = estimatePeriod(request);
   if (
+    dependencies?.data &&
+    'load_balancer_targets' in dependencies.data &&
+    dependencies.data.load_balancer_targets?.length
+  )
+    missing_checks.push(
+      'get_ec2_dependencies: Review the registered load-balancer consumers with service owners and plan traffic draining before reconsidering shutdown; registration alone does not establish continuous-operation obligations.',
+    );
+  if (
     Date.parse(request.window.to) - Date.parse(request.window.from) <
     7 * 86400000
   )
@@ -170,6 +228,13 @@ export function assessScheduling(
       );
   }
   if (!window) return { proof: null, missing_checks };
+  if (
+    operations &&
+    schedulingConflict(request, window, operations) === 'scheduled_maintenance'
+  )
+    missing_checks.push(
+      'get_ec2_operations: Review the overlapping dated SSM maintenance execution with the workload owner before proposing this window again.',
+    );
   if (authoritative(operations)) {
     const o = operations.data as OperationsData;
     if (o.jobs.some((j) => overlaps(j.window, window)))

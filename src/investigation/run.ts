@@ -7,13 +7,11 @@ import {
   type Action,
   type BillingData,
   type CandidateReport,
-  type DependenciesData,
   type InventoryData,
   type InvestigationReport,
   type InvestigationRequest,
   type MetricsData,
   type Observation,
-  type OperationsData,
   type ToolAction,
   type TraceEntry,
   validateAction,
@@ -34,10 +32,10 @@ import {
 } from './planner.ts';
 import {
   assessScheduling,
+  schedulingConflict,
   schedulingProof,
   calculateSavings,
   rankCandidates,
-  overlaps,
   sameSchedule,
 } from './policy.ts';
 import { validateReport } from './report.ts';
@@ -569,20 +567,19 @@ export async function runInvestigation(
       }
       const proposedWindow = candidate.proposed_window;
       if (proposedWindow && usable(observation)) {
-        let conflict = false;
-        if (observation.tool === 'get_ec2_operations')
-          conflict = (observation.data as OperationsData).jobs.some(
-            (j) => j.critical && overlaps(j.window, proposedWindow),
-          );
-        if (observation.tool === 'get_ec2_dependencies')
-          conflict = (observation.data as DependenciesData)
-            .requires_continuous_operation;
+        const conflict = schedulingConflict(
+          request,
+          proposedWindow,
+          observation,
+        );
         if (conflict) {
           candidate.verdict = 'not_recommended';
           candidate.explanation =
-            observation.tool === 'get_ec2_operations'
-              ? 'A retrieved critical job overlaps the proposed shutdown window; reject this window.'
-              : 'A retrieved dependency requires continuous operation; reject this window.';
+            conflict === 'scheduled_maintenance'
+              ? 'A retrieved dated SSM maintenance execution overlaps the proposed shutdown window in the planning month; shutdown is not recommended for this window.'
+              : conflict === 'critical_job'
+                ? 'A retrieved critical job overlaps the proposed shutdown window; reject this window.'
+                : 'A retrieved dependency requires continuous operation; reject this window.';
           candidate.contradicting_evidence_ids = [observation.evidence_id];
           candidate.hypotheses.push({
             window: proposedWindow,
