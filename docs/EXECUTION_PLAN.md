@@ -11,6 +11,20 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Recommendation wording — 2026-10-25
+
+- **Gate/owner/mode:** recommendation clarity, Milad; UI wording only. Verdicts
+  now distinguish a conditional recommendation requiring human approval, rejection
+  of the evaluated window, and a withheld recommendation pending evidence. CPU
+  checks identify potential off-hours windows rather than assert inactivity.
+  The durable authority rule is recorded in `AGENTS.md` and `memory.md`.
+- **Verification:** `node --check src/web/app.js` passed;
+  `node --import tsx --test --test-isolation=none tests/report.test.ts` passed
+  **7/7**, synthetic evidence; scoped `git diff --check` passed.
+- **Limits/next action:** no browser visual or live-service proof; safety policy,
+  citations and verdict values are unchanged. Continue actionable unresolved
+  checks, policy regression proof, then operational-source integration.
+
 ### Clean-checkout validation and coding-agent runbook — 2026-10-25
 
 - **Gate/owner/status:** clean-checkout local runtime reproduction, Milad —

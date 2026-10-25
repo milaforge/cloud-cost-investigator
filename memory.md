@@ -1,5 +1,15 @@
 # Project Memory
 
+## Recommendation authority and window scope (2026-10-25)
+
+- CCI is a cost optimization recommendation system, starting with EC2 scheduling.
+  Its evaluator controls recommendation eligibility; infrastructure approval stays
+  with an authorized human. UI verdicts describe the evaluated window, so a
+  rejected schedule cannot become a blanket "keep it running" instruction.
+- Low utilization identifies a potential window to investigate. It does not prove
+  inactivity. Keep conditional recommendation, a cited conflict and unresolved
+  evidence visibly distinct; none grants execution authority.
+
 ## Visitor-facing agent diagram (2026-10-25)
 
 - Keep overview diagrams in the README; `docs/components.md` links there and

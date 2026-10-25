@@ -105,17 +105,21 @@ function clockTime(value) {
 }
 const verdicts = {
   conditional_recommendation: [
-    'Shutdown can be considered',
-    'Conditional · human approval required',
+    'Shutdown conditionally recommended',
+    'For this window · human approval required',
     '✓',
   ],
-  not_recommended: ['Keep it running', 'Shutdown window rejected', '×'],
-  needs_verification: ['Hold off on shutdown', 'More evidence needed', '?'],
+  not_recommended: [
+    'Shutdown not recommended for this window',
+    'Evaluated window rejected · see cited conflict',
+    '×',
+  ],
+  needs_verification: ['Recommendation withheld', 'More evidence needed', '?'],
 };
 const toolTitles = {
   list_ec2_instances: 'Discover instances',
   get_ec2_billing: 'Check compute spend',
-  get_ec2_metrics: 'Find inactive hours',
+  get_ec2_metrics: 'Find potential off-hours windows',
   get_ec2_operations: 'Check scheduled jobs',
   get_ec2_dependencies: 'Check dependencies',
 };

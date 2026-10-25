@@ -47,6 +47,7 @@ Keep rationale in `memory.md`; keep task status and integration proof in `docs/E
 
 ## Non-negotiable invariants
 
+- CCI controls recommendations, not shutdown authority. Scope verdict wording to the evaluated window; a rejected window is not a blanket instruction to keep the instance running. Preserve conditional recommendation, evidence-backed rejection and insufficient-evidence deferral as distinct outcomes. Only an authorized human can approve an infrastructure change.
 - **Live AWS evidence is the CLI default.** Synthetic/demo investigations require explicit `--evidence mock`; never silently fall back to mocks.
 - **AWS is entirely read-only**; no stopping, resizing or other infrastructure writes. Current-evidence tools are read-only. The sole permitted non-infrastructure exception is narrowly authorized, append-only Zetaris investigation-history persistence with schema/permission validation. Do not expose generic Zetaris SQL or unrestricted write tools to the model.
 - Runtime-validate external data and model/tool output; TypeScript interfaces alone do not validate data. Preserve account/region/resource scope, UTC observation windows, collection times, units, coverage, source modes, provenance and evidence IDs.
