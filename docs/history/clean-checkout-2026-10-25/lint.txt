@@ -1,0 +1,5 @@
+
+> cloud-cost-investigator@0.1.0 lint
+> biome lint .
+
+Checked 158 files in 19ms. No fixes applied.

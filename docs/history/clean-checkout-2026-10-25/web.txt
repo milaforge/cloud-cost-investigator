@@ -1,0 +1,7 @@
+
+> cloud-cost-investigator@0.1.0 demo:web
+> node --import tsx scripts/demo-web.ts --no-open
+
+Generating synthetic A/B investigations…
+Demo viewer: http://127.0.0.1:33469
+Offline demos by default. Real services require explicit browser controls. Ctrl+C to stop.

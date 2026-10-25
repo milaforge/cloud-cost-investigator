@@ -1,0 +1,5 @@
+npm error code EAI_AGAIN
+npm error syscall getaddrinfo
+npm error errno EAI_AGAIN
+npm error request to https://registry.npmjs.org/undici-types/-/undici-types-7.16.0.tgz failed, reason: getaddrinfo EAI_AGAIN registry.npmjs.org
+npm error A complete log of this run can be found in: /tmp/cci-clean-checkout-bhgh7o3r/npm-cache/_logs/2026-10-25T10_24_57_833Z-debug-0.log

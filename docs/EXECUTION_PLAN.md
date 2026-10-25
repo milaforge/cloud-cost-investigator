@@ -11,6 +11,57 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Clean-checkout validation and coding-agent runbook — 2026-10-25
+
+- **Gate/owner/status:** clean-checkout local runtime reproduction, Milad —
+  **PASSED** at revision `391cdef38bba8a8fc0eb3ac2b9f5f02632b68062`.
+  Created a separate `git clone --no-local` of the local Git repository with a
+  fresh home, npm cache and temp directory. No `.env`, `.aws`, `node_modules`,
+  credentials or prior memory were copied/inherited. This proves the recorded
+  local revision, not remote GitHub cloning/visibility or an independent human.
+- **Agent entry point:** [How → AI agent clean checkout](HOW.md#ai-agent-clean-checkout),
+  linked from `AGENTS.md`, gives ordered commands, expected exits/verdicts,
+  service-mode checks, failure handling and an explicit human-approval table.
+  Local setup proceeds under the task request; paid calls, live scope access,
+  remote provisioning/retained writes, secrets and publishing require their
+  specific authorization. Existing approvals persist. No product code changed;
+  these guide changes were checked separately from the clean revision.
+- **Install/proof:** Node **24.19.0**, npm **11.17.0**;
+  `npm ci --no-audit --no-fund` installed **38 packages in 9s**, exit **0**.
+  The first registry attempt failed with sandbox DNS `EAI_AGAIN`; the permitted
+  attempt passed. An isolated-home version-manager shim initially returned 126;
+  selecting the already installed Node bin resolved the environment issue.
+  npm warned about pending esbuild install-script review; no bulk approval,
+  global policy change or dependency/lockfile edits were made.
+- **Executed:** the runbook's scripted/mock CLI B/A/C all exited **0**, with
+  rejection/conditional recommendation/rejection; missing exited **2**, partial
+  `needs_verification`. History was disabled, citations resolved, and B/C showed
+  fresh proposal contradictions. `npm test` passed **235/235** with local
+  loopback/subprocess permission. `npm run typecheck`, `npm run typecheck:aws`,
+  `npm run lint` all exited **0**. Scripted `evaluate` returned **8/8 correct**,
+  **0 unsafe positives**, **44/44 valid citations**. Scripted `demo:warm --json`
+  passed cold/warm/changed with real temporary local H-MEM. The verification
+  harness initially merged progress stderr into JSON; parsing the existing
+  successful result separately resolved that harness error without rerunning it.
+- **Web/cleanliness:** `npm run demo:web -- --no-open` served loopback HTTP **200**;
+  `/api/config` reported no configured model or Zetaris. Stopped only that server.
+  Final `git diff --exit-code` and `git status --short` were clean. Full
+  [command/result receipt](history/clean-checkout-2026-10-25/summary.json),
+  [tests](history/clean-checkout-2026-10-25/tests.txt),
+  [evaluation](history/clean-checkout-2026-10-25/evaluation.txt) and
+  [installation](history/clean-checkout-2026-10-25/install-network-enabled.txt) retained.
+- **Limits/next action:** no paid inference, live AWS or remote Zetaris calls;
+  browser visual review, a separate reproducer/OS, remote clone availability,
+  artifact-wide security review and final assets/submission remain open.
+  The existing README is **189 lines**, conflicting with the 10-line AGENTS
+  rule; preserved the team's current README rather than changing its presentation
+  in a validation task. This is a separate documentation conflict, not a runtime
+  setup failure. The runbook review passed **108 local links/anchors**, balanced
+  fences, entry-point/approval assertions and receipt consistency. Retained
+  receipts had no credential-pattern matches; recorded rules JSON is unchanged.
+  `git diff --check` passed. Continue integrated source verification and final
+  deck/video.
+
 ### Concise captured trace example — 2026-10-25
 
 - **Gate/owner/mode:** submission trace clarity, Milad; documentation only.
@@ -383,7 +434,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 | Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Current admin identity fails least privilege; user provisions the dedicated account and Milad verifies it ([permission review](#zetaris-deployment-permission-review--2026-10-25)). Live evidence and event eligibility remain separate. |
 | Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
 | Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
-| Release | README/setup and retained proof exist; release is **not complete**. | Clean-checkout/independent reproduction, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
+| Release | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**. | Independent reproducer/visual review, README policy reconciliation, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
 
 **Next slice:** Zayan/team verifies populated live CloudWatch and opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. The repeated OpenAI A/B/C gate is closed; retain prior failures and complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
 
@@ -430,7 +481,7 @@ Apply [`the_bar.md`](../the_bar.md) as illustrative quality guidance without cha
 | Review criterion | Acceptance evidence / owner |
 | --- | --- |
 | Understandable agent behavior | [Role authority/shared state diagram](components.md), real-model trace showing evidence-dependent choices and evaluator critique; Milad. Scripted policy proof alone is insufficient for model behavior. |
-| Reproducible output and failures | [CLI trace walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace), A/B/C examples, missing-source result, exact modes and exits; independent clean-checkout reproduction still required; Milad/Zayan. |
+| Reproducible output and failures | [CLI trace walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace), A/B/C examples, missing-source result, exact modes and exits; local isolated clean-checkout proof recorded above; separate reproducer review remains; Milad/Zayan. |
 | Sponsor and development claims | [Canonical explanation and reused components](components.md#sponsor-technology-explanation), real service receipts, actual development-tool attribution, permission and portal verification; existing open gates remain open; both. |
 | Final presentation | Exported eight-topic slide deck and reviewed 1–4 minute video showing run, critique, sponsor proof, output and limitations; [storyboard](DEMO.md) is preparation only; Milad. |
 

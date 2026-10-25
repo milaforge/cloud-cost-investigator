@@ -1,0 +1,2 @@
+PASS: 108 local links/anchors; balanced fences; agent entry and approval table; receipts consistent; no credential-pattern matches; rules JSON unchanged
+PRE-EXISTING POLICY CONFLICT: README 189 lines; cap 10; preserved

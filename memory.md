@@ -620,3 +620,24 @@
   the evaluator's rejection auditable; do not invent quality-bar metadata or
   sponsor calls. Label live model execution separately from synthetic telemetry,
   and distinguish offline reproduction from the captured model run.
+
+## Coding-agent first-run contract (2026-10-25)
+
+- The expected repository reader may be Claude, Codex or another coding agent.
+  Keep the executable first-run sequence and approval table in `docs/HOW.md`,
+  linked from `AGENTS.md`; do not create a competing agent-specific setup guide.
+- Setup authorization covers locked installation, local tests, temporary H-MEM
+  and a loopback viewer. It does not imply paid calls, live account access,
+  retained remote records, provisioning, secret changes, commit or publication.
+  Reuse existing explicit authorization rather than asking again at each step.
+- A clean-checkout proof must not borrow `.env`, AWS configuration, installed
+  modules or persisted memory from the developer workspace. Use a fresh home
+  and npm cache when checking isolation; version-manager shims may need their
+  installed Node binary selected explicitly. Registry access and local fixture
+  permissions are environment requirements, not reasons to change product code.
+- First-run examples explicitly disable history, since `--evidence mock` alone
+  does not disable configured historical reads/appends. H-MEM is vendored;
+  `npm run setup` refreshes upstream code and is not first installation.
+- Keep progress stderr separate from JSON stdout. Missing-source exit 2 is an
+  expected safe partial result. Local runtime proof, browser visual review,
+  remote clone availability and live services remain separate evidence classes.

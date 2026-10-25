@@ -1,0 +1,143 @@
+{
+  "revision": "391cdef38bba8a8fc0eb3ac2b9f5f02632b68062",
+  "origin": "git clone --no-local of local repository; no remote fetch",
+  "node_version": "v24.19.0",
+  "npm_version": "11.17.0",
+  "isolation": {
+    "fresh_home": true,
+    "fresh_npm_cache": true,
+    "credentials_not_inherited": true,
+    "env_file_absent": true,
+    "prior_memory_absent": true
+  },
+  "install": {
+    "command": "npm ci --no-audit --no-fund",
+    "exit_code": 0,
+    "packages_added": 38,
+    "elapsed_seconds_reported": 9,
+    "initial_restricted_attempt": "EAI_AGAIN to public npm registry; subsequent permitted attempt passed",
+    "package_manager_warning": "npm reported pending allow-scripts review for esbuild; no bulk script approval or policy change made; installed CLI and checks passed"
+  },
+  "scenarios": [
+    {
+      "scenario": "B",
+      "exit_code": 0,
+      "completion_status": "complete",
+      "verdict": "not_recommended",
+      "integration_mode": "mock",
+      "planner_mode": "scripted",
+      "history_configured": false
+    },
+    {
+      "scenario": "A",
+      "exit_code": 0,
+      "completion_status": "complete",
+      "verdict": "conditional_recommendation",
+      "integration_mode": "mock",
+      "planner_mode": "scripted",
+      "history_configured": false
+    },
+    {
+      "scenario": "C",
+      "exit_code": 0,
+      "completion_status": "complete",
+      "verdict": "not_recommended",
+      "integration_mode": "mock",
+      "planner_mode": "scripted",
+      "history_configured": false
+    },
+    {
+      "scenario": "missing",
+      "exit_code": 2,
+      "completion_status": "partial",
+      "verdict": "needs_verification",
+      "integration_mode": "mock",
+      "planner_mode": "scripted",
+      "history_configured": false
+    }
+  ],
+  "checks": [
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "result": "235/235"
+    },
+    {
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "command": "npm run typecheck:aws",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "command": "npm run lint",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    {
+      "command": "git diff --exit-code",
+      "exit_code": 0,
+      "result": "clean"
+    },
+    {
+      "command": "git status --short",
+      "exit_code": 0,
+      "result": "clean"
+    }
+  ],
+  "evaluation": {
+    "command": "npm run --silent evaluate -- --planner scripted",
+    "exit_code": 0,
+    "disposition_correct": 8,
+    "cases": 8,
+    "unsafe_positives": 0,
+    "unsafe_cases": 3,
+    "unverified_positives": 0,
+    "unknown_cases": 3,
+    "citations": {
+      "valid": 44,
+      "total": 44
+    }
+  },
+  "memory": {
+    "command": "npm run --silent demo:warm -- --planner scripted --json",
+    "exit_code": 0,
+    "passed": true,
+    "phases": [
+      {
+        "phase": "cold",
+        "verdict": "not_recommended",
+        "hmem": "ok"
+      },
+      {
+        "phase": "warm",
+        "verdict": "not_recommended",
+        "hmem": "ok"
+      },
+      {
+        "phase": "changed",
+        "verdict": "conditional_recommendation",
+        "hmem": "ok"
+      }
+    ],
+    "note": "Progress is stderr; capture stdout separately for machine-readable JSON. Initial harness parse failed after merging streams; existing result parsed successfully without rerun."
+  },
+  "web": {
+    "command": "npm run demo:web -- --no-open",
+    "page_http_status": 200,
+    "services_configured": false,
+    "browser_visual_check": "not run"
+  },
+  "not_run": [
+    "paid model calls",
+    "live AWS",
+    "remote Zetaris",
+    "GitHub clone/visibility",
+    "visual browser review",
+    "different OS or independent human reproduction"
+  ],
+  "passed": true
+}

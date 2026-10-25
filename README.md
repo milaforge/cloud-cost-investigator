@@ -187,3 +187,5 @@ npm run demo:web
 
 - real-service controls are opt-in.
 - Load existing JSON reports or inspect evidence in the UI.
+
+See [example traces](./docs/TRACE_EXAMPLE.md).

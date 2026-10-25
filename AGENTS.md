@@ -8,6 +8,17 @@
 4. [`memory.md`](memory.md): rationale for repository decisions and explicit superseded decisions.
 5. [`the_bar.md`](the_bar.md): team-adopted implementation and submission quality bar. Apply its recommendations to the existing architecture; illustrative agents, technology roles, trace fields and fallbacks are not mandatory designs.
 
+### First run for coding agents
+
+Claude, Codex and other coding agents should follow
+[`docs/HOW.md#ai-agent-clean-checkout`](docs/HOW.md#ai-agent-clean-checkout)
+for the ordered clean-checkout procedure, expected results and human-approval
+boundaries. That procedure starts with synthetic evidence and scripted planning;
+a setup/validation request alone does not authorize paid inference, live account
+access or retained remote writes. Existing explicit task authorization remains
+valid; do not request it again. Do not run `npm run setup` for first installation:
+H-MEM is already vendored and that command refreshes it from upstream.
+
 Keep these documents aligned when an agreed decision changes. Rules are locally recorded event notes, not independently verified portal requirements. Resolve discrepancies and material submission conflicts with the team; do not invent requirements. The README and starter code do not override the chosen track or rubric. Never infer completion from a plan, file, or elapsed day.
 
 ## Mission and priorities
@@ -57,9 +68,17 @@ The release checklist in `docs/EXECUTION_PLAN.md` is authoritative. It must incl
 
 ## Documentation hierarchy
 
-Keep the root `README.md` at most 10 lines and begin with mandatory hackathon participation. It must answer **What** in three seconds, then link only to **Why** (`docs/WHY.md`) and **How** (`docs/HOW.md`). Include the mandatory concise runtime and external-service dependencies, setup and usage in the root README within that cap; distinguish demo prerequisites from service-dependent features. Why explains the problem; How owns the full setup and links to deeper references, including the explicit Zetaris, Meterless and NVIDIA sponsor explanation in `docs/components.md`. Verify public repository visibility before claiming that submission requirement passed. Give each detailed topic one canonical home: link instead of copying setup, contracts, learning mechanisms, results or status across pages. Use consistent What / Why / How navigation. Keep current progress only in `docs/EXECUTION_PLAN.md`; dated receipts under `docs/history/` are historical evidence, never competing instructions. Preserve the recorded rules JSON and failed measurements.
+Keep the root `README.md` at most 10 lines and begin with mandatory hackathon participation. It must answer **What** in three seconds, then link only to  **How** (`docs/HOW.md`). Include the mandatory concise runtime and external-service dependencies, setup and usage in the root README within that cap; distinguish demo prerequisites from service-dependent features. Why explains the problem; How owns the full setup and links to deeper references, including the explicit Zetaris, Meterless and NVIDIA sponsor explanation in `docs/components.md`. Verify public repository visibility before claiming that submission requirement passed. Give each detailed topic one canonical home: link instead of copying setup, contracts, learning mechanisms, results or status across pages. Use consistent What / Why / How navigation. Keep current progress only in `docs/EXECUTION_PLAN.md`; dated receipts under `docs/history/` are historical evidence, never competing instructions. Preserve the recorded rules JSON and failed measurements.
 
 ## Submission quality bar
+
+Visitor-facing agent diagrams should foreground dynamic choices and feedback
+with explicit decision notation. Show Zetaris through its useful decision
+follow-through and validated outcome-learning scenarios; describing it only as
+optional history obscures its role. Present it as a primary component for
+long-term improvement, with the durable decision record feeding validated
+outcome learning through H-MEM. Preserve the separation of historical
+context, learned check priorities and fresh evidence.
 
 Keep the demo UI verdict-first, lean and concise: show the shutdown disposition,
 then the evidence-driven steps with honestly labeled timestamps. Put complementary
