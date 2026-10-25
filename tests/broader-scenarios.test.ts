@@ -117,6 +117,7 @@ for (const condition of [
       if (condition === 'partial') {
         o.status = 'partial';
         o.coverage.complete = false;
+        o.missing_fields.push('incomplete_job_schedule');
       }
       if (condition === 'owner_unknown') c.owner_confirmed = false;
       if (condition === 'calendar_unknown') c.calendar_reviewed = false;
@@ -134,6 +135,26 @@ for (const condition of [
     });
     assert.equal(r.candidates[0].verdict, 'needs_verification');
     assert.equal(r.candidates[0].estimated_monthly_savings, null);
+    const expectedAction = {
+      missing_clearance: /Obtain owner, calendar and recovery clearance/,
+      non_authoritative:
+        /Ask the workload owner to supply an authoritative job schedule/,
+      partial: /get_ec2_operations \(partial\)/,
+      owner_unknown: /Ask the workload owner to confirm/,
+      calendar_unknown: /Review the job calendar and exceptional dates/,
+      recovery_unknown: /Verify stop\/start recovery readiness/,
+      expired: /Renew clearance to cover 2026-10-01/,
+      mismatch: /Reconcile operations and dependency clearances/,
+      noncritical_job: /Resolve overlapping jobs/,
+      coarse_metrics: /five-minute or finer resolution/,
+      high_peak: /exceeds the low-utilization policy thresholds/,
+    }[condition];
+    assert.match(r.candidates[0].missing_checks.join(' '), expectedAction);
+    assert.match(r.candidates[0].next_human_actions.join(' '), expectedAction);
+    assert.match(
+      r.candidates[0].next_human_actions.join(' '),
+      /Rerun the investigation with fresh evidence/,
+    );
   });
 }
 for (const condition of [

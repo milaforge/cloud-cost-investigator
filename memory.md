@@ -1,5 +1,17 @@
 # Project Memory
 
+## Actionable unresolved checks (2026-10-25)
+
+- Keep diagnostic reasons in the scheduling policy beside the checks they
+  explain. The same assessment feeds positive proof and unresolved human actions,
+  preventing report advice from drifting from recommendation eligibility.
+- Retain all existing thresholds, matching operational clearances and current
+  evidence requirements. Diagnose missing sources, owner/calendar/recovery gaps,
+  expired clearance, overlapping jobs and conflicting clearance details without
+  treating an action checklist as evidence or approval.
+- An absent accepted observation is "no validated observation", not "not queried":
+  invalid or failed attempted calls must not disappear from the explanation.
+
 ## Recommendation authority and window scope (2026-10-25)
 
 - CCI is a cost optimization recommendation system, starting with EC2 scheduling.

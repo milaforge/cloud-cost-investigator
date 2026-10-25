@@ -68,6 +68,14 @@ For three reproducible input/output cases, run the same JSON command with `--sce
 
 ## Failure behavior
 
+For `needs_verification`, `missing_checks` identifies the evidence or clearance
+that failed policy, and `next_human_actions` names the owner review, source
+retrieval or recovery check needed before a fresh investigation. Source statuses
+remain explicit; "no validated observation" can include a failed or rejected
+retrieval and does not claim the tool was never attempted. Resolving a checklist
+does not itself approve shutdown: rerun with fresh evidence and obtain authorized
+human approval before an infrastructure change.
+
 | Trigger | Actual response |
 | --- | --- |
 | Invalid flags/request or invalid planner configuration | Exit 1 with a bounded message; no silent planner/evidence fallback. |

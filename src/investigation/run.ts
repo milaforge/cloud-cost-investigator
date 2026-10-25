@@ -33,6 +33,7 @@ import {
   sanitizedPlannerFailure,
 } from './planner.ts';
 import {
+  assessScheduling,
   schedulingProof,
   calculateSavings,
   rankCandidates,
@@ -632,30 +633,13 @@ export async function runInvestigation(
     if (candidate && candidate.verdict === 'needs_verification') {
       candidate.explanation =
         'Critical operational authority or complete evidence is unresolved; no shutdown recommendation is issued.';
-      for (const tool of [
-        'get_ec2_metrics',
-        'get_ec2_operations',
-        'get_ec2_dependencies',
-      ]) {
-        const obs = find(tool);
-        if (
-          !usable(obs) ||
-          !obs.coverage.complete ||
-          !obs.coverage.authoritative ||
-          obs.missing_fields.length
-        )
-          candidate.missing_checks.push(
-            `${tool}: require complete authoritative evidence`,
-          );
-      }
-      if (!candidate.proposed_window)
-        candidate.missing_checks.push(
-          'No supported initial scheduling window established.',
-        );
-      if (!candidate.missing_checks.length)
-        candidate.missing_checks.push(
-          'Require matching owner, calendar and recovery clearance from operations and dependencies; all jobs, peaks and complete coverage must permit the window.',
-        );
+      candidate.missing_checks.push(
+        ...assessScheduling(request, candidate, evidence).missing_checks,
+      );
+      candidate.next_human_actions = [
+        ...candidate.missing_checks,
+        'Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change.',
+      ];
       if (candidate.proposed_window)
         candidate.hypotheses.push({
           window: candidate.proposed_window,

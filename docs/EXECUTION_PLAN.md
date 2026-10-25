@@ -11,6 +11,22 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Actionable unresolved recommendation checks — 2026-10-25
+
+- **Gate/owner/mode:** report usefulness, Milad; synthetic/fixture evidence.
+  Policy assessment now returns both existing positive proof and actionable
+  reasons. Unresolved reports name workload/service-owner reviews, missing CPU
+  coverage/resolution, calendar/recovery confirmation, expired clearance and
+  conflicting clearance details, then request a fresh run and human approval.
+  Existing thresholds, authority requirements and savings guards are preserved.
+- **Verification:** focused investigation, broader-scenario, AWS-adapter and
+  report tests passed **84/84**; `npm run typecheck` and scoped Biome lint passed.
+  Assertions cover the concrete next action for each existing clearance failure.
+- **Limits/next action:** no live calls or infrastructure changes. Continue
+  independent policy/report-boundary regression proof. Operational collection is
+  awaiting identification of the available job/dependency systems; current AWS
+  adapter still defers missing operational sources.
+
 ### Recommendation wording — 2026-10-25
 
 - **Gate/owner/mode:** recommendation clarity, Milad; UI wording only. Verdicts

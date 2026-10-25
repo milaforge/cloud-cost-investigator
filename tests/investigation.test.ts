@@ -131,6 +131,14 @@ test('unavailable operational data is distinct from no_match and never becomes s
       s.includes('get_ec2_operations'),
     ),
   );
+  assert.match(
+    r.candidates[0].next_human_actions.join(' '),
+    /get_ec2_operations \(unavailable\): Ask the workload owner.*timezones and exceptions/,
+  );
+  assert.match(
+    r.candidates[0].next_human_actions.join(' '),
+    /get_ec2_dependencies: Obtain owner, calendar and recovery clearance/,
+  );
 });
 
 for (const mutation of [

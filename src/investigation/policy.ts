@@ -59,29 +59,52 @@ export function estimatePeriod(request: InvestigationRequest): Window {
 const covers = (a: Window, b: Window) =>
   Date.parse(a.from) <= Date.parse(b.from) &&
   Date.parse(a.to) >= Date.parse(b.to);
-function cleared(
+function clearanceChecks(
   c: SchedulingClearance | undefined,
   window: Schedule,
   period: Window,
-): c is SchedulingClearance {
-  return (
-    !!c &&
-    sameSchedule(c.window, window) &&
-    covers(c.valid_window, period) &&
-    c.owner_confirmed &&
-    c.calendar_reviewed &&
-    c.recovery_verified &&
-    c.overhead_minutes < (window.end_hour_utc - window.start_hour_utc) * 60
-  );
+): string[] {
+  if (!c)
+    return [
+      'Obtain owner, calendar and recovery clearance for the proposed UTC window and estimate month.',
+    ];
+  const checks: string[] = [];
+  if (!sameSchedule(c.window, window))
+    checks.push('Obtain clearance for the exact proposed UTC window.');
+  if (!covers(c.valid_window, period))
+    checks.push(
+      `Renew clearance to cover ${period.from} through ${period.to}.`,
+    );
+  if (!c.owner_confirmed)
+    checks.push(
+      'Ask the workload owner to confirm the proposed shutdown window.',
+    );
+  if (!c.calendar_reviewed)
+    checks.push(
+      'Review the job calendar and exceptional dates with the owner.',
+    );
+  if (!c.recovery_verified)
+    checks.push(
+      'Verify stop/start recovery readiness with the workload owner.',
+    );
+  if (c.overhead_minutes >= (window.end_hour_utc - window.start_hour_utc) * 60)
+    checks.push(
+      'Review stop/start overhead; it must leave usable time within the proposed window.',
+    );
+  return checks;
 }
 /** Positive evidence is mandatory from both operational owners; empty query results alone are insufficient. */
-export function schedulingProof(
+export function assessScheduling(
   request: InvestigationRequest,
   candidate: CandidateReport,
   evidence: Observation[],
-): Observation[] | null {
+): { proof: Observation[] | null; missing_checks: string[] } {
   const window = candidate.proposed_window;
-  if (!window) return null;
+  const missing_checks: string[] = [];
+  if (!window)
+    missing_checks.push(
+      'get_ec2_metrics: Establish a potential UTC window from covered utilization data before requesting operational clearance.',
+    );
   const find = (tool: string) =>
     evidence.find(
       (o) => o.tool === tool && o.scope.instance_id === candidate.instance_id,
@@ -91,37 +114,107 @@ export function schedulingProof(
     dependencies = find('get_ec2_dependencies');
   const inventory = evidence.find((o) => o.tool === 'list_ec2_instances'),
     billing = evidence.find((o) => o.tool === 'get_ec2_billing');
-  if (
-    !authoritative(metrics) ||
-    !authoritative(operations) ||
-    !authoritative(dependencies) ||
-    !authoritative(inventory) ||
-    !authoritative(billing)
-  )
-    return null;
-  const m = metrics.data as MetricsData,
-    o = operations.data as OperationsData,
-    d = dependencies.data as DependenciesData;
+  const sources = [
+    [
+      'list_ec2_instances',
+      inventory,
+      'Retrieve complete scoped EC2 inventory.',
+    ],
+    [
+      'get_ec2_billing',
+      billing,
+      'Retrieve complete matching compute-cost evidence.',
+    ],
+    [
+      'get_ec2_metrics',
+      metrics,
+      'Retrieve complete CPU averages and peaks for the observed period; missing samples cannot establish inactivity.',
+    ],
+    [
+      'get_ec2_operations',
+      operations,
+      'Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.',
+    ],
+    [
+      'get_ec2_dependencies',
+      dependencies,
+      'Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance.',
+    ],
+  ] as const;
+  for (const [tool, observation, action] of sources) {
+    const status = observation?.status ?? 'no validated observation';
+    if (!authoritative(observation))
+      missing_checks.push(`${tool} (${status}): ${action}`);
+  }
   const period = estimatePeriod(request);
   if (
     Date.parse(request.window.to) - Date.parse(request.window.from) <
-      7 * 86400000 ||
-    m.aggregation_minutes > 5 ||
-    m.average_cpu_percent > 10 ||
-    m.peak_cpu_percent > 20 ||
-    !sameSchedule(m.suggested_window, window) ||
-    o.jobs.some((j) => overlaps(j.window, window)) ||
-    d.requires_continuous_operation ||
-    !cleared(o.scheduling_clearance, window, period) ||
-    !cleared(d.scheduling_clearance, window, period)
+    7 * 86400000
   )
-    return null;
+    missing_checks.push(
+      'get_ec2_metrics: Collect at least seven days of utilization before reconsidering this window.',
+    );
+  if (authoritative(metrics)) {
+    const m = metrics.data as MetricsData;
+    if (m.aggregation_minutes > 5)
+      missing_checks.push(
+        'get_ec2_metrics: Retrieve CPU averages and peaks at five-minute or finer resolution.',
+      );
+    if (m.average_cpu_percent > 10 || m.peak_cpu_percent > 20)
+      missing_checks.push(
+        'get_ec2_metrics: Review observed CPU activity with the workload owner; this window exceeds the low-utilization policy thresholds.',
+      );
+    if (window && !sameSchedule(m.suggested_window, window))
+      missing_checks.push(
+        'get_ec2_metrics: Re-evaluate the proposed window against the window supported by current utilization evidence.',
+      );
+  }
+  if (!window) return { proof: null, missing_checks };
+  if (authoritative(operations)) {
+    const o = operations.data as OperationsData;
+    if (o.jobs.some((j) => overlaps(j.window, window)))
+      missing_checks.push(
+        'get_ec2_operations: Resolve overlapping jobs with the workload owner before proposing this window again.',
+      );
+    missing_checks.push(
+      ...clearanceChecks(o.scheduling_clearance, window, period).map(
+        (check) => `get_ec2_operations: ${check}`,
+      ),
+    );
+  }
+  if (authoritative(dependencies)) {
+    const d = dependencies.data as DependenciesData;
+    if (d.requires_continuous_operation)
+      missing_checks.push(
+        'get_ec2_dependencies: Review the continuous-operation requirement with service owners before reconsidering this window.',
+      );
+    missing_checks.push(
+      ...clearanceChecks(d.scheduling_clearance, window, period).map(
+        (check) => `get_ec2_dependencies: ${check}`,
+      ),
+    );
+  }
   if (
-    JSON.stringify(o.scheduling_clearance) !==
-    JSON.stringify(d.scheduling_clearance)
+    authoritative(operations) &&
+    authoritative(dependencies) &&
+    JSON.stringify((operations.data as OperationsData).scheduling_clearance) !==
+      JSON.stringify(
+        (dependencies.data as DependenciesData).scheduling_clearance,
+      )
   )
-    return null;
-  return [metrics, operations, dependencies];
+    missing_checks.push(
+      'Reconcile operations and dependency clearances: window, validity, excluded dates and stop/start overhead must match.',
+    );
+  if (missing_checks.length || !metrics || !operations || !dependencies)
+    return { proof: null, missing_checks };
+  return { proof: [metrics, operations, dependencies], missing_checks };
+}
+export function schedulingProof(
+  request: InvestigationRequest,
+  candidate: CandidateReport,
+  evidence: Observation[],
+): Observation[] | null {
+  return assessScheduling(request, candidate, evidence).proof;
 }
 /** Next UTC calendar month, compute-only marginal on-demand rate, conservative billing-unit rounding. */
 export function calculateSavings(
