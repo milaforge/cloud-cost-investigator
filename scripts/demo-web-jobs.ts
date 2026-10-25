@@ -9,6 +9,8 @@ import {
   identifier,
   integer,
   validateScope,
+  validateOwnerEvidence,
+  type OwnerEvidence,
 } from '../src/contracts.ts';
 import { INVESTIGATION_TIMEOUT_MS } from '../src/investigation/limits.ts';
 import { modelConfigFromEnv } from '../src/config.ts';
@@ -25,6 +27,7 @@ export type DemoRun = {
   account: string;
   region: string;
   max_candidates: number;
+  owner_evidence?: OwnerEvidence[];
 };
 export function validateDemoRun(value: unknown): DemoRun {
   const o = exact(value, [
@@ -39,6 +42,7 @@ export function validateDemoRun(value: unknown): DemoRun {
     'account',
     'region',
     'max_candidates',
+    'owner_evidence',
   ]);
   const kind = member(o.kind, ['investigate', 'learn', 'followup']);
   const planner = member(o.planner, ['scripted', 'model']);
@@ -74,7 +78,12 @@ export function validateDemoRun(value: unknown): DemoRun {
   const scope = validateScope({ account_id: o.account, region: o.region });
   if (evidence === 'aws' && !/^\d{12}$/.test(scope.account_id))
     throw new Error('AWS account required');
+  if (o.owner_evidence !== undefined && kind !== 'investigate')
+    throw new Error('Owner evidence is an investigation option');
   return {
+    ...(o.owner_evidence === undefined
+      ? {}
+      : { owner_evidence: validateOwnerEvidence(o.owner_evidence, scope) }),
     request_id: identifier(o.request_id),
     kind,
     planner,

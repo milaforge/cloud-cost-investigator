@@ -1,0 +1,140 @@
+{
+  "date_utc": "2026-10-25",
+  "owner": "Milad",
+  "integration_mode": "live",
+  "region": "eu-west-3",
+  "command": "AWS_PROFILE=cci AWS_REGION=eu-west-3 AWS_ENABLE_COST_EXPLORER=true npm run integration:cloud",
+  "tls_verification": true,
+  "aws_writes": 0,
+  "model_calls": 0,
+  "history_calls": 0,
+  "bounds": {
+    "suite_timeout_ms": 150000,
+    "collector_timeout_ms": 20000,
+    "max_pages_per_read": 3,
+    "max_billing_instances": 1
+  },
+  "first_run": {
+    "passed_tool_checks": 4,
+    "total_tool_checks": 5,
+    "exit_code": 1,
+    "billing_status": "error",
+    "billing_failure_code": "INVALID_INPUT"
+  },
+  "bounded_followup_diagnostic": {
+    "billing_periods_returned": 14,
+    "date_only_periods": 0,
+    "non_daily_periods": 0,
+    "finding": "AWS returned timestamp periods; the parser incorrectly appended another timestamp."
+  },
+  "final_run": {
+    "passed_tool_checks": 4,
+    "total_tool_checks": 5,
+    "exit_code": 1,
+    "tools": [
+      {
+        "tool": "list_ec2_instances",
+        "check": "passed",
+        "status": "partial",
+        "missing_fields": [
+          "MISSING_METADATA"
+        ]
+      },
+      {
+        "tool": "get_ec2_billing",
+        "check": "failed",
+        "status": "unavailable",
+        "missing_fields": [
+          "MISSING_METADATA",
+          "inventory_incomplete",
+          "billing_incomplete",
+          "billing_records_unavailable",
+          "billing_currency_and_resource_records_unavailable"
+        ]
+      },
+      {
+        "tool": "get_ec2_metrics",
+        "check": "passed",
+        "status": "partial",
+        "missing_fields": [
+          "INCOMPLETE_COVERAGE"
+        ]
+      },
+      {
+        "tool": "get_ec2_operations",
+        "check": "passed",
+        "status": "partial",
+        "missing_fields": [
+          "JOBS_OUTSIDE_SSM_UNKNOWN",
+          "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+        ]
+      },
+      {
+        "tool": "get_ec2_dependencies",
+        "check": "passed",
+        "status": "partial",
+        "missing_fields": [
+          "DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN",
+          "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "The earlier final_run had unavailable resource billing; subsequent_recheck records newly available billing without weakening assertions.",
+    "Successful access does not establish complete coverage, shutdown safety or savings.",
+    "Only sanitized statuses and counts are retained; no account IDs, resource IDs, costs or raw AWS responses."
+  ],
+  "subsequent_recheck": {
+    "date_utc": "2026-10-25",
+    "passed_tool_checks": 5,
+    "total_tool_checks": 5,
+    "node_test_count_including_parent": 6,
+    "exit_code": 0,
+    "suite_and_collector_unchanged": true,
+    "billing_records_and_currency_returned": true,
+    "tools": [
+      {
+        "tool": "list_ec2_instances",
+        "status": "partial",
+        "missing_fields": [
+          "MISSING_METADATA"
+        ]
+      },
+      {
+        "tool": "get_ec2_billing",
+        "status": "partial",
+        "missing_fields": [
+          "MISSING_METADATA",
+          "inventory_incomplete",
+          "INCOMPLETE_COVERAGE",
+          "billing_incomplete"
+        ]
+      },
+      {
+        "tool": "get_ec2_metrics",
+        "status": "partial",
+        "missing_fields": [
+          "INCOMPLETE_COVERAGE"
+        ]
+      },
+      {
+        "tool": "get_ec2_operations",
+        "status": "partial",
+        "missing_fields": [
+          "JOBS_OUTSIDE_SSM_UNKNOWN",
+          "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+        ]
+      },
+      {
+        "tool": "get_ec2_dependencies",
+        "status": "partial",
+        "missing_fields": [
+          "DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN",
+          "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+        ]
+      }
+    ],
+    "limitation": "Source access and usable observations passed; incomplete coverage and unknown operational authority still prevent a safety or numeric savings claim."
+  }
+}

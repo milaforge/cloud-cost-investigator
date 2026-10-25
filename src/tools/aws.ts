@@ -192,6 +192,22 @@ class UnavailableError extends Error {
     super(code);
   }
 }
+// Cost Explorer DateInterval accepts date-only strings and UTC timestamps.
+// Daily billing must still describe real UTC midnights, never shifted/rolled dates.
+function billingDay(value: string | undefined): string {
+  if (
+    typeof value !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}(?:T00:00:00(?:\.000)?Z)?$/.test(value)
+  )
+    throw new DataError('Invalid billing date');
+  const date = new Date(value.length === 10 ? `${value}T00:00:00Z` : value);
+  if (
+    !Number.isFinite(+date) ||
+    date.toISOString().slice(0, 10) !== value.slice(0, 10)
+  )
+    throw new DataError('Invalid billing date');
+  return date.toISOString();
+}
 function classify(error: unknown) {
   const name = error instanceof Error ? error.name : '';
   const networkCode =
@@ -522,8 +538,10 @@ export function createToolsWithTransport(
                     response.$metadata?.requestId,
                   ),
                 );
-                if (Object.values(data).some((v) => v === null))
-                  partial(r, 'MISSING_METADATA', instance.InstanceId);
+                // Optional descriptive metadata does not reduce enumerated resource coverage.
+                for (const [field, value] of Object.entries(data))
+                  if (value === null)
+                    r.issues.push(issue('MISSING_METADATA', field, 'info'));
               }
             }
             if (!response.NextToken) break;
@@ -737,10 +755,9 @@ export function createToolsWithTransport(
               if (!day.TimePeriod?.Start || !day.TimePeriod.End)
                 throw new DataError('Missing billing period');
               const periodWindow = {
-                from: `${day.TimePeriod.Start}T00:00:00.000Z`,
-                to: `${day.TimePeriod.End}T00:00:00.000Z`,
+                from: billingDay(day.TimePeriod.Start),
+                to: billingDay(day.TimePeriod.End),
               };
-              checkWindow(periodWindow, 86400);
               if (
                 Date.parse(periodWindow.from) < Date.parse(window.from) ||
                 Date.parse(periodWindow.to) > Date.parse(window.to) ||
@@ -748,7 +765,7 @@ export function createToolsWithTransport(
                   86400000
               )
                 throw new DataError('Unexpected billing period');
-              if (day.Groups?.length) days.add(day.TimePeriod.Start);
+              if (day.Groups?.length) days.add(periodWindow.from);
               for (const group of day.Groups ?? []) {
                 const amount = group.Metrics?.UnblendedCost?.Amount,
                   currency = group.Metrics?.UnblendedCost?.Unit;

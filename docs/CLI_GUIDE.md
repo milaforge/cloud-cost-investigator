@@ -2,6 +2,14 @@
 
 [What](../README.md) · [How](HOW.md)
 
+When partial or unavailable metrics prevent an initial window, the report uses
+`metrics_evidence_incomplete` and explains that targeted jobs/dependency checks
+were not reached. This is a prerequisite stop, not evidence that those workloads
+are absent. Metric sample counts and affected fields appear in the report;
+optional inventory metadata is separate from resource discovery coverage.
+[Owner statements captured in the web UI](HOW.md#open-the-web-demo) are separate,
+unverified report context and do not change the verdict.
+
 ## Run
 
 Install dependencies using [How](HOW.md#run-the-demo) first.
@@ -79,7 +87,8 @@ human approval before an infrastructure change.
 | Trigger | Actual response |
 | --- | --- |
 | Invalid flags/request or invalid planner configuration | Exit 1 with a bounded message; no silent planner/evidence fallback. |
-| Tool error, timeout or invalid observation | Record the failed attempt without accepting its payload; use remaining bounded checks, then defer unresolved safety. |
+| Required inventory/billing discovery unavailable, error, timeout or invalid observation | Stop immediately with `required_tool_failed:<tool>`, a named diagnostic and exit 1. No further planner/tool calls. Inventory must precede billing; usable partial metadata is retained. Authenticated empty inventory finishes without billing. |
+| Operational tool error, timeout or invalid observation | Record the failed attempt without accepting its payload; use remaining bounded checks, then defer unresolved safety. |
 | `no_match`, partial or unavailable operational source | Preserve its distinct status; absence cannot establish authority or eliminate dependencies. |
 | Model transport/HTTP/schema failure | Record a sanitized failure and stop planning. Earlier evidence can yield a partial report (exit 2); no usable evidence yields failure (exit 1). |
 | Repeated action or exhausted tool/model/runtime budget | Stop rather than loop; preserve finished candidates and explicitly defer unresolved candidates. |
@@ -222,7 +231,7 @@ Tests cover actual discovery/rejection, changed jobs and suggested windows, miss
 ### Manual LLM integration test
 
 ```bash
-npm run test:integration
+npm run integration:modal
 ```
 
 Run this explicitly when checking access. It loads `.env`, uses the same `LLM_*`
@@ -244,6 +253,52 @@ another destination for the existing key.
 `npm test` runs only offline tests in `tests/*.test.ts`; the live test lives in
 `tests/integration/llm.test.ts` and runs only via explicit integration-test invocation.
 No integration command was added to normal tests or build hooks.
+The former `npm run test:integration` remains a model-only compatibility alias;
+it never invokes the cloud suite.
+
+### Manual AWS integration tests
+
+```bash
+AWS_PROFILE=your-read-only-profile AWS_REGION=your-region npm run integration:cloud
+# Explicit opt-in to potentially charged resource-level Cost Explorer queries:
+AWS_PROFILE=your-read-only-profile AWS_REGION=your-region AWS_ENABLE_COST_EXPLORER=true npm run integration:cloud
+```
+
+For the configured dedicated CCI profile in Paris, the verified command is:
+
+```bash
+AWS_PROFILE=cci AWS_REGION=eu-west-3 AWS_ENABLE_COST_EXPLORER=true npm run integration:cloud
+```
+
+Shell variables override `.env`. A bare command can therefore select another
+profile/region or leave billing disabled; use explicit selectors when checking
+this scope. The suite keeps unavailable billing as a failure until scoped records
+are actually returned.
+
+This separate live suite loads `.env` with shell precedence, verifies TLS and
+uses the production AWS collectors and observation adapter. It authenticates
+through the Node SDK credential chain, discovers real inventory/scope, and then
+tests billing, CPU metrics, SSM maintenance and ELBv2 dependencies. Set
+`AWS_EXPECTED_ACCOUNT_ID` to guard the authenticated account. An inventory
+failure stops all downstream reads; an empty account passes the inventory access
+check but fails the suite because resource checks cannot be verified. No resource
+IDs are fabricated. Billing queries cover at most one discovered instance;
+without explicit Cost Explorer opt-in that check fails without a billing request.
+
+The suite bounds each collector to 20 seconds, pagination to three pages per
+read, and total runtime to 150 seconds. Missing credentials, denied access,
+unavailable sources or unusable observations fail the suite rather than skip.
+Partial inventory metadata and incomplete metric history are printed as gaps;
+successful empty SSM/ELBv2 reads can pass access checks while remaining
+non-authoritative for safety. Diagnostics contain statuses and codes, not account
+IDs, resource IDs, costs or raw provider responses. No model, historical-store or
+AWS write calls run. `npm test` remains offline.
+
+The billing collector normalizes date-only and UTC-midnight response periods,
+while rejecting invalid dates, shifted times and out-of-scope or non-daily
+periods. AWS's [DateInterval contract](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_DateInterval.html)
+and [resource-cost response example](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_GetCostAndUsageWithResources.html)
+include both date and timestamp forms.
 
 ## Inherited starter
 

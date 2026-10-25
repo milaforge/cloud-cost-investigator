@@ -1,0 +1,105 @@
+{
+  "started_at": "2026-10-25T13:40:03.221Z",
+  "mode": "live",
+  "profile": "cci",
+  "region": "eu-west-3",
+  "observation_window": {
+    "from": "2026-10-11T00:00:00.000Z",
+    "to": "2026-10-25T00:00:00.000Z"
+  },
+  "period_seconds": 300,
+  "billing_queries": 0,
+  "model_calls": 0,
+  "infrastructure_writes": 0,
+  "raw_metrics_retained": false,
+  "inventory": {
+    "status": "partial",
+    "count": 1,
+    "issues": [
+      "MISSING_METADATA"
+    ]
+  },
+  "collector": {
+    "status": "partial",
+    "source": "aws_sdk",
+    "collected_at": "2026-10-25T13:40:04.785Z",
+    "issues": [
+      {
+        "code": "INCOMPLETE_COVERAGE",
+        "field": "cpu_avg"
+      },
+      {
+        "code": "INCOMPLETE_COVERAGE",
+        "field": "cpu_max"
+      },
+      {
+        "code": "INCOMPLETE_COVERAGE",
+        "field": "network_in"
+      },
+      {
+        "code": "INCOMPLETE_COVERAGE",
+        "field": "network_out"
+      },
+      {
+        "code": "MEMORY_NOT_COLLECTED",
+        "field": "memory"
+      }
+    ],
+    "series": [
+      {
+        "metric": "CPUUtilization",
+        "statistic": "Average",
+        "unit": "Percent",
+        "expected_points": 4032,
+        "returned_points": 79,
+        "coverage_complete": false,
+        "finite_values": true,
+        "first_sample_utc": "2026-10-24T17:25:00.000Z",
+        "last_sample_utc": "2026-10-24T23:55:00.000Z"
+      },
+      {
+        "metric": "CPUUtilization",
+        "statistic": "Maximum",
+        "unit": "Percent",
+        "expected_points": 4032,
+        "returned_points": 79,
+        "coverage_complete": false,
+        "finite_values": true,
+        "first_sample_utc": "2026-10-24T17:25:00.000Z",
+        "last_sample_utc": "2026-10-24T23:55:00.000Z"
+      },
+      {
+        "metric": "NetworkIn",
+        "statistic": "Sum",
+        "unit": "Bytes",
+        "expected_points": 4032,
+        "returned_points": 79,
+        "coverage_complete": false,
+        "finite_values": true,
+        "first_sample_utc": "2026-10-24T17:25:00.000Z",
+        "last_sample_utc": "2026-10-24T23:55:00.000Z"
+      },
+      {
+        "metric": "NetworkOut",
+        "statistic": "Sum",
+        "unit": "Bytes",
+        "expected_points": 4032,
+        "returned_points": 79,
+        "coverage_complete": false,
+        "finite_values": true,
+        "first_sample_utc": "2026-10-24T17:25:00.000Z",
+        "last_sample_utc": "2026-10-24T23:55:00.000Z"
+      }
+    ]
+  },
+  "cpu_consistency": {
+    "average_present": true,
+    "maximum_present": true,
+    "paired_samples": 79,
+    "maxima_at_least_averages": true
+  },
+  "result": "failed",
+  "failure_type": "TypeError",
+  "finished_at": "2026-10-25T13:40:05.912Z",
+  "verification_helper_failure": "Redundant validateObservation invocation omitted required action/run arguments after the agent adapter returned; corrected helper reuses the adapter internal runtime validation."
+}

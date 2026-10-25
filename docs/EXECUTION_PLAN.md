@@ -61,6 +61,195 @@
   Task 2 branch for review; upstream request-timing Windows portability remains
   a separate follow-up. Both Task 2 safety stashes remain retained locally.
 
+### Evidence diagnostics and supporting owner statements — 2026-10-25
+
+- **Gate/owner:** Days 3–4 useful live-evidence reporting, Milad; implemented and
+  verified with injected AWS transports, synthetic evidence and a local browser.
+  Optional inventory metadata is informational and remains visible per instance;
+  it no longer degrades resource enumeration or cascades into billing coverage.
+  Truncation and actual source failures retain their existing coverage gates.
+- **Report behavior:** named metric fields retain expected/returned sample counts,
+  interval and UTC sample bounds, including unavailable CPU summaries. A metrics
+  prerequisite stop is explicitly `metrics_evidence_incomplete`, explaining why
+  targeted jobs/dependency checks were not reached. Older reports still validate.
+- **Owner evidence:** user selected supporting context only. The web form captures
+  a scoped, attributed statement with reference and applicable dates; worker and
+  report validation preserve it for display/export. It cannot enter model prompts,
+  satisfy safety gates, authorize shutdown, or flow into H-MEM/Zetaris records.
+  Scope changes require renewed form opt-in. No production dependency was added.
+- **Verification:** `npm test` initially passed 285/291 with six sandbox-only
+  socket/child-process `EPERM` failures; the permitted rerun passed 291/291.
+  Final focused runner/collector/adapter/report/web suites passed 108/108 before
+  the additional missing-series regression. Both TypeScript checks, scoped Biome
+  lint, JS syntax and `git diff --check` passed. Final `npm test`: **292/292**,
+  including missing-series diagnostics and explicit owner-context exclusion from
+  H-MEM summaries and Zetaris history records.
+  A local Chromium harness exercised form → HTTP → isolated worker → report,
+  script-like text rendered inertly, JSON download/reload, coverage/metadata/stop
+  messages, and scope-change reset. Desktop and 390px mobile screenshots were
+  inspected; no horizontal overflow or page errors were observed.
+- **Limits/next action:** no fresh AWS, model or remote history calls; these checks
+  do not establish live coverage or operational clearance. Restart the web server
+  and rerun the live investigation to populate new diagnostics; old reports are
+  not retroactively enriched. Account owner/Zayan still owns adequate telemetry
+  and authoritative operational integrations. Permanent retirement remains outside
+  the scheduling verdict. Combined live-evidence/release gates stay open.
+
+### Execution-status correction and passing cloud recheck — 2026-10-25
+
+- **Gate/owner:** useful live diagnostics, Milad. The UI previously rendered
+  `partial`, `no_match`, `unavailable` and `error` as identical red crosses,
+  making a usable partial inventory look like an ignored tool failure. Execution
+  events now show visible labels: amber partial, neutral no-match, green complete,
+  red unavailable/failed. Copied event numbers retain punctuation and spacing.
+  Required discovery failures still stop immediately; no runner policy changed.
+- **UI proof:** a local Chromium fixture executing the actual `renderEvents`
+  source reproduced the misleading display before the patch and passed the
+  distinct-status DOM assertions afterward; the rendered screenshot was inspected.
+  Focused investigation/AWS adapter/CLI/web/job tests passed **69/69** with local
+  fixture permissions. JS syntax, scoped Biome lint, CSS formatting and
+  `git diff --check` passed. No new model or history call was needed.
+- **Live cloud recheck:** `AWS_PROFILE=cci AWS_REGION=eu-west-3
+  AWS_ENABLE_COST_EXPLORER=true npm run integration:cloud` now passes **5/5** tool
+  checks (Node reports **6/6** including the parent), exit **0**. Billing returned
+  resource records/currency this time; assertions were not weakened and no cloud
+  test or collector changes were needed. All five observations remain `partial`:
+  missing inventory metadata, incomplete billing/metric coverage and unknown
+  external operational/owner clearance remain explicit.
+- **Configuration:** this worker's inherited shell selects `rika-deploy` /
+  `eu-central-1` with billing disabled, so it needs the explicit selectors above
+  for the CCI scope. Shell precedence and credentials were preserved. The earlier
+  failed billing measurements remain in the receipt; the successful recheck does
+  not establish complete coverage, savings or scheduling safety.
+
+### Required discovery failure and isolated live tests — 2026-10-25
+
+- **Gate/owner:** Days 3–4 useful live-evidence failure behavior, Milad;
+  attributable billing data and complete operational coverage remain Zayan/team
+  and account-owner blockers. Inventory must precede billing. Unusable required
+  discovery now stops the runner immediately with `required_tool_failed:<tool>`,
+  a named diagnostic and exit 1, without another planner/tool call. Usable partial
+  metadata remains usable; authenticated empty inventory finishes without billing.
+  UI failure status and discovery gaps expose the failure explicitly.
+- **Commands:** `npm run integration:modal` isolates the existing one-call model
+  suite; `npm run integration:cloud` runs real bounded AWS collector/adapter checks.
+  `test:integration` remains a model-only compatibility alias. Neither live suite
+  runs under `npm test`; billing requires `AWS_ENABLE_COST_EXPLORER=true`.
+- **Offline proof:** failure-path regressions reproduced the previous continuation
+  and partial-status behavior before implementation. The first full sandbox run
+  hit six loopback/child-process `EPERM` failures and one model-test expectation
+  needing the new inventory-first order. After updating that expectation and
+  adding the negative ordering test, permitted `npm test` passed **281/281**.
+  Billing timestamp regressions then reproduced the live parser defect; after its
+  correction, final permitted `npm test` passed **287/287**. `npm run typecheck`,
+  `npm run typecheck:aws`, scoped Biome lint/TypeScript formatting,
+  `node --check src/web/app.js` and `git diff --check` passed.
+- **Live proof:** `AWS_PROFILE=cci AWS_REGION=eu-west-3
+  AWS_ENABLE_COST_EXPLORER=true npm run integration:cloud` used genuine SDK reads,
+  TLS verification and no model/history calls. First run: **4/5** tool checks
+  passed; billing failed with `INVALID_INPUT`. A single bounded diagnostic found
+  14 returned billing periods used timestamps rather than date-only strings.
+  The collector now normalizes both documented forms and rejects invalid dates,
+  shifted midnights and non-daily/out-of-scope source periods. Final cloud rerun:
+  **4/5** tool checks passed, suite exit **1**; billing is correctly `unavailable`
+  because no scoped resource billing records/currency were returned.
+  [Sanitized receipt](history/aws-integration-2026-10-25.json).
+- **Limits/next action:** inventory metadata and metric-history coverage remain
+  partial; successful empty SSM/ELBv2 reads do not prove workload safety. Account
+  owner/Zayan verifies populated resource billing before rerunning the cloud suite
+  and integrated investigation. No IAM, secrets, AWS features or infrastructure
+  changed. No paid model call, rendered-browser proof or completed release gate
+  is claimed by this task.
+
+### Persistent billing denial diagnosis — 2026-10-25
+
+- **Gate/owner/mode:** live attributable billing, Milad diagnoses / account owner
+  provisions; genuine AWS calls. A bounded network-enabled Node SDK diagnostic
+  explicitly selected `AWS_PROFILE=cci`, verified the expected IAM user with
+  STS, and made **one** account-scoped `GetCostAndUsageWithResources` request
+  for EC2 compute in the last complete UTC day. SDK attempts were one, with a
+  shared 20-second identity/billing deadline and TLS verification enabled.
+- **Result:** HTTP **400**, `AccessDeniedException`, exit **2**. Sanitized message
+  indicators identify Cost Explorer not enabled and organization/member-account
+  access; no missing identity-policy allow was reported. This does not enumerate
+  effective IAM/SCP permissions. The initial sandbox attempt stopped at identity
+  and made no billing query; network-enabled execution reached the service.
+  [Sanitized receipt](history/aws-billing-access-2026-10-25.json).
+- **Next action/blocker:** the account owner checks Cost Explorer enablement in
+  the management account where applicable, linked-account access and daily EC2
+  resource-level data preferences. Account setup and data preparation remain open;
+  the agent made no IAM, feature-enablement, secret or infrastructure changes and
+  did not repeat the billing query. No inference or history persistence ran.
+  The existing application still collapses these AWS denials into `ACCESS_DENIED`;
+  no product code changed in this diagnostic step. Receipt JSON parsing and
+  `git diff --check` passed; product tests were not rerun for documentation only.
+
+### Inventory denial diagnostics — 2026-10-25
+
+- **Gate/owner/mode:** useful incomplete-run reporting, Milad; injected AWS
+  transport and local fixtures only. The operator reported
+  `list_ec2_instances/unavailable/ACCESS_DENIED`; this blocks discovery before
+  shutdown safety is assessed. Safe local configuration inspection found a
+  different inherited profile/region from the separately verified CCI scope;
+  this is a recovery lead, not proof of the failed worker's identity.
+- **Change:** trace and discovery gaps retain tool/status/coverage and bounded
+  missing-field diagnostics. Inventory denial names server `AWS_PROFILE` and
+  `ec2:DescribeInstances` checks. Incomplete empty reports open discovery gaps;
+  the web view shows evidence codes directly and names tools in the full trace.
+  Existing reports remain readable without regeneration. No permissions,
+  credentials, scope defaults or recommendation gates changed.
+- **Executed proof:** the denied-inventory regression first failed on the old
+  generic trace. `node --import tsx --test --test-isolation=none
+  tests/aws-agent.test.ts tests/investigation.test.ts tests/report.test.ts`
+  then passed **57/57**, including denial/redaction and long diagnostic bounds.
+  The same test command with `tests/demo-web.test.ts tests/demo-web-jobs.test.ts`
+  passed **7/7** with local loopback access after sandbox `listen EPERM`.
+  `npm run typecheck`, `node --check src/web/app.js`, scoped Biome lint,
+  formatting for the three changed TypeScript files and `git diff --check`
+  passed. Existing unrelated formatting differences in `src/web/app.js` remain.
+- **Limits/next action:** no live AWS, paid inference or remote persistence;
+  no rendered-browser proof. Restart the local server with the intended approved
+  profile and choose the matching region in the browser. Resolve remaining
+  billing, metric coverage and operational-authority gaps independently; this
+  diagnostic fix does not establish live scheduling safety or close that gate.
+
+### Live CloudWatch verification — 2026-10-25
+
+- **Gate/owner/mode:** populated metrics, Milad; genuine read-only AWS calls using
+  `cci` in `eu-west-3`. **Access and populated retrieval verified; historical
+  coverage remains PARTIAL.** No product code, IAM settings or secrets changed.
+- **Command:** `AWS_PROFILE=cci AWS_REGION=eu-west-3
+  AWS_ENABLE_COST_EXPLORER=false NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx
+  docs/history/aws-cloudwatch-2026-10-25-probe.mjs`, network-enabled; exit **2**
+  intentionally reports incomplete coverage. The probe discovers one running
+  instance and calls the existing collector with a five-minute period, a shared
+  60-second verification budget and the collector's existing tool/page bounds.
+- **Result:** window **2026-10-11T00:00:00Z–2026-10-25T00:00:00Z** (exclusive end),
+  CPU Average/Maximum and NetworkIn/Out each returned **79/4032** expected samples.
+  All values are finite, the 79 paired CPU maxima are at least their averages,
+  and live scope/provenance/window checks passed. Samples span Oct 24
+  **17:25–23:55 UTC**. Missing earlier observations are not zero usage; the reason
+  for the missing history was not established. Today's partial UTC day is excluded.
+- **Agent-boundary proof:** the same retrieved collection, without another
+  CloudWatch read, passed `createAwsEvidenceProvider`'s runtime validator as a
+  live five-minute CPU summary, `partial`, non-authoritative/incomplete coverage,
+  with a generated evidence ID. This is not a full investigation or safety verdict.
+  [Sanitized receipt](history/aws-cloudwatch-2026-10-25.json) retains coverage
+  metadata only; raw values and account/resource identifiers were not persisted.
+- **Failed helper attempt retained:** the initial live retrieval succeeded, then
+  the temporary helper redundantly called `validateObservation` without its
+  required action/run arguments and exited **1/TypeError**. The corrected retained
+  reproducer reuses the adapter's internal validation; its separate live repeat
+  produced the result above. [Original attempt](history/aws-cloudwatch-2026-10-25-attempt1.json)
+  remains in the record. Reproducer syntax, scoped lint and receipt assertions
+  passed; no product tests were rerun because no product code changed.
+- **Limits/next action:** zero billing queries, model calls, remote history writes
+  or infrastructure mutations. Live CloudWatch access is no longer a blocker.
+  Obtain adequate historical coverage (positive policy needs at least seven days
+  with five-minute-or-finer data), verify explicitly opted-in resource-level
+  billing and obtain authoritative workload/owner evidence. Preserve deferral and
+  null savings wherever those requirements are unmet; combined live gate stays open.
+
 ### Dedicated CCI AWS profile and live reads — 2026-10-25
 
 - **Gate/owner/mode:** AWS identity and populated inventory access, user provisions /
@@ -598,13 +787,13 @@ This table summarizes the release checklist below. [Historical execution receipt
 | Gate | Verified state and proof | Remaining work / owner |
 | --- | --- | --- |
 | Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
-| AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). [CCI profile proof](#dedicated-cci-aws-profile-and-live-reads--2026-10-25) retrieves one live Paris instance and completes empty SSM/ELBv2 reads. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
+| AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). [CCI profile proof](#dedicated-cci-aws-profile-and-live-reads--2026-10-25) retrieves one live Paris instance and completes empty SSM/ELBv2 reads. [CloudWatch proof](#live-cloudwatch-verification--2026-10-25) retrieves all four series at five-minute resolution, with incomplete history. | Obtain adequate metric history and verify opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
 | Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Owner confirms the existing Zetaris identity is non-admin/limited API; detailed effective table/overwrite policy evidence remains separate ([permission review](#zetaris-deployment-permission-review--2026-10-25)). No replacement account is required on the previous admin assumption. Live evidence and event eligibility remain separate. |
 | Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
 | Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
 | Release | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**. | Independent reproducer/visual review, README policy reconciliation, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
 
-**Next slice:** Zayan/team verifies populated live CloudWatch and opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. The repeated OpenAI A/B/C gate is closed; retain prior failures and complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
+**Next slice:** CloudWatch access and populated retrieval are verified, with incomplete history. Zayan/team obtains adequate metric coverage, verifies opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. The repeated OpenAI A/B/C gate is closed; retain prior failures and complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
 
 ## Owners
 
@@ -626,7 +815,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 
 - [x] GitHub repository is public: Oct 24 `gh repo view milaforge/cloud-cost-investigator --json visibility,url` returned `PUBLIC`.
 - [x] API-backed AWS provider is wired and default; injected-transport tests pass and authenticated empty discovery has live proof. Modes remain explicit.
-- [ ] Verify populated live metrics/billing and authoritative operational coverage through the integrated CLI; disclose unavailable sources and keep unsafe/unknown opportunities deferred.
+- [ ] Complete live metric-history coverage, verify resource-level billing and authoritative operational coverage through the integrated CLI; populated CloudWatch retrieval is verified above, with incomplete history. Disclose unavailable sources and keep unsafe/unknown opportunities deferred.
 - [x] Genuine scoped Zetaris history append/readback and useful subsequent-run recall demonstrated with synthetic records.
 - [ ] Record effective table-level/append-only policy evidence separately from successful history functionality: [owner confirms the existing account is non-admin with limited API access](#zetaris-deployment-permission-review--2026-10-25); no replacement account required on the superseded admin assumption. Deployment owner is the user, verification owner Milad.
 - [x] Genuine local H-MEM store/retrieve changes fresh query order; changed evidence corrects stale lessons. Eight-workload comparison ties fixed ordering; no general benefit claimed.

@@ -52,6 +52,8 @@ Keep rationale in `memory.md`; keep task status and integration proof in `docs/E
 - **AWS is entirely read-only**; no stopping, resizing or other infrastructure writes. Current-evidence tools are read-only. The sole permitted non-infrastructure exception is narrowly authorized, append-only Zetaris investigation-history persistence with schema/permission validation. Do not expose generic Zetaris SQL or unrestricted write tools to the model.
 - Runtime-validate external data and model/tool output; TypeScript interfaces alone do not validate data. Preserve account/region/resource scope, UTC observation windows, collection times, units, coverage, source modes, provenance and evidence IDs.
 - Keep `ok`, `no_match`, `partial`, `unavailable` and `error` distinct. Missing data is unknown, not zero or proof that jobs/dependencies do not exist.
+- Execution-event UI must keep visible status text: `partial` is an amber evidence-gap warning, `no_match` is a neutral empty result, and only `unavailable`/`error` use red failure marks. Never replace all non-`ok` statuses with an indistinguishable cross.
+- Establish usable EC2 inventory before billing. If required inventory or billing discovery is unavailable, errors, times out or fails validation, stop the investigation immediately with a named tool failure and exit 1; do not spend further planner/tool calls. Valid partial inventory remains usable, and authenticated empty inventory is a successful no-candidate result. Operational evidence gaps still defer safety rather than invent it.
 - Low average CPU or a `dev` tag does not establish scheduling safety. Challenge each candidate with peaks, jobs, dependencies and other relevant operational constraints; defer if critical evidence or authority is unknown.
 - Compute savings deterministically only with adequate billing, schedule, currency, pricing/commitment and retained-resource assumptions; unsupported estimates are `null`.
 - Zetaris historical records and H-MEM memory are **timestamped historical context**, not current telemetry. Every factual current conclusion cites evidence actually retrieved through direct tools **during the investigation**. Historical context IDs must be labeled separately.
@@ -101,6 +103,8 @@ Use `security-review` for security-sensitive changes, `architecture-review` for 
 ## Configuration inspection
 
 Load the intended project `.env` before concluding that credentials are absent; process environment alone does not establish file configuration. Inspect only required key presence and safe metadata, never values. Preserve existing shell-variable precedence and never print credentials or private endpoints.
+
+Do not diagnose Cost Explorer `AccessDeniedException` as a missing IAM grant from its name alone. Verify the intended caller and distinguish policy denial from Cost Explorer enablement and organization/member-account access using bounded, sanitized diagnostics. Billing-console "Activate IAM Access" does not control Cost Explorer SDK API access. Do not broaden permissions or enable billing features automatically.
 
 Validate model API protocol compatibility separately from model names and credentials: this planner uses Chat Completions; a Codex backend or Responses-only route is not automatically compatible. Do not guess alternate credential destinations. For remote Zetaris local storage, require the server-visible persistent directory; creating a local workspace folder does not provision remote storage.
 

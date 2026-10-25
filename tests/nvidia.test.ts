@@ -269,21 +269,38 @@ test('NVIDIA choice binds scope and periods from trusted current state', async (
     Response.json(
       envelope(
         JSON.stringify({
-          action: 'get_ec2_billing',
-          reason: 'Rank cost after inventory.',
+          action: 'list_ec2_instances',
+          reason: 'Establish inventory access first.',
         }),
       ),
     ),
   );
   assert.deepEqual(await planner.next(state, signal()), {
     type: 'tool',
-    tool: 'get_ec2_billing',
-    reason: 'Rank cost after inventory.',
+    tool: 'list_ec2_instances',
+    reason: 'Establish inventory access first.',
     args: {
       account_id: state.request.account_id,
       region: state.request.region,
       window: state.request.window,
     },
+  });
+});
+
+test('NVIDIA planner refuses billing before validated inventory access', async (t) => {
+  const planner = configure(t);
+  t.mock.method(globalThis, 'fetch', async () =>
+    Response.json(
+      envelope(
+        JSON.stringify({
+          action: 'get_ec2_billing',
+          reason: 'Skip inventory.',
+        }),
+      ),
+    ),
+  );
+  await assert.rejects(planner.next(state, signal()), {
+    message: 'model_invalid_choice',
   });
 });
 

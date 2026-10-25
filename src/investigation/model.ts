@@ -35,7 +35,14 @@ function availableActions(state: PlannerState): string[] {
     return [
       ...TOOL_NAMES.filter(
         (t) =>
-          (t === 'list_ec2_instances' || t === 'get_ec2_billing') &&
+          (t === 'list_ec2_instances' ||
+            (t === 'get_ec2_billing' &&
+              state.observations.some(
+                (o) =>
+                  o.tool === 'list_ec2_instances' &&
+                  o.data !== null &&
+                  ['ok', 'partial', 'no_match'].includes(o.status),
+              ))) &&
           !attempted(t),
       ),
       'finish',

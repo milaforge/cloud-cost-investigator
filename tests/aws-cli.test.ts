@@ -179,8 +179,9 @@ test('AWS CLI routes through collector and evaluator: empty, denied, missing bil
       assert.equal(report.integration_mode, 'live'); // Mocked transport, not live AWS proof.
       assert.ok(report.evidence.every((e) => e.integration_mode === 'live'));
       if (scenario === 'empty') {
-        // Shared discovery also requires billing; absent currency stays unknown.
-        assert.equal(code, 2);
+        assert.equal(code, 0);
+        assert.equal(costCalls, 0);
+        assert.equal(report.budget.planner_calls, 1);
         assert.equal(report.candidates.length, 0);
         assert.equal(report.evidence[0].status, 'no_match');
       } else {
@@ -196,6 +197,8 @@ test('AWS CLI routes through collector and evaluator: empty, denied, missing bil
               'unavailable',
             );
         } else {
+          assert.equal(code, 1);
+          assert.equal(report.completion_status, 'failed');
           assert.equal(metricCalls, 0);
           assert.equal(costCalls, 0);
           assert.equal(report.candidates.length, 0);

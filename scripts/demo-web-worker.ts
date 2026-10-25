@@ -61,6 +61,7 @@ process.once('message', async (value) => {
               ? new OpenAICompatiblePlanner()
               : new ScriptedPlanner(),
           provider: createEvidenceProvider(options),
+          owner_evidence: run.owner_evidence,
           history: run.history ? { zetaris: true, zetaris_append: false } : {},
           ...(run.evidence === 'aws'
             ? { limits: { tool_timeout_ms: 25000 } }

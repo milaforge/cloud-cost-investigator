@@ -29,6 +29,7 @@ import {
   validateSchedule,
   validateScope,
   validatePlannerFailureCode,
+  validateOwnerEvidence,
 } from '../contracts.ts';
 
 const strings = (value: unknown) => array(value, 100).map((v) => textValue(v));
@@ -173,6 +174,7 @@ export function validateReport(value: unknown): InvestigationReport {
     'budget',
     'limitations',
     'stop_reason',
+    'owner_evidence',
   ]);
   const request = validateRequest(r.request);
   const started_at = utc(r.started_at);
@@ -217,6 +219,7 @@ export function validateReport(value: unknown): InvestigationReport {
       'collected_at',
       'coverage',
       'missing_fields',
+      'metric_coverage',
       'units',
       'evidence_id',
       'data',
@@ -688,6 +691,15 @@ export function validateReport(value: unknown): InvestigationReport {
     budget,
     limitations: strings(r.limitations),
     stop_reason: textValue(r.stop_reason),
+    ...(r.owner_evidence === undefined
+      ? {}
+      : {
+          owner_evidence: validateOwnerEvidence(
+            r.owner_evidence,
+            request,
+            started_at,
+          ),
+        }),
   };
 }
 
@@ -743,6 +755,17 @@ export function renderReport(value: InvestigationReport): string {
         : 'Estimated monthly savings: null (unsupported marginal-cost and scheduling assumptions)',
     );
   }
+  if (r.owner_evidence?.length) {
+    lines.push(
+      '',
+      'Owner statements — unverified supporting context; not clearance or infrastructure approval:',
+    );
+    for (const e of r.owner_evidence)
+      lines.push(
+        `${e.instance_id}: ${e.topic}; attributed to ${e.owner}; asserted ${e.asserted_at}; applies ${e.valid_window.from} → ${e.valid_window.to}; reference: ${e.source_ref}`,
+        `  ${e.statement}`,
+      );
+  }
   lines.push('', 'Retrieved current evidence:');
   for (const e of r.evidence) {
     lines.push(
@@ -750,6 +773,10 @@ export function renderReport(value: InvestigationReport): string {
       `  Scope: ${JSON.stringify(e.scope)}; observed=${e.observed_window.from} → ${e.observed_window.to}; collected=${e.collected_at}`,
       `  Coverage: complete=${e.coverage.complete} authoritative=${e.coverage.authoritative}; units=${e.units}; missing=${e.missing_fields.join(', ') || 'none'}`,
       `  Observation: ${JSON.stringify(e.data)}`,
+      ...(e.metric_coverage ?? []).map(
+        (c) =>
+          `  ${c.field}: ${c.returned_points}/${c.expected_points} samples (${((100 * c.returned_points) / c.expected_points).toFixed(1)}%); period=${c.period_seconds}s; first=${c.first_sample_at ?? 'none'}; last=${c.last_sample_at ?? 'none'}`,
+      ),
     );
   }
   lines.push('', 'Decision trace:');
