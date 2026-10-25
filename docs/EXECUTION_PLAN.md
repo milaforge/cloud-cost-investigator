@@ -289,11 +289,13 @@
 
 ### Zetaris deployment permission review — 2026-10-25
 
-- **Gate/owners/status:** effective least privilege — **OPEN; current admin identity
-  does not meet the gate**. User confirmed they control the deployment and that
-  the current account has an administrator role with read/write access. This is
-  administrator-reported identity evidence; role membership was not independently
-  enumerated. User provisions/reviews the replacement identity; Milad verifies it.
+- **Gate/owners/status:** the deployment owner now explicitly confirms that the
+  configured Zetaris account is **non-admin and limited to API access**. This
+  supersedes the earlier administrator-account characterization; a replacement
+  account is not required on that basis. This is owner-confirmed identity evidence,
+  not an independently enumerated grant set. Detailed table scope and backend
+  append-only enforcement remain unverified; keep those distinct from identity
+  class and the already proven append/readback functionality.
 - **Live read-only checks:** loaded the project `.env` without printing credentials
   or private endpoints. Password auth, dedicated history target and append enablement
   are configured. Under the configured identity, `verifyZetarisHistorySchema()`
@@ -314,13 +316,15 @@
   passed. The wider link check found the pre-existing missing;
   repository-wide whitespace checking found a concurrent README trailing-space
   edit. Both remain outside this slice. Documentation only; no product-code
-  change or new model calls. Existing successful administrator append/read
-  measurements remain functionality proof, not restricted-identity proof.
-- **Next action:** user creates and configures the dedicated account with appends
-  disabled, supplies non-secret effective permission/role/overwrite evidence,
-  then Milad verifies reads and an explicitly enabled retained synthetic append
-  with that identity. Close only after those conditions pass. Deployment version
-  and actual append-only enforcement remain unverified.
+  change or new model calls. Existing successful append/read measurements remain
+  functionality proof; their former administrator label is superseded by the
+  owner's correction, not by a new service probe.
+- **Next action:** retain the existing limited API identity. For the separate
+  effective-permission gate, record non-secret table/role/backend-overwrite policy
+  evidence when available; do not require another account or destructive denial
+  probes. No new calls, grants, retained writes or secret edits were performed for
+  the owner-confirmation update. Deployment version and actual append-only
+  enforcement remain unverified.
 
 ### Real-model reliability gate — 2026-10-25
 
@@ -595,7 +599,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 | --- | --- | --- |
 | Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
 | AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). [CCI profile proof](#dedicated-cci-aws-profile-and-live-reads--2026-10-25) retrieves one live Paris instance and completes empty SSM/ELBv2 reads. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
-| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Current admin identity fails least privilege; user provisions the dedicated account and Milad verifies it ([permission review](#zetaris-deployment-permission-review--2026-10-25)). Live evidence and event eligibility remain separate. |
+| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Owner confirms the existing Zetaris identity is non-admin/limited API; detailed effective table/overwrite policy evidence remains separate ([permission review](#zetaris-deployment-permission-review--2026-10-25)). No replacement account is required on the previous admin assumption. Live evidence and event eligibility remain separate. |
 | Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
 | Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
 | Release | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**. | Independent reproducer/visual review, README policy reconciliation, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
@@ -624,7 +628,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 - [x] API-backed AWS provider is wired and default; injected-transport tests pass and authenticated empty discovery has live proof. Modes remain explicit.
 - [ ] Verify populated live metrics/billing and authoritative operational coverage through the integrated CLI; disclose unavailable sources and keep unsafe/unknown opportunities deferred.
 - [x] Genuine scoped Zetaris history append/readback and useful subsequent-run recall demonstrated with synthetic records.
-- [ ] Verify effective least-privilege deployment permissions separately from successful history functionality: [current admin identity requires a new restricted app account](#zetaris-deployment-permission-review--2026-10-25); deployment owner is the user, verification owner Milad.
+- [ ] Record effective table-level/append-only policy evidence separately from successful history functionality: [owner confirms the existing account is non-admin with limited API access](#zetaris-deployment-permission-review--2026-10-25); no replacement account required on the superseded admin assumption. Deployment owner is the user, verification owner Milad.
 - [x] Genuine local H-MEM store/retrieve changes fresh query order; changed evidence corrects stale lessons. Eight-workload comparison ties fixed ordering; no general benefit claimed.
 - [x] Team-approved real-model call and genuine NVIDIA contribution recorded; organizer/portal verification is separate.
 - [ ] Describe actual Cursor use accurately in submission assets.
