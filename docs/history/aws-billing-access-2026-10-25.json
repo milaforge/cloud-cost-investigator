@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-25",
+  "mode": "live",
+  "profile": "cci",
+  "identity_verified_as_expected_user": true,
+  "operation": "GetCostAndUsageWithResources",
+  "endpoint_region": "us-east-1",
+  "query_scope": "Authenticated account; EC2 compute; last complete UTC day; resource grouping",
+  "billing_requests": 1,
+  "sdk_max_attempts": 1,
+  "shared_identity_and_billing_deadline_ms": 20000,
+  "outcome": "blocked",
+  "http_status": 400,
+  "error_name": "AccessDeniedException",
+  "sanitized_message_indicators": {
+    "missing_identity_allow": false,
+    "explicit_identity_deny": false,
+    "permissions_boundary": false,
+    "service_control_policy": false,
+    "session_policy": false,
+    "billing_view": false,
+    "member_account_restricted": true,
+    "source_not_enabled": true,
+    "subscription_required": false
+  },
+  "interpretation": "The denial message indicates Cost Explorer enablement and organization/member-account access, rather than reporting a missing identity-policy allow. False indicators do not independently prove that a policy restriction is absent.",
+  "initial_sandbox_attempt": "Stopped during identity lookup; billing not called. Network-enabled execution reached billing.",
+  "privacy": "No credentials, costs, account/resource identifiers, private endpoints or raw AWS error messages retained.",
+  "changes": "No IAM, billing-feature, secret or infrastructure changes."
+}

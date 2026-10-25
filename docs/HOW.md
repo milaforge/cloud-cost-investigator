@@ -229,6 +229,18 @@ files. Uploads go only to this local server for validation and are not saved to
 disk. Invalid files preserve the current display. Loaded files remain in the
 current page until replaced or refreshed; keep real-account reports private.
 
+**Owner evidence (optional)** captures one attributed statement for the next run:
+instance ID, owner/team, topic, statement, ticket/document reference, and an
+applicable UTC date range (exclusive end, at most 90 days). Account and region
+come from the selected scope; submission records the assertion time. Changing
+scope or scenario requires opting in again. The report and JSON export label it
+as **unverified supporting context**. Owner identity is not authenticated; the
+statement cannot satisfy safety gates, approve infrastructure changes or turn
+retirement intent into an off-hours recommendation. It is excluded from planner
+prompts, H-MEM lessons and Zetaris history writes. Keep secrets out of statements
+and references. A restart or page refresh can lose the unsaved form; export the
+report to retain it. Old reports without owner evidence remain valid.
+
 The verdict and next human action lead the report. **How it got there** shows
 the key checks and proposal/rejection sequence. UTC timestamps label evidence
 collection; reasoning steps without recorded times say so. Hover, focus or tap

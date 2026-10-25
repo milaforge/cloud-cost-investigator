@@ -205,6 +205,63 @@ test('empty authenticated discovery is a valid no_match observation', async () =
   assert.deepEqual(o.data, { instances: [] });
 });
 
+test('denied inventory explains the blocked investigation without assessing shutdown safety or leaking provider details', async () => {
+  const unused = async (): Promise<never> => {
+    throw new Error('unexpected API');
+  };
+  const transport: AwsTransport = {
+    region: async () => args.region,
+    identity: async () => ({ Account: args.account_id, $metadata: {} }),
+    inventory: async () => {
+      throw Object.assign(new Error('private-provider-detail-marker'), {
+        name: 'UnauthorizedOperation',
+      });
+    },
+    metrics: unused,
+    costs: unused,
+    close: () => {},
+  };
+  const report = await runInvestigation(
+    { ...args, max_candidates: 1 },
+    {
+      planner: new ScriptedPlanner(),
+      provider: createAwsEvidenceProvider({
+        tools: createToolsWithTransport({}, transport, true),
+        mode: 'fixture',
+      }),
+    },
+  );
+  assert.equal(report.completion_status, 'failed');
+  assert.equal(report.stop_reason, 'required_tool_failed:list_ec2_instances');
+  assert.equal(report.budget.planner_calls, 1);
+  assert.equal(report.budget.discovery_attempts, 1);
+  assert.equal(report.evidence.length, 1);
+  assert.deepEqual(report.candidates, []);
+  assert.equal(report.budget.candidate_attempts, 0);
+  const inventory = report.evidence.find(
+    (o) => o.tool === 'list_ec2_instances',
+  );
+  assert.equal(inventory?.status, 'unavailable');
+  assert.deepEqual(inventory?.missing_fields, ['ACCESS_DENIED']);
+  const attempt = report.trace.find(
+    (t) =>
+      t.phase === 'tool' &&
+      t.action?.type === 'tool' &&
+      t.action.tool === 'list_ec2_instances',
+  );
+  assert.match(
+    attempt?.reason ?? '',
+    /list_ec2_instances.*unavailable.*ACCESS_DENIED/,
+  );
+  assert.ok(
+    report.discovery.gaps.some(
+      (gap) =>
+        gap.includes('AWS_PROFILE') && gap.includes('ec2:DescribeInstances'),
+    ),
+  );
+  assert.ok(!JSON.stringify(report).includes('private-provider-detail-marker'));
+});
+
 test('partial inventory preserves known rows with incomplete coverage', async () => {
   const tools = createSyntheticTools('A');
   const original = tools.getEC2Instances;

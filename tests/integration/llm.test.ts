@@ -3,7 +3,7 @@ import { loadProjectEnv } from '../../src/config.ts';
 import { validateAction } from '../../src/contracts.ts';
 import { OpenAICompatiblePlanner } from '../../src/investigation/model.ts';
 
-// Opt-in live test: npm test only matches tests/*.test.ts, not this directory.
+// Opt-in live test: npm run integration:modal. npm test excludes this directory.
 // One real model call; the returned tool choice is validated but never executed.
 test('configured LLM accepts a request and returns a valid planner action', {
   timeout: 25_000,

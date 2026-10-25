@@ -1,5 +1,27 @@
 # Project Memory
 
+## Cost Explorer denial interpretation (2026-10-25)
+
+- Service `AccessDeniedException` can represent disabled Cost Explorer or
+  organization access restrictions as well as missing IAM permission. Verify
+  the caller and inspect bounded sanitized reason indicators before suggesting
+  wider grants; an error-name-only diagnosis sent the operator to IAM without
+  establishing the actual blocker. The reusable procedure lives in `AGENTS.md`;
+  live proof and remaining setup work live in `docs/EXECUTION_PLAN.md`.
+
+## Inventory denial is not a shutdown verdict (2026-10-25)
+
+- An unavailable inventory observation may be structurally valid yet contain no
+  usable inventory. Trace wording must name the tool, source status and coverage
+  gaps rather than describe validation alone. Retain full missing-field details
+  in cited evidence and bound repeated trace text to its 400-character contract.
+- Surface existing failure codes and discovery recovery actions directly when no
+  candidate conclusion exists. `ACCESS_DENIED` requires checking the server-side
+  identity/profile and read permission; operator knowledge of workload safety
+  does not repair AWS discovery access. A locally inherited profile mismatch is
+  a diagnostic lead, not proof of another process's identity. Preserve secret
+  redaction, read-only access and all existing recommendation requirements.
+
 ## Recommendation boundary regression proof (2026-10-25)
 
 - Protect both operational channels against promotion of incomplete evidence:
@@ -713,3 +735,62 @@
   previous inventory-access blocker in this scope. They do not establish populated
   metrics/billing, absence of workload jobs/consumers, or owner clearance. Keep
   those evidence gates open; no additional IAM permissions fix an invalid page size.
+
+## Live metric verification boundaries (2026-10-25)
+
+- Separate CloudWatch access/populated retrieval from adequate historical coverage.
+  The live collector can return real five-minute CPU/network observations while
+  correctly withholding authoritative coverage; missing intervals never become
+  zero utilization. A complete-UTC-day observation window excludes today's data.
+- Verify the agent projection using the same fetched collection to avoid redundant
+  remote calls. `createAwsEvidenceProvider` already invokes `validateObservation`
+  with the required action/run context; a redundant context-free validation is a
+  helper error, not a provider failure. Preserve the failed helper receipt and
+  distinguish its corrected execution from the original live retrieval.
+
+## Required discovery and isolated live tests (2026-10-25)
+
+- Correction: a red cross for every non-`ok` event made successful inventory
+  retrieval with optional metadata gaps look like an ignored error. Preserve
+  visible status labels: amber partial, neutral no-match, red unavailable/error.
+  This supersedes the earlier icon-only non-`ok` cross display. Do not stop a
+  usable inventory merely because optional metadata is missing; real discovery
+  failures retain the immediate stop rule.
+- Inventory access is a prerequisite owned by the runner, not a planner hint.
+  Unusable inventory or billing must stop before further model/tool calls, retain
+  sanitized diagnostics and return a failed report/exit 1. A metadata-only partial
+  inventory still has useful rows; do not label optional tag gaps as API failure.
+  Authenticated empty inventory needs no billing query. Operational gaps remain
+  explicit deferrals, and positive partial counter-evidence retains its meaning.
+- User requested `integration:modal` for the existing single-call live model test
+  and `integration:cloud` for real AWS reads. Keep them isolated from each other
+  and offline tests; the old `test:integration` is a model-only compatibility alias.
+  Cloud access checks reuse the production collector/adapter, fresh inventory and
+  bounded read-only calls. They must fail on unavailable sources, require explicit
+  potentially charged billing opt-in and never imply scheduling clearance.
+- The first live cloud suite exposed a billing parser assumption: real AWS returned
+  timestamp periods; appending `T00:00:00.000Z` produced `INVALID_INPUT`. AWS's
+  DateInterval contract and resource-cost example permit UTC timestamps as well
+  as dates. Normalize only valid daily UTC midnights, preserve scope and duration
+  checks, and report malformed source periods as `INVALID_SOURCE_DATA`.
+- Retain only sanitized coverage metadata in public verification receipts. Raw
+  metric values and resource/account identifiers are unnecessary to establish
+  connectivity, timestamp alignment, CPU-series consistency and safe deferral.
+
+## Evidence diagnostics and owner statements (2026-10-25)
+
+- Optional inventory metadata is not resource-enumeration coverage. Keep missing
+  metadata visible per instance without cascading missing tags into incomplete
+  billing. Pagination, source failures and unsupported resources still constrain
+  discovery. Metadata presence never establishes owner authority.
+- Preserve per-metric sample counts, intervals and first/last timestamps at the
+  validated report boundary, even when no usable CPU summary exists. Carry only
+  allowlisted issue field names; never copy arbitrary provider messages/fields.
+- Explain a finish at the metrics prerequisite as `metrics_evidence_incomplete`.
+  This does not authorize partial metrics to clear a shutdown window.
+- User chose owner evidence as supporting context only. Capture bounded, scoped,
+  attributed statements separately from current AWS observations, with assertion
+  time, reference and applicable UTC interval. No authenticated identity is
+  claimed; no planner input, operational clearance, history write or memory lesson
+  comes from this prose. Keep existing scheduling gates and permanent-retirement
+  scope unchanged. Optional fields preserve older report compatibility.

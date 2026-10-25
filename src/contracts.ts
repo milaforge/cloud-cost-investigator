@@ -75,8 +75,21 @@ export type Action =
       reason: string;
     }
   | { type: 'finish'; reason: string };
+export const OPTIONAL_INVENTORY_FIELDS = [
+  'availabilityZone',
+  'launchTime',
+  'platform',
+  'tenancy',
+  'tags',
+  'owner',
+  'environment',
+] as const;
 export interface InventoryData {
-  instances: { instance_id: string; state: 'running' | 'stopped' }[];
+  instances: {
+    instance_id: string;
+    state: 'running' | 'stopped';
+    missing_metadata?: (typeof OPTIONAL_INVENTORY_FIELDS)[number][];
+  }[];
 }
 export interface BillingData {
   costs: {
@@ -149,6 +162,74 @@ export type ToolData =
   | MetricsData
   | OperationsData
   | DependenciesData;
+export interface MetricCoverage {
+  field: 'cpu_avg' | 'cpu_max' | 'network_in' | 'network_out';
+  expected_points: number;
+  returned_points: number;
+  period_seconds: number;
+  first_sample_at: string | null;
+  last_sample_at: string | null;
+}
+/** Operator-supplied supporting context. Never telemetry, clearance, or model instructions. */
+export interface OwnerEvidence extends Scope {
+  instance_id: string;
+  owner: string;
+  topic: 'jobs' | 'dependencies' | 'retirement' | 'other';
+  statement: string;
+  source_ref: string;
+  asserted_at: string;
+  valid_window: Window;
+}
+export function validateOwnerEvidence(
+  value: unknown,
+  scope: Scope,
+  now = new Date().toISOString(),
+): OwnerEvidence[] {
+  return array(value, 3).map((value) => {
+    const o = exact(value, [
+      'account_id',
+      'region',
+      'instance_id',
+      'owner',
+      'topic',
+      'statement',
+      'source_ref',
+      'asserted_at',
+      'valid_window',
+    ]);
+    const supplied = validateScope(o);
+    if (
+      supplied.account_id !== scope.account_id ||
+      supplied.region !== scope.region
+    )
+      throw new Error('Owner evidence scope mismatch');
+    for (const field of ['owner', 'statement', 'source_ref']) {
+      if (typeof o[field] !== 'string' || !o[field].trim())
+        throw new Error('Empty owner evidence field');
+    }
+    const instance_id = identifier(o.instance_id);
+    if (!/^i-(?:[a-f0-9]{8}|[a-f0-9]{17})$/.test(instance_id))
+      throw new Error('Invalid owner evidence instance');
+    const asserted_at = utc(o.asserted_at);
+    if (Date.parse(asserted_at) > Date.parse(now))
+      throw new Error('Future owner statement');
+    return {
+      ...supplied,
+      instance_id,
+      owner: textValue(o.owner, 100),
+      topic: member(o.topic, ['jobs', 'dependencies', 'retirement', 'other']),
+      statement: textValue(
+        typeof o.statement === 'string'
+          ? o.statement.replace(/\r?\n/g, ' ')
+          : o.statement,
+        1000,
+      ),
+      source_ref: textValue(o.source_ref, 300),
+      asserted_at,
+      valid_window: validateWindow(o.valid_window),
+    };
+  });
+}
 export interface Observation {
   tool: ToolName;
   status: SourceStatus;
@@ -159,6 +240,7 @@ export interface Observation {
   collected_at: string;
   coverage: { complete: boolean; authoritative: boolean };
   missing_fields: string[];
+  metric_coverage?: MetricCoverage[];
   units: 'instances' | 'currency' | 'percent' | 'UTC-hours' | 'boolean';
   evidence_id: string;
   data: ToolData | null;
@@ -246,6 +328,7 @@ export interface InvestigationReport {
   };
   limitations: string[];
   stop_reason: string;
+  owner_evidence?: OwnerEvidence[];
 }
 
 export function object(value: unknown): Record<string, unknown> {
@@ -417,6 +500,7 @@ export function validateObservation(
     'collected_at',
     'coverage',
     'missing_fields',
+    'metric_coverage',
     'units',
     'evidence_id',
     'data',
@@ -487,10 +571,17 @@ export function validateObservation(
       case 'list_ec2_instances': {
         exact(d, ['instances']);
         const instances = array(d.instances).map((v) => {
-          const i = exact(v, ['instance_id', 'state']);
+          const i = exact(v, ['instance_id', 'state', 'missing_metadata']);
           return {
             instance_id: identifier(i.instance_id),
             state: member(i.state, ['running', 'stopped']),
+            ...(i.missing_metadata === undefined
+              ? {}
+              : {
+                  missing_metadata: array(i.missing_metadata, 7).map((v) =>
+                    member(v, OPTIONAL_INVENTORY_FIELDS),
+                  ),
+                }),
           };
         });
         if (
@@ -601,6 +692,61 @@ export function validateObservation(
         throw new Error('no_match requires an empty collection');
     }
   }
+  let metric_coverage: MetricCoverage[] | undefined;
+  if (o.metric_coverage !== undefined) {
+    if (tool !== 'get_ec2_metrics')
+      throw new Error('Unexpected metric coverage');
+    metric_coverage = array(o.metric_coverage, 4).map((value) => {
+      const c = exact(value, [
+        'field',
+        'expected_points',
+        'returned_points',
+        'period_seconds',
+        'first_sample_at',
+        'last_sample_at',
+      ]);
+      const field = member(c.field, [
+        'cpu_avg',
+        'cpu_max',
+        'network_in',
+        'network_out',
+      ]);
+      const period_seconds = integer(c.period_seconds, 60, 3600);
+      const expected_points = integer(c.expected_points, 1, 129600);
+      const returned_points = integer(c.returned_points, 0, expected_points);
+      const first_sample_at =
+        c.first_sample_at === null ? null : utc(c.first_sample_at);
+      const last_sample_at =
+        c.last_sample_at === null ? null : utc(c.last_sample_at);
+      if (
+        expected_points !==
+          (Date.parse(observed_window.to) - Date.parse(observed_window.from)) /
+            (period_seconds * 1000) ||
+        (returned_points === 0
+          ? first_sample_at !== null || last_sample_at !== null
+          : !first_sample_at ||
+            !last_sample_at ||
+            Date.parse(first_sample_at) < Date.parse(observed_window.from) ||
+            Date.parse(last_sample_at) >= Date.parse(observed_window.to) ||
+            Date.parse(first_sample_at) > Date.parse(last_sample_at)) ||
+        (coverage.complete && returned_points !== expected_points)
+      )
+        throw new Error('Invalid metric coverage');
+      return {
+        field,
+        period_seconds,
+        expected_points,
+        returned_points,
+        first_sample_at,
+        last_sample_at,
+      };
+    });
+    if (
+      new Set(metric_coverage.map((c) => c.field)).size !==
+      metric_coverage.length
+    )
+      throw new Error('Duplicate metric coverage');
+  }
   return {
     tool,
     status,
@@ -611,6 +757,7 @@ export function validateObservation(
     collected_at,
     coverage,
     missing_fields,
+    ...(metric_coverage === undefined ? {} : { metric_coverage }),
     units,
     evidence_id: identifier(o.evidence_id),
     data,

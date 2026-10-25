@@ -192,6 +192,21 @@ Every call returns `status`, `scope`, optional `window`, `collectedAt`,
 | `unavailable` | Credentials, permission, configuration or source unavailable           |
 | `error`       | Invalid input, scope mismatch, invalid source data or failed request   |
 
+Inventory completeness describes resource enumeration, not optional descriptive
+metadata. Missing availability zone, launch time, platform, tenancy, tags, owner
+or environment is an informational `MISSING_METADATA` issue. The agent projection
+keeps per-instance `missing_metadata` separately; these gaps do not make matching
+billing incomplete. Truncated pages, unsupported records and actual source
+failures still reduce discovery coverage. An owner tag never grants clearance.
+
+The agent/report boundary retains optional `metric_coverage` rows for `cpu_avg`,
+`cpu_max`, `network_in` and `network_out`: expected/returned counts, interval
+seconds and first/last sample UTC timestamps (null when no samples returned).
+Counts describe the requested interval, not instance lifetime or inactivity.
+Gap codes retain allowlisted affected fields, for example
+`INCOMPLETE_COVERAGE:cpu_max`. Reports created before these fields were added
+remain valid; their missing coverage detail is not reconstructed.
+
 Each evidence record keeps the shared fields (`id`, `instanceId`, `kind`, `source`,
 `observedAt`, `collectedAt`, `synthetic`, `data`) and adds `scope`, `window` and
 `provenance`. Scope always belongs to the authenticated identity. If setup fails,

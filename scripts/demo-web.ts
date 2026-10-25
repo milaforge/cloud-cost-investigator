@@ -112,8 +112,19 @@ export async function startDemoServer(port = 0) {
       const chunks: Buffer[] = [];
       for await (const chunk of req) {
         size += chunk.length;
-        if (size > (req.url === '/api/validate' ? MAX_REPORT_BYTES : 4096)) {
-          reply(413, { error: 'Report exceeds 2 MiB.' });
+        const limit =
+          req.url === '/api/validate'
+            ? MAX_REPORT_BYTES
+            : req.url === '/api/run'
+              ? 24 * 1024
+              : 4096;
+        if (size > limit) {
+          reply(413, {
+            error:
+              req.url === '/api/validate'
+                ? 'Report exceeds 2 MiB.'
+                : 'Request exceeds the size limit.',
+          });
           return;
         }
         chunks.push(chunk);

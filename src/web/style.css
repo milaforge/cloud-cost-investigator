@@ -119,6 +119,7 @@ nav {
 }
 button,
 select,
+textarea,
 input {
   font: inherit;
   color: inherit;
@@ -151,6 +152,7 @@ button:disabled {
 button:focus-visible,
 summary:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
 input:focus-visible {
   outline: 2px solid #447c62;
   outline-offset: 4px;
@@ -696,6 +698,12 @@ input[type="checkbox"] {
 .event-not-ok {
   color: var(--red);
 }
+.event-warning {
+  color: var(--amber);
+}
+.event-neutral {
+  color: var(--muted);
+}
 .intro {
   max-width: 660px;
   margin: 34px 0;
@@ -905,4 +913,11 @@ dialog::backdrop {
 }
 #dismiss-toast:hover {
   background: #43584a;
+}
+
+#owner-evidence-fields textarea {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  resize: vertical;
 }

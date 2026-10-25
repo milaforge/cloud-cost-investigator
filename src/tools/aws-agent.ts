@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { loadProjectEnv } from '../config.ts';
 import {
+  OPTIONAL_INVENTORY_FIELDS,
   type Observation,
   type ToolAction,
   type ToolArgs,
@@ -10,7 +11,7 @@ import {
   validateObservation,
 } from '../contracts.ts';
 import type { CurrentEvidenceProvider } from '../investigation/mock.ts';
-import { createAwsTools, type AwsToolConfig } from './aws.ts';
+import { createAwsTools, METRICS, type AwsToolConfig } from './aws.ts';
 import type {
   EC2Tools,
   Evidence,
@@ -48,7 +49,19 @@ function unavailable(
 function gaps(result: ToolResult): string[] {
   return result.issues
     .filter((i) => i.severity !== 'info')
-    .map((i) => i.code)
+    .map((i) =>
+      i.field &&
+      [
+        'cpu_avg',
+        'cpu_max',
+        'network_in',
+        'network_out',
+        'billing',
+        'isEstimated',
+      ].includes(i.field)
+        ? `${i.code}:${i.field}`
+        : i.code,
+    )
     .slice(0, 25);
 }
 function compatible(
@@ -268,6 +281,9 @@ export function createAwsEvidenceProvider(
                       {
                         instance_id: e.instanceId,
                         state: e.data.state as 'running' | 'stopped',
+                        missing_metadata: OPTIONAL_INVENTORY_FIELDS.filter(
+                          (field) => e.data[field] === null,
+                        ),
                       },
                     ]
                   : [],
@@ -286,6 +302,26 @@ export function createAwsEvidenceProvider(
                 window: args.window,
               }),
             );
+            o.metric_coverage = METRICS.map((metric) => {
+              const series = result.evidence.find(
+                (e) =>
+                  e.data.metricName === metric.metricName &&
+                  e.data.statistic === metric.statistic,
+              )?.data;
+              const period =
+                series?.periodSeconds ?? options.config?.periodSeconds ?? 3600;
+              return {
+                field: metric.id,
+                period_seconds: period,
+                expected_points:
+                  series?.expectedPoints ??
+                  (Date.parse(args.window.to) - Date.parse(args.window.from)) /
+                    (period * 1000),
+                returned_points: series?.returnedPoints ?? 0,
+                first_sample_at: series?.points[0]?.timestamp ?? null,
+                last_sample_at: series?.points.at(-1)?.timestamp ?? null,
+              };
+            });
             setResult(o, result);
             if (result.status === 'error' || result.status === 'unavailable')
               unavailable(o, gaps(result), result.status);

@@ -1,0 +1,83 @@
+**The strongest opportunity is to make each investigation teach the next one how to investigate—not just remember its verdict.** That could turn our CLI into an investigator that learns an environment’s operational traps over time.
+
+
+**1. Use H-MEM to remember investigation methods and corrections**
+
+Our existing integration stores reasoning summaries, but reduces recalled information to essentially **“check operations first” or “check dependencies first.”** That happens in [history.ts](/mnt/workspace/code/hackathon/cloud-cost-investigator/src/investigation/history.ts:18). Retrieval is also restricted to the same instance in [memory.ts](/mnt/workspace/code/hackathon/cloud-cost-investigator/src/investigation/memory.ts:223).
+
+H-MEM supports richer relationships, provenance, corrections and superseded records; its ranking considers entities, confidence and recency. [H-MEM overview](https://github.com/Meterless/Meterless/blob/main/engines/hmem/README.md), [retrieval design](https://github.com/Meterless/Meterless/blob/main/engines/hmem/docs/retrieval-ranking.md).
+
+**What this could enable:**
+
+> “A previous investigation of this service missed its weekly export. For this candidate, check the export scheduler before considering shutdown.”
+
+If engineers replace an instance, the useful lesson could survive through a validated service relationship. If they correct the lesson, the replacement should outrank the old memory.
+
+The memory would supply a **question to verify**, never evidence that the job still exists. Every operational conclusion would require fresh tool results.
+
+**Why this matters:** we move from repeating a generic checklist to investigating the environment’s known failure patterns. Measure warm versus cold runs by time to a verified contradiction, useful tool calls, and stale-memory errors.
+
+**My first choice for our next product slice.**
+
+**2. Use World Model for explanations across resources**
+
+Meterless’s World Model represents entities and relationships with stable identities, versioned state and rebuildable views. It is a specification with a runnable reference, rather than a production library we can simply install. [World Model](https://github.com/Meterless/Meterless/blob/main/engines/world-model/README.md).
+
+For us, a narrowly scoped graph could express:
+
+```text
+EC2 instance → serves service → supports batch job → has operational owner
+```
+
+That could produce an explanation such as:
+
+> “This instance appears idle, but it serves the export worker used by the overnight reporting job. Verify that dependency before scheduling.”
+
+Today our planner chooses among a small set of tool names; its available actions are prescribed in [model.ts](/mnt/workspace/code/hackathon/cloud-cost-investigator/src/investigation/model.ts:24). A sourced relationship model could eventually help it identify **which dependency needs checking**, rather than merely choosing “dependencies.”
+
+**Potential gain:** substantially less human work tracing why an apparently idle instance must stay available.
+
+**Boundary:** a historical graph cannot prove current safety. Relationships need observation times, source provenance and fresh verification. This is a larger follow-on, after direct evidence adapters work.
+
+**3. Save successful methods and replay routine work**
+
+Meterless emphasizes retaining the method that worked. Its documented examples include workflows that later execute many steps without model calls. Those are Meterless’s results, not evidence about our application. [Architecture learnings](https://github.com/Meterless/Meterless/blob/main/docs/architecture/learnings.md).
+
+Our model currently makes repeated calls to select individual actions, even when the next action is largely prescribed.
+
+We could retain a verified investigation recipe:
+
+> Inventory → billing → metrics → propose → check service-specific operational risk.
+
+Trusted code could execute routine steps and consult the model where fresh evidence creates a meaningful choice. **Replay the method; retrieve new evidence every time.**
+
+This could reduce latency and exposure to provider failures. However, our `ScriptedPlanner` already supplies a fixed recipe, so another replay framework would add little. The valuable extension would be **validated, environment-specific recipes with explicit invalidation conditions**.
+
+Measure model calls and wall time per correctly resolved case. A reduction from six calls to one would be useful, but it would be 6× fewer calls—not automatically 6× faster.
+
+**4. Borrow Nightshift’s search-and-check approach for evaluation**
+
+Nightshift explores multiple attempts, checks outcomes and retains useful methods. Meterless also documents that more attempts can waste work, and stresses measuring accepted outcomes rather than generation volume. [Nightshift](https://github.com/Meterless/Meterless/blob/main/docs/products/nightshift/README.md), [learnings](https://github.com/Meterless/Meterless/blob/main/docs/architecture/learnings.md).
+
+For us, the strongest application is **offline adversarial evaluation**:
+
+- Generate operational variations: stale dependencies, incomplete job coverage, conflicting owner clearance.
+- Validate fixtures and independently establish expected outcomes.
+- Compare planner versions against our deterministic safety evaluator.
+- Retain every failure in the denominator.
+
+An initial **10× target could be expanding eight designed cases to eighty reviewed cases**. That measures coverage, not a claimed 10× quality gain.
+
+I would use diverse generation here before introducing multiple agents into the live investigation.
+
+**5. Use Markovian compression when investigations become larger**
+
+Markovian carries bounded state between reasoning steps instead of repeatedly sending growing history. Its advertised token savings include explicitly **modeled**, rather than measured, figures. [Markovian](https://github.com/Meterless/Meterless/blob/main/engines/markovian/README.md).
+
+Our planner sends accumulated observations, capped at 100 KB. A compact state containing unresolved checks, contradictions and evidence references could eventually help with larger investigations. Full evidence would remain available to the deterministic evaluator.
+
+For our current small, bounded workflow, I would defer this. Compression adds the risk of dropping an important constraint before context size is our demonstrated bottleneck.
+
+**My recommendation:** build one stronger warm-run demonstration: a prior investigation teaches a specific operational check; the next run retrieves that lesson, verifies it through fresh evidence, and reaches the correct conclusion earlier. Include a changed-evidence case proving it can abandon the old lesson.
+
+That would make Meterless’s contribution materially useful and visible. Broader graphs, local inference and long reasoning can follow once we measure that improvement. None of them substitutes for the live evidence integrations our product still needs.

@@ -170,6 +170,7 @@ function citations(ids) {
           'eyebrow',
         ),
         facts(observation.data ?? { finding: 'No usable data returned' }),
+        ...coverageDetails(observation),
         disclosure('Source and coverage', [
           facts(
             Object.fromEntries(
@@ -183,6 +184,51 @@ function citations(ids) {
     group.append(button);
   }
   return group;
+}
+function coverageDetails(observation) {
+  const result = [];
+  if (observation.metric_coverage?.length) {
+    result.push(
+      node('h4', 'Metric coverage'),
+      list(
+        observation.metric_coverage.map(
+          (c) =>
+            `${c.field}: ${c.returned_points.toLocaleString()}/${c.expected_points.toLocaleString()} samples (${((100 * c.returned_points) / c.expected_points).toFixed(1)}%)`,
+        ),
+      ),
+    );
+  }
+  if (observation.metric_coverage?.length)
+    result.push(
+      disclosure('Intervals & sample timestamps (UTC)', [
+        list(
+          observation.metric_coverage.map(
+            (c) =>
+              `${c.field}: ${c.period_seconds / 60}-minute intervals; first ${c.first_sample_at ?? 'none'}; last ${c.last_sample_at ?? 'none'}`,
+          ),
+        ),
+      ]),
+    );
+  const optional =
+    observation.tool === 'list_ec2_instances'
+      ? (observation.data?.instances ?? []).filter(
+          (i) => i.missing_metadata?.length,
+        )
+      : [];
+  if (optional.length)
+    result.push(
+      node(
+        'p',
+        'Optional metadata missing; resource discovery coverage is assessed separately.',
+        'hint',
+      ),
+      list(
+        optional.map(
+          (i) => `${i.instance_id}: ${i.missing_metadata.join(', ')}`,
+        ),
+      ),
+    );
+  return result;
 }
 function timeline(candidate, report) {
   const section = node('section', undefined, 'schedule');
@@ -310,12 +356,15 @@ function render(focusCandidate = false) {
     root.append(
       node(
         'p',
-        `Investigation ${r.completion_status}: ${human(r.stop_reason)}`,
+        `Investigation ${r.completion_status}: ${r.stop_reason === 'metrics_evidence_incomplete' ? 'Stopped at the utilization evidence gate. Incomplete metrics prevented a supported UTC window; targeted jobs and dependency checks were not reached.' : human(r.stop_reason)}`,
         'notice',
       ),
     );
-  if (r.discovery.gaps.length)
-    root.append(disclosure('Discovery gaps', [list(r.discovery.gaps)]));
+  if (r.discovery.gaps.length) {
+    const gaps = disclosure('Discovery gaps', [list(r.discovery.gaps)]);
+    gaps.open = r.completion_status !== 'complete' && !r.candidates.length;
+    root.append(gaps);
+  }
   if (r.candidates.length > 1) {
     const label = node('label', 'Instance ', 'candidate-select');
     const select = node('select');
@@ -396,15 +445,37 @@ function render(focusCandidate = false) {
       card.append(pending);
     }
     layout.append(card);
-  } else
-    layout.append(
+  } else {
+    const empty = node('article');
+    empty.append(
       node(
         'h2',
         r.completion_status === 'complete'
           ? 'No eligible candidates found'
-          : 'No candidate conclusion available',
+          : r.completion_status === 'failed'
+            ? 'Investigation failed — required checks could not complete'
+            : 'No candidate conclusion available',
       ),
     );
+    if (r.completion_status !== 'complete') {
+      const gaps = r.evidence.filter(
+        (e) =>
+          ['partial', 'unavailable', 'error'].includes(e.status) ||
+          e.missing_fields.length,
+      );
+      if (gaps.length)
+        empty.append(
+          node('h3', 'Evidence checks needing attention'),
+          list(
+            gaps.map(
+              (e) =>
+                `${e.tool} · ${human(e.status)}${e.missing_fields.length ? ` · ${e.missing_fields.join(', ')}` : ''}`,
+            ),
+          ),
+        );
+    }
+    layout.append(empty);
+  }
 
   const journey = node('section', undefined, 'journey');
   const heading = node('div', undefined, 'section-heading');
@@ -506,6 +577,15 @@ function render(focusCandidate = false) {
       step.classList.add('conflict-step');
     } else if (t.status)
       body.append(node('span', human(t.status), `step-status ${t.status}`));
+    if (observed) body.append(...coverageDetails(observed));
+    if (observed?.missing_fields.length)
+      body.append(
+        node(
+          'p',
+          `Missing evidence: ${observed.missing_fields.join(', ')}`,
+          'notice',
+        ),
+      );
     if (t.failure_code) body.append(node('p', human(t.failure_code), 'notice'));
     if (t.evidence_ids.length) body.append(citations(t.evidence_ids));
     step.append(number, body);
@@ -555,6 +635,35 @@ function render(focusCandidate = false) {
       ]),
     );
   }
+  if (r.owner_evidence?.length) {
+    const statements = r.owner_evidence.map((e) => {
+      const section = node('section');
+      section.append(
+        node('h3', `${e.instance_id} · ${human(e.topic)}`),
+        node('p', `Attributed to ${e.owner} · asserted ${e.asserted_at}`),
+        node('p', e.statement),
+        node(
+          'p',
+          `Scope: ${e.account_id} / ${e.region}. Applies ${e.valid_window.from} → ${e.valid_window.to}. Reference: ${e.source_ref}`,
+          'hint',
+        ),
+      );
+      return section;
+    });
+    details.append(
+      disclosure(
+        `Owner evidence · ${statements.length} unverified statement(s)`,
+        [
+          node(
+            'p',
+            'Supporting context only. Owner identity is not verified. These statements do not satisfy safety checks or authorize infrastructure changes.',
+            'notice',
+          ),
+          ...statements,
+        ],
+      ),
+    );
+  }
   if (r.limitations.length)
     details.append(
       disclosure(`Run limitations (${r.limitations.length})`, [
@@ -566,7 +675,7 @@ function render(focusCandidate = false) {
     step.append(
       node(
         'h3',
-        `${t.step}. ${human(t.phase)}${t.status ? ` · ${human(t.status)}` : ''}`,
+        `${t.step}. ${human(t.phase)}${t.action?.tool ? ` · ${t.action.tool}` : ''}${t.status ? ` · ${human(t.status)}` : ''}`,
       ),
       node('p', t.reason),
       citations(t.evidence_ids),
@@ -882,6 +991,13 @@ function renderFollowup(result) {
 }
 function renderEvents(events) {
   const root = $('run-events');
+  const statuses = {
+    ok: ['✓ Complete', 'event-ok'],
+    no_match: ['○ No match', 'event-neutral'],
+    partial: ['⚠ Partial — evidence incomplete', 'event-warning'],
+    unavailable: ['✕ Unavailable', 'event-not-ok'],
+    error: ['✕ Failed', 'event-not-ok'],
+  };
   const groups = [];
   let current = null;
   for (const value of events) {
@@ -891,7 +1007,9 @@ function renderEvents(events) {
     if (planner || (phase && current?.key !== `phase-${phase[1]}`)) {
       current = {
         key: planner ? `planner-${planner[1]}` : `phase-${phase[1]}`,
-        title: planner ? `Planner call ${planner[1]}` : `${human(phase[1])} run`,
+        title: planner
+          ? `Planner call ${planner[1]}`
+          : `${human(phase[1])} run`,
         events: planner ? [] : [text],
       };
       groups.push(current);
@@ -913,18 +1031,13 @@ function renderEvents(events) {
     for (const entry of group.events) {
       const step = /^(\d+)\. (.*)$/.exec(entry);
       const line = node('div', undefined, 'event-leaf');
-      if (step) line.append(node('span', step[1], 'event-step'));
+      if (step) line.append(node('span', `${step[1]}. `, 'event-step'));
       const parts = (step ? step[2] : entry).split(' · ');
       for (const [index, part] of parts.entries()) {
         if (index) line.append(document.createTextNode(' · '));
-        if (['ok', 'no_match', 'partial', 'unavailable', 'error'].includes(part)) {
-          const mark = node(
-            'span',
-            part === 'ok' ? '✓' : '✕',
-            `event-result ${part === 'ok' ? 'event-ok' : 'event-not-ok'}`,
-          );
-          mark.setAttribute('role', 'img');
-          mark.setAttribute('aria-label', part.replace('_', ' '));
+        if (Object.hasOwn(statuses, part)) {
+          const status = statuses[part];
+          const mark = node('span', status[0], `event-result ${status[1]}`);
           mark.title = part;
           line.append(mark);
         } else line.append(document.createTextNode(part));
@@ -974,7 +1087,9 @@ function paintJob(job) {
         ? job.result.completion_status === 'complete'
         : job.result.passed;
     $('run-status').textContent =
-      `${human(job.kind)} · ${complete ? 'Finished' : 'Finished with incomplete or failed checks — inspect the result'}`;
+      job.kind === 'investigate' && job.result.completion_status === 'failed'
+        ? `Investigate · Failed — ${human(job.result.stop_reason)}; inspect discovery gaps`
+        : `${human(job.kind)} · ${complete ? 'Finished' : 'Finished with incomplete or failed checks — inspect the result'}`;
   }
 }
 async function pollJob() {
@@ -1023,7 +1138,9 @@ async function startRun(kind) {
     return;
   }
   if (
-    (planner === 'model' || evidence === 'aws' || kind === 'followup' ||
+    (planner === 'model' ||
+      evidence === 'aws' ||
+      kind === 'followup' ||
       (kind === 'investigate' && $('investigate-history').checked)) &&
     !real
   ) {
@@ -1031,6 +1148,38 @@ async function startRun(kind) {
     $('run-status').textContent =
       'Select the explicit real-service acknowledgment before running this action.';
     return;
+  }
+  let ownerEvidence;
+  if (kind === 'investigate' && $('owner-evidence-enabled').checked) {
+    for (const input of $('owner-evidence-fields').querySelectorAll(
+      'input, textarea',
+    )) {
+      if (!input.reportValidity()) return;
+    }
+    const from = `${$('owner-from').value}T00:00:00.000Z`;
+    const to = `${$('owner-to').value}T00:00:00.000Z`;
+    if (
+      Date.parse(to) <= Date.parse(from) ||
+      Date.parse(to) - Date.parse(from) > 90 * 86400000
+    ) {
+      showToast(
+        'Owner evidence needs an increasing UTC date range of at most 90 days.',
+      );
+      return;
+    }
+    ownerEvidence = [
+      {
+        account_id: evidence === 'aws' ? $('account').value.trim() : 'demo',
+        region: evidence === 'aws' ? $('region').value.trim() : 'us-east-1',
+        instance_id: $('owner-instance').value.trim(),
+        owner: $('owner-name').value.trim(),
+        topic: $('owner-topic').value,
+        statement: $('owner-statement').value.trim(),
+        source_ref: $('owner-reference').value.trim(),
+        asserted_at: new Date().toISOString(),
+        valid_window: { from, to },
+      },
+    ];
   }
   submitted = true;
   runButtons.forEach((id) => {
@@ -1040,6 +1189,7 @@ async function startRun(kind) {
   $('run-status').textContent = 'Starting…';
   const body = {
     request_id: crypto.randomUUID(),
+    ...(ownerEvidence ? { owner_evidence: ownerEvidence } : {}),
     kind,
     planner,
     evidence,
@@ -1083,6 +1233,15 @@ async function startRun(kind) {
     });
   }
 }
+for (const id of ['account', 'region', 'source', 'scenario']) {
+  $(id).addEventListener('change', () => {
+    $('owner-evidence-enabled').checked = false;
+    $('owner-evidence-fields').hidden = true;
+  });
+}
+$('owner-evidence-enabled').addEventListener('change', () => {
+  $('owner-evidence-fields').hidden = !$('owner-evidence-enabled').checked;
+});
 for (const kind of ['investigate', 'learn', 'followup'])
   $(`run-${kind}`).addEventListener('click', () => startRun(kind));
 $('view-last-result').addEventListener('click', () => {

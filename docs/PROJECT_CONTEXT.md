@@ -159,6 +159,14 @@ Actionless planner trace entries may carry a validated `failure_code` and option
 
 Do not count a partially completed run as fully investigated. A `partial` run may include one well-supported rejection and two deferred candidates; overall status is separate from per-instance verdicts. Render errors without exposing credentials, raw provider responses, or private endpoints.
 
+Operator-supplied owner statements are a separate optional `owner_evidence`
+report section, never direct current-evidence observations. They carry scope,
+instance, attribution, topic, reference, assertion time and applicable interval.
+The local UI does not authenticate ownership; statements cannot satisfy clearance,
+change verdicts, enter model prompts or teach/persist through H-MEM/Zetaris.
+Retirement intent remains supporting context outside the scheduling decision.
+See [capture and retention behavior](HOW.md#open-the-web-demo).
+
 ## 9. Test and release acceptance
 
 A runnable demo must prove:

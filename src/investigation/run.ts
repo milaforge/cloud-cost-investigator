@@ -17,6 +17,8 @@ import {
   validateAction,
   validateObservation,
   validateRequest,
+  validateOwnerEvidence,
+  type OwnerEvidence,
 } from '../contracts.ts';
 import {
   type HistoryHint,
@@ -53,6 +55,7 @@ export interface RunOptions {
   planner: Planner;
   provider: CurrentEvidenceProvider;
   history?: HistoryOptions;
+  owner_evidence?: OwnerEvidence[];
   /** Safe metadata only: no model text, source payloads, scope or credentials. */
   onProgress?: (event: InvestigationProgress) => void;
   limits?: {
@@ -126,6 +129,10 @@ export async function runInvestigation(
   const request = validateRequest(input);
   const start = Date.now();
   const started_at = new Date(start).toISOString();
+  const ownerEvidence =
+    options.owner_evidence === undefined
+      ? undefined
+      : validateOwnerEvidence(options.owner_evidence, request, started_at);
   if (Date.parse(request.window.to) > start)
     throw new Error('Observation window cannot end in the future');
   const toolTimeout = limit(options.limits?.tool_timeout_ms, 5_000, 30_000);
@@ -176,6 +183,7 @@ export async function runInvestigation(
   let candidatePlannerCalls = 0;
   let stopReason = 'planner_budget_exhausted';
   let degraded = false;
+  let discoveryFailed = false;
   let runtimeExhausted = false;
   const add = (
     phase: TraceEntry['phase'],
@@ -200,6 +208,13 @@ export async function runInvestigation(
       failure_code: extra.failure_code,
       provider_error: extra.provider_error,
     });
+  };
+  const failDiscovery = (tool: ToolAction['tool']) => {
+    discoveryFailed = true;
+    stopReason = `required_tool_failed:${tool}`;
+    const reason = `Required tool ${tool} failed; investigation stopped before candidate evaluation. Fix the tool access or source and rerun. Shutdown safety was not assessed.`;
+    gaps.push(reason);
+    add('evaluator', reason);
   };
   const find = (tool: string) =>
     evidence.find(
@@ -366,7 +381,24 @@ export async function runInvestigation(
       // Planner text is explanatory, never a verdict or authority to execute a write.
       if (action.type === 'finish') {
         add('planner', action.reason, [], { action });
-        stopReason = 'planner_finished';
+        const metrics = find('get_ec2_metrics');
+        const metricsBlocked =
+          candidate &&
+          !candidate.proposed_window &&
+          metrics &&
+          (metrics.status !== 'ok' ||
+            !metrics.data ||
+            !metrics.coverage.complete ||
+            metrics.missing_fields.length > 0);
+        stopReason = metricsBlocked
+          ? 'metrics_evidence_incomplete'
+          : 'planner_finished';
+        if (metricsBlocked)
+          add(
+            'evaluator',
+            'Stopped because utilization evidence is incomplete or unavailable. A supported UTC window could not be established, so targeted jobs and dependency checks were not reached. Obtain adequate metric coverage and rerun.',
+            [metrics.evidence_id],
+          );
         break;
       }
       if (action.type === 'propose') {
@@ -420,6 +452,16 @@ export async function runInvestigation(
       const discovery =
         action.tool === 'list_ec2_instances' ||
         action.tool === 'get_ec2_billing';
+      if (
+        action.tool === 'get_ec2_billing' &&
+        !usable(find('list_ec2_instances'))
+      ) {
+        stopReason = 'inventory_required';
+        gaps.push(
+          'list_ec2_instances must establish inventory access before billing can execute. Investigation stopped.',
+        );
+        break;
+      }
       if (
         discovery
           ? !!candidate
@@ -504,15 +546,25 @@ export async function runInvestigation(
           stopReason = 'total_runtime_exhausted';
           break;
         }
+        if (discovery) {
+          failDiscovery(action.tool);
+          break;
+        }
         continue;
       }
       evidence.push(observation);
-      add(
-        'tool',
-        'Validated current-investigation observation registered.',
-        [observation.evidence_id],
-        { action, status: observation.status },
-      );
+      // Keep trace text within its 400-character contract; the cited observation
+      // retains the complete missing-fields list. Never include raw provider errors.
+      const missingFields = observation.missing_fields.join(', ');
+      const observationReason =
+        `${observation.tool}: ${observation.status}; coverage ${observation.coverage.complete ? 'complete' : 'incomplete'}, ${observation.coverage.authoritative ? 'authoritative' : 'non-authoritative'}.` +
+        (missingFields
+          ? ` Missing fields: ${missingFields.slice(0, 250)}${missingFields.length > 250 ? '…' : ''}.`
+          : '');
+      add('tool', observationReason, [observation.evidence_id], {
+        action,
+        status: observation.status,
+      });
       for (const hint of historicalHints) {
         if (
           hint.lesson &&
@@ -539,15 +591,30 @@ export async function runInvestigation(
         observation.missing_fields.length
       ) {
         degraded = true;
-        gaps.push(
-          `${observation.tool}: ${observation.status}; critical coverage may be incomplete`,
-        );
+        gaps.push(observationReason);
+        if (
+          observation.tool === 'list_ec2_instances' &&
+          (observation.status === 'unavailable' ||
+            observation.status === 'error') &&
+          observation.missing_fields.includes('ACCESS_DENIED')
+        )
+          gaps.push(
+            'AWS denied inventory access before candidate evaluation. Verify the server AWS_PROFILE and ec2:DescribeInstances permission for the requested account/region; restart the server with the intended profile and rerun. Shutdown safety was not assessed.',
+          );
+      }
+      if (discovery && !usable(observation)) {
+        failDiscovery(action.tool);
+        break;
       }
       if (!candidate) {
         const inventory = find('list_ec2_instances');
         const billing = find('get_ec2_billing');
         if (usable(inventory))
           discoveredCount = (inventory.data as InventoryData).instances.length;
+        if (usable(inventory) && discoveredCount === 0) {
+          stopReason = 'no_eligible_candidates';
+          break;
+        }
         if (usable(inventory) && usable(billing)) {
           const eligible = rankCandidates(
             inventory.data as InventoryData,
@@ -675,13 +742,15 @@ export async function runInvestigation(
     investigation_id: randomUUID(),
     goal: 'evaluate_ec2_off_hours_scheduling',
     request,
+    ...(ownerEvidence === undefined ? {} : { owner_evidence: ownerEvidence }),
     started_at,
     finished_at: new Date().toISOString(),
-    completion_status:
-      !runtimeExhausted &&
-      candidates.length > 0 &&
-      candidates.every((c) => c.verdict !== 'needs_verification') &&
-      !degraded
+    completion_status: discoveryFailed
+      ? 'failed'
+      : !runtimeExhausted &&
+          candidates.length > 0 &&
+          candidates.every((c) => c.verdict !== 'needs_verification') &&
+          !degraded
         ? 'complete'
         : !runtimeExhausted &&
             stopReason === 'no_eligible_candidates' &&
@@ -722,7 +791,8 @@ export async function runInvestigation(
   validateReport(report);
   const markDeadlineExhausted = () => {
     report.stop_reason = 'total_runtime_exhausted';
-    report.completion_status = evidence.length ? 'partial' : 'failed';
+    report.completion_status =
+      discoveryFailed || !evidence.length ? 'failed' : 'partial';
     trace[trace.length - 1].reason = report.stop_reason;
   };
   if (runtimeExhausted || Date.now() >= workDeadline) {

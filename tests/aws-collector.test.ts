@@ -444,54 +444,92 @@ test('billing is opt-in and never enables AWS features', async () => {
   assert.equal(calls, 0);
 });
 
-test('billing filters resource, account, region, service and preserves decimals/currency', async () => {
-  const window = {
-    from: '2026-10-21T00:00:00.000Z',
-    to: '2026-10-22T00:00:00.000Z',
-  };
-  const tools = createToolsWithTransport(
-    { ...config, window, enableCostExplorer: true },
-    transport({
-      costs: async (input) => {
-        assert.deepEqual(
-          input.Filter?.And?.map((f) => [
-            f.Dimensions?.Key,
-            f.Dimensions?.Values,
-          ]),
-          [
-            ['SERVICE', ['Amazon Elastic Compute Cloud - Compute']],
-            ['RESOURCE_ID', [id]],
-            ['LINKED_ACCOUNT', ['123456789012']],
-            ['REGION', ['us-east-1']],
-          ],
-        );
-        return {
-          $metadata: {},
-          ResultsByTime: [
-            {
-              TimePeriod: { Start: '2026-10-21', End: '2026-10-22' },
-              Estimated: true,
-              Groups: [
-                {
-                  Keys: ['BoxUsage:m6i.large', 'SavingsPlanCoveredUsage'],
-                  Metrics: {
-                    UnblendedCost: { Amount: '0.123456789', Unit: 'EUR' },
-                  },
+for (const suffix of ['', 'T00:00:00Z', 'T00:00:00.000Z']) {
+  test(`billing normalizes ${suffix || 'date-only'} periods and preserves scoped decimals/currency`, async () => {
+    const window = {
+      from: '2026-10-21T00:00:00.000Z',
+      to: '2026-10-22T00:00:00.000Z',
+    };
+    const tools = createToolsWithTransport(
+      { ...config, window, enableCostExplorer: true },
+      transport({
+        costs: async (input) => {
+          assert.deepEqual(
+            input.Filter?.And?.map((f) => [
+              f.Dimensions?.Key,
+              f.Dimensions?.Values,
+            ]),
+            [
+              ['SERVICE', ['Amazon Elastic Compute Cloud - Compute']],
+              ['RESOURCE_ID', [id]],
+              ['LINKED_ACCOUNT', ['123456789012']],
+              ['REGION', ['us-east-1']],
+            ],
+          );
+          return {
+            $metadata: {},
+            ResultsByTime: [
+              {
+                TimePeriod: {
+                  Start: `2026-10-21${suffix}`,
+                  End: `2026-10-22${suffix}`,
                 },
-              ],
-            },
-          ],
-        };
+                Estimated: true,
+                Groups: [
+                  {
+                    Keys: ['BoxUsage:m6i.large', 'SavingsPlanCoveredUsage'],
+                    Metrics: {
+                      UnblendedCost: { Amount: '0.123456789', Unit: 'EUR' },
+                    },
+                  },
+                ],
+              },
+            ],
+          };
+        },
+      }),
+    );
+    const result = await tools.getCostEvidence(id);
+    assert.equal(result.status, 'ok');
+    assert.equal(result.evidence[0].data.amount, '0.123456789');
+    assert.equal(result.evidence[0].data.currency, 'EUR');
+    assert.equal(result.evidence[0].data.pricingModel, 'savings_plan');
+    assert.equal(result.evidence[0].data.isEstimated, true);
+    assert.deepEqual(result.evidence[0].window, window);
+  });
+}
+
+for (const start of [
+  '2026-10-21T01:00:00Z',
+  '2026-10-21T00:00:00+01:00',
+  '2026-02-30',
+  '2026-10-22',
+]) {
+  test(`billing rejects invalid or non-daily source period ${start}`, async () => {
+    const tools = createToolsWithTransport(
+      {
+        ...config,
+        window: {
+          from: '2026-10-21T00:00:00.000Z',
+          to: '2026-10-22T00:00:00.000Z',
+        },
+        enableCostExplorer: true,
       },
-    }),
-  );
-  const result = await tools.getCostEvidence(id);
-  assert.equal(result.status, 'ok');
-  assert.equal(result.evidence[0].data.amount, '0.123456789');
-  assert.equal(result.evidence[0].data.currency, 'EUR');
-  assert.equal(result.evidence[0].data.pricingModel, 'savings_plan');
-  assert.equal(result.evidence[0].data.isEstimated, true);
-});
+      transport({
+        costs: async () => ({
+          ResultsByTime: [{ TimePeriod: { Start: start, End: '2026-10-22' } }],
+          $metadata: {},
+        }),
+      }),
+    );
+    const result = await tools.getCostEvidence(id);
+    assert.equal(result.status, 'error');
+    assert.ok(
+      result.issues.some((issue) => issue.code === 'INVALID_SOURCE_DATA'),
+    );
+    assert.deepEqual(result.evidence, []);
+  });
+}
 
 test('billing rejects unsupported windows and never fabricates unavailable costs', async () => {
   const tools = createToolsWithTransport(

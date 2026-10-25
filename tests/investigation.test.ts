@@ -192,6 +192,110 @@ test('partial operational observation retains status and a positive conflict, wh
   assert.equal(r.evidence.at(-1)?.status, 'partial');
 });
 
+for (const tool of ['list_ec2_instances', 'get_ec2_billing'] as const) {
+  for (const failure of [
+    'unavailable',
+    'error',
+    'malformed',
+    'throw',
+  ] as const) {
+    test(`${tool} ${failure} stops discovery without another planner or tool call`, async () => {
+      const calls: string[] = [];
+      const base = new MockProvider();
+      const r = await run({
+        provider: {
+          mode: 'mock',
+          async call(action, signal) {
+            calls.push(action.tool);
+            const o = (await base.call(action, signal)) as Observation;
+            if (action.tool === tool) {
+              if (failure === 'throw') throw new Error('private-detail');
+              if (failure === 'malformed') return { private: 'private-detail' };
+              o.status = failure;
+              o.data = null;
+              o.coverage = { complete: false, authoritative: false };
+              o.missing_fields = ['ACCESS_DENIED'];
+            }
+            return o;
+          },
+        },
+      });
+      const expected =
+        tool === 'list_ec2_instances' ? [tool] : ['list_ec2_instances', tool];
+      assert.deepEqual(calls, expected);
+      assert.equal(r.budget.planner_calls, expected.length);
+      assert.equal(r.completion_status, 'failed');
+      assert.equal(r.stop_reason, `required_tool_failed:${tool}`);
+      assert.deepEqual(r.candidates, []);
+      assert.ok(
+        r.discovery.gaps.some(
+          (gap) => gap.includes(`${tool} failed`) && gap.includes('stopped'),
+        ),
+      );
+      assert.ok(!JSON.stringify(r).includes('private-detail'));
+    });
+  }
+}
+
+test('authenticated empty inventory finishes without billing or another planner call', async () => {
+  const r = await run({
+    provider: modify((o) => {
+      if (o.tool === 'list_ec2_instances') {
+        o.status = 'no_match';
+        o.data = { instances: [] };
+      }
+    }),
+  });
+  assert.equal(r.completion_status, 'complete');
+  assert.equal(r.stop_reason, 'no_eligible_candidates');
+  assert.equal(r.budget.planner_calls, 1);
+  assert.equal(r.evidence.length, 1);
+});
+
+test('billing cannot execute before inventory establishes access', async () => {
+  let calls = 0;
+  const r = await run({
+    planner: planner((_state, next) =>
+      next.type === 'tool' ? { ...next, tool: 'get_ec2_billing' } : next,
+    ),
+    provider: {
+      mode: 'mock',
+      async call() {
+        calls++;
+        throw new Error('unexpected');
+      },
+    },
+  });
+  assert.equal(calls, 0);
+  assert.equal(r.completion_status, 'failed');
+  assert.equal(r.stop_reason, 'inventory_required');
+});
+
+test('usable partial inventory continues and retains long missing-fields lists without overflowing trace validation', async () => {
+  const missing = Array.from(
+    { length: 30 },
+    (_, i) => `${i}-${'x'.repeat(97)}`,
+  );
+  const r = await run({
+    provider: modify((o) => {
+      if (o.tool === 'list_ec2_instances') {
+        o.status = 'partial';
+        o.coverage.complete = false;
+        o.missing_fields = missing;
+      }
+    }),
+  });
+  assert.equal(r.completion_status, 'partial');
+  assert.ok(r.evidence.some((o) => o.tool === 'get_ec2_billing'));
+  assert.ok(r.candidates.length > 0);
+  assert.deepEqual(r.evidence[0].missing_fields, missing);
+  const trace = r.trace.find((t) => t.phase === 'tool');
+  assert.ok(trace);
+  assert.match(trace.reason, /list_ec2_instances: partial.*Missing fields:/);
+  assert.ok(trace.reason.length <= 400);
+  assert.ok(trace.reason.endsWith('….'));
+});
+
 test('low averages with high peaks never support an initial hypothesis', async () => {
   const r = await run({
     provider: modify((o) => {
@@ -326,7 +430,9 @@ test('tool timeout cancels signal and terminates a noncooperative provider in bo
   assert.equal(r.completion_status, 'failed');
   assert.ok(signal?.aborted);
   assert.ok(Date.now() - start < 1000);
-  assert.equal(r.budget.discovery_attempts, 2);
+  assert.equal(r.budget.discovery_attempts, 1);
+  assert.equal(r.budget.planner_calls, 1);
+  assert.equal(r.stop_reason, 'required_tool_failed:list_ec2_instances');
 });
 
 test('planner timeout stops without tools or late results', async () => {
