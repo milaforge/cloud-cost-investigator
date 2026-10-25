@@ -89,6 +89,8 @@ export async function collectOperationalEvidence(options: {
     });
     const after = new Date(Date.parse(period.from) - 86400000).toISOString();
     const definitions = new Map<string, number | null>();
+    // The live SSM service rejects MaxResults above 10 for this operation.
+    const pageSize = 10;
     for (let page = 0; page < maxPages; page++) {
       if (!take()) return;
       const response = await maintenanceSchedule(
@@ -99,7 +101,7 @@ export async function collectOperationalEvidence(options: {
             { Key: 'ScheduledAfter', Values: [after] },
             { Key: 'ScheduledBefore', Values: [period.to] },
           ],
-          MaxResults: 100,
+          MaxResults: pageSize,
           NextToken: token,
         },
         signal,
@@ -107,7 +109,7 @@ export async function collectOperationalEvidence(options: {
       signal.throwIfAborted();
       if (
         !Array.isArray(response.ScheduledWindowExecutions) ||
-        response.ScheduledWindowExecutions.length > 100
+        response.ScheduledWindowExecutions.length > pageSize
       )
         throw new DataError();
       for (const row of response.ScheduledWindowExecutions) {

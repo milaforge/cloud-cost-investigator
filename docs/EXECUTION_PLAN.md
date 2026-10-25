@@ -11,6 +11,44 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Dedicated CCI AWS profile and live reads — 2026-10-25
+
+- **Gate/owner/mode:** AWS identity and populated inventory access, user provisions /
+  Milad verifies; genuine read-only AWS calls. The user created a dedicated IAM
+  user and local `cci` profile. STS verified an IAM user named `cci` (rather than
+  the suggested `cci-readonly` name); region is `eu-west-3`, containing the user's
+  `eu-west-3a` availability zone. No credentials, account IDs, ARNs, instance IDs
+  or private endpoints were retained. Effective permissions were not enumerated.
+- **Executed:** `AWS_PROFILE=cci AWS_REGION=eu-west-3
+  NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx src/aws-demo.ts --live --operations`.
+  The first network-enabled run retrieved **1 instance**, inventory
+  `partial/MISSING_METADATA`; ELBv2 completed with zero matching facts, while SSM
+  returned `AWS_REQUEST_FAILED`. A scoped diagnostic identified HTTP **400**
+  `ValidationException`: the requested page size **100** exceeded the service's
+  allowed maximum **10**. The adapter now requests ten results and validates that
+  page bound, preserving pagination, request limits and incomplete-coverage policy.
+- **Verified retry:** the same command exited **0**: one retrieved instance;
+  operations and dependencies each `partial`, zero facts, with only the expected
+  broader-coverage and owner/calendar/recovery unknowns. Inventory permission
+  denial is resolved for this profile and region. This proves populated inventory
+  and successful empty native operational reads, not populated operational facts
+  or positive scheduling safety. [Sanitized receipt](history/aws-cci-profile-2026-10-25.json).
+- **Local proof:** `node --import tsx --test --test-isolation=none
+  tests/aws-operational.test.ts tests/aws-agent.test.ts tests/aws-cli.test.ts`
+  passed **43/43**, including request-size and oversized-response regressions.
+  `npm run typecheck`, `npm run typecheck:aws`, scoped Biome lint/format and
+  `git diff --check` passed. The broader `biome check` additionally reports
+  pre-existing import-order assist findings in both touched source/test files;
+  the imports are unchanged. Initial `npm run demo:aws` hit sandbox IPC `EPERM`;
+  direct Node import avoided that wrapper, and network access was needed after
+  the sandbox returned `NETWORK_UNAVAILABLE`.
+- **Limits/next action:** no billing query, paid inference, remote history write,
+  IAM modification by the agent, secret-file edit or infrastructure change.
+  Keep selecting `AWS_PROFILE=cci AWS_REGION=eu-west-3` explicitly; inherited
+  settings were not changed. Zayan/team verifies populated CloudWatch and
+  explicitly opted-in billing, and supplies authoritative workload/owner sources;
+  Milad verifies integrated reports. The combined live-evidence gate remains open.
+
 ### Native operational evidence collection — 2026-10-25
 
 - **Gate/owner/mode:** direct operational integration, Zayan source boundary /
@@ -35,8 +73,9 @@
   `no_running_instance_retrieved`. Sanitized output only; no paid calls, remote
   writes, guessed resource IDs or infrastructure changes.
 - **Blocker/next action:** populated live SSM/ELBv2 proof remains **OPEN**.
-  Obtain read-only inventory access in the intended scope, then rerun the
-  documented `npm run demo:aws -- --live --operations` with the permissions in
+  The later [CCI profile verification](#dedicated-cci-aws-profile-and-live-reads--2026-10-25)
+  resolves inventory access and proves successful empty SSM/ELBv2 reads in Paris.
+  Verify populated operational facts with the permissions in
   [AWS tools](AWS_TOOLS.md#authentication-and-live-smoke-check). Native empty scans
   still cannot prove absence of workload jobs/consumers or owner/calendar/recovery
   clearance. Separate workload authority remains necessary for recommendations.
@@ -505,7 +544,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 | Gate | Verified state and proof | Remaining work / owner |
 | --- | --- | --- |
 | Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
-| AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). Live proof is limited to authenticated empty discovery. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
+| AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). [CCI profile proof](#dedicated-cci-aws-profile-and-live-reads--2026-10-25) retrieves one live Paris instance and completes empty SSM/ELBv2 reads. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
 | Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Current admin identity fails least privilege; user provisions the dedicated account and Milad verifies it ([permission review](#zetaris-deployment-permission-review--2026-10-25)). Live evidence and event eligibility remain separate. |
 | Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
 | Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |

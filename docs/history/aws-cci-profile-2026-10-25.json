@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-25",
+  "mode": "live",
+  "profile": "cci",
+  "region": "eu-west-3",
+  "identity": { "type": "iam_user", "name": "cci" },
+  "command": "AWS_PROFILE=cci AWS_REGION=eu-west-3 NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx src/aws-demo.ts --live --operations",
+  "initial_network_enabled_probe": {
+    "exit_code": 1,
+    "inventory": { "status": "partial", "count": 1, "issues": ["MISSING_METADATA"] },
+    "operations": { "status": "error", "count": 0, "failure": "AWS_REQUEST_FAILED" },
+    "dependencies": { "status": "partial", "count": 0 }
+  },
+  "scoped_ssm_diagnostic": {
+    "http_status": 400,
+    "name": "ValidationException",
+    "message": "100 is greater than the allowed max results of 10"
+  },
+  "verified_retry": {
+    "exit_code": 0,
+    "inventory": { "status": "partial", "count": 1, "issues": ["MISSING_METADATA"] },
+    "operations": {
+      "status": "partial",
+      "count": 0,
+      "issues": ["JOBS_OUTSIDE_SSM_UNKNOWN", "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"]
+    },
+    "dependencies": {
+      "status": "partial",
+      "count": 0,
+      "issues": ["DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN", "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"]
+    }
+  },
+  "local_checks": {
+    "focused_tests": { "passed": 43, "total": 43 },
+    "typecheck": "passed",
+    "typecheck_aws": "passed",
+    "scoped_lint": "passed",
+    "scoped_format": "passed",
+    "biome_check": "pre-existing import-order assist findings; unchanged imports"
+  },
+  "not_verified": [
+    "effective least-privilege permissions",
+    "populated CloudWatch metrics",
+    "resource-level billing",
+    "populated native operational facts",
+    "workload-wide operational coverage and owner clearance"
+  ],
+  "infrastructure_writes": 0,
+  "billing_queries": 0,
+  "model_calls": 0,
+  "secret_file_edits": 0
+}
