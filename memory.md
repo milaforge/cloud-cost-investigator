@@ -623,6 +623,12 @@
 
 ## Dedicated Zetaris runtime identity (2026-10-25)
 
+- **Owner correction:** the configured Zetaris account is non-admin and limited
+  to API access, explicitly confirmed by the deployment owner. This supersedes
+  the prior administrator characterization. Do not require another identity on
+  that assumption; distinguish owner-confirmed account class from independently
+  inspected table grants and backend overwrite restrictions. The requirements
+  below describe the intended boundary, not an observed administrator account.
 - Administrator read/write success cannot establish least privilege. Provision a
   separate general/non-admin account with table-only SELECT/INSERT on the history
   records table, no Grant Option, and no broader inherited authority. Token auth
