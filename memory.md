@@ -706,3 +706,21 @@
 - The live smoke probe logs only statuses/counts/codes and uses a running instance
   actually retrieved from inventory. Missing inventory prevents operational proof;
   fabricated IDs or resource provisioning would not remedy that evidence gap.
+
+## Dedicated AWS profile and SSM page size (2026-10-25)
+
+- The user provisioned the local `cci` profile and an IAM user named `cci` for
+  Paris (`eu-west-3`; `eu-west-3a` is an availability zone). Select the profile
+  and region explicitly when probing; do not alter inherited settings or secrets
+  merely to verify the new identity. Successful reads do not enumerate effective
+  permissions or prove that the identity has no additional grants.
+- A genuine SSM `DescribeMaintenanceWindowSchedule` call rejected `MaxResults:
+  100` with HTTP 400 `ValidationException`, stating a maximum of 10. The API
+  reference lists only a minimum, so fixture success and SDK types did not establish
+  this service constraint. Request ten results, validate that page bound, and keep
+  existing continuation/request caps. This changes collection compatibility, not
+  safety policy. Retain the failed measurement as well as the successful retry.
+- Live populated inventory and successful empty SSM/ELBv2 reads resolve the
+  previous inventory-access blocker in this scope. They do not establish populated
+  metrics/billing, absence of workload jobs/consumers, or owner clearance. Keep
+  those evidence gates open; no additional IAM permissions fix an invalid page size.

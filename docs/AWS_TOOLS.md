@@ -255,6 +255,11 @@ never clears safety. Missing transport sources remain `SOURCE_NOT_CONFIGURED`.
 No task payloads, command parameters, credentials or raw provider error bodies
 are retained.
 
+SSM schedule pages request at most ten results. A live Paris request rejected
+`MaxResults: 100` despite the API reference specifying only a minimum; the
+adapter enforces the verified ten-result page bound and follows continuation
+tokens within the existing page/request limits.
+
 Planned execution intervals are distinct from the utilization observation window
 and collection timestamp. Reports retain these facts with source provenance and
 validated evidence IDs. Both native sources always disclose missing broader

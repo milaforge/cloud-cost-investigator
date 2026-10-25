@@ -160,6 +160,7 @@ test('SSM queries the exact instance and planning horizon; native dated facts pr
         { Key: 'InstanceIds', Values: [instance_id] },
       ]);
       assert.equal(input.ResourceType, 'INSTANCE');
+      assert.equal(input.MaxResults, 10);
       assert.equal(
         input.Filters?.find((f) => f.Key === 'ScheduledBefore')?.Values?.[0],
         period.to,
@@ -202,6 +203,20 @@ test('SSM queries the exact instance and planning horizon; native dated facts pr
     to: scheduled(4),
   });
   assert.deepEqual(value.coverage, { complete: false, authoritative: false });
+});
+
+test('SSM rejects a response exceeding its requested ten-result page', async () => {
+  const value = await observation('operations', {
+    maintenanceSchedule: async () => ({
+      $metadata: {},
+      ScheduledWindowExecutions: Array.from({ length: 11 }, () => ({
+        WindowId: window_id,
+        ExecutionTime: scheduled(2),
+      })),
+    }),
+  });
+  assert.equal(value.status, 'error');
+  assert.equal(value.data, null);
 });
 
 test('ELBv2 registration is a current consumer fact, never continuous-operation authority', async () => {
