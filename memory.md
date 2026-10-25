@@ -769,8 +769,11 @@
 
 - Correction: a red cross for every non-`ok` event made successful inventory
   retrieval with optional metadata gaps look like an ignored error. Preserve
-  visible status labels: amber partial, neutral no-match, red unavailable/error.
-  This supersedes the earlier icon-only non-`ok` cross display. Do not stop a
+  distinct status meanings: amber partial, neutral no-match, red unavailable/error.
+  User correction (Oct 25): show icons only, with status text in the existing
+  tooltip on hover, keyboard focus or click to keep the event tree concise.
+  This supersedes the inline-label requirement while retaining distinct symbols,
+  colors and accessible labels. Do not stop a
   usable inventory merely because optional metadata is missing; real discovery
   failures retain the immediate stop rule.
 - Inventory access is a prerequisite owned by the runner, not a planner hint.

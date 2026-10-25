@@ -61,6 +61,25 @@
   Task 2 branch for review; upstream request-timing Windows portability remains
   a separate follow-up. Both Task 2 safety stashes remain retained locally.
 
+### Compact execution-status tooltips — 2026-10-25
+
+- **Gate/owner:** Days 3–4 demo usability, Milad. Per user correction,
+  execution events show icons only; the existing accessible tooltip exposes
+  status text on hover, focus or click. Amber partial and neutral no-match
+  remain distinct from green complete and red unavailable/failed. This
+  supersedes the inline-label presentation recorded below.
+- **Verification:** `node /tmp/cci-icon-tooltip-check.mjs` passed in Chromium
+  against the actual renderer/helper source: all five symbols, accessible
+  labels, hover/click/focus, Escape/blur dismissal and amber partial.
+  `node --import tsx --test --test-isolation=none tests/demo-web.test.ts
+  tests/demo-web-jobs.test.ts` passed **7/7**. Initial sandbox checks blocked
+  Chromium sockets and three localhost tests; permitted reruns passed.
+  `node --check src/web/app.js`, scoped Biome lint/format and
+  `git diff --check` passed.
+- **Mode/limits/next:** local synthetic browser fixture and local HTTP tests;
+  no external services called, no blocker for this slice. Refresh the demo
+  to use it; combined live-evidence and release gates remain open.
+
 ### Evidence diagnostics and supporting owner statements — 2026-10-25
 
 - **Gate/owner:** Days 3–4 useful live-evidence reporting, Milad; implemented and
