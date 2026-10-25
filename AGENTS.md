@@ -43,7 +43,7 @@ Keep rationale in `memory.md`; keep task status and integration proof in `docs/E
 - Low average CPU or a `dev` tag does not establish scheduling safety. Challenge each candidate with peaks, jobs, dependencies and other relevant operational constraints; defer if critical evidence or authority is unknown.
 - Compute savings deterministically only with adequate billing, schedule, currency, pricing/commitment and retained-resource assumptions; unsupported estimates are `null`.
 - Zetaris historical records and H-MEM memory are **timestamped historical context**, not current telemetry. Every factual current conclusion cites evidence actually retrieved through direct tools **during the investigation**. Historical context IDs must be labeled separately.
-- Bound model/tool calls, retries, timeouts, query sizes and total runtime. When exhausted or unavailable, return an explicit partial/uncertain result rather than looping or fabricating safety claims.
+- Bound model/tool calls, retries, timeouts, query sizes and total runtime. One investigation must use a maximum 15-minute total budget, at most 60 seconds per model call, and a report finalization reserve. History waits and pacing share the deadline; preserve completed findings and defer unresolved candidates on exhaustion. Do not multiply the aggregate deadline by call count. When exhausted or unavailable, return an explicit partial/uncertain result rather than looping or fabricating safety claims.
 - Never modify infrastructure. Any eventual remediation needs human review/approval.
 - Never commit or expose credentials, sensitive AWS exports, raw provider responses containing secrets, or private endpoints in logs, screenshots, fixtures or reports.
 

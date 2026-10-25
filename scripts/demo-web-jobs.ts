@@ -10,6 +10,7 @@ import {
   integer,
   validateScope,
 } from '../src/contracts.ts';
+import { INVESTIGATION_TIMEOUT_MS } from '../src/investigation/limits.ts';
 import { modelConfigFromEnv } from '../src/config.ts';
 
 export type DemoRun = {
@@ -182,7 +183,9 @@ export class DemoJobs {
       run.kind === 'followup'
         ? 180_000
         : run.planner === 'model'
-          ? 1_200_000
+          ? run.kind === 'investigate'
+            ? INVESTIGATION_TIMEOUT_MS
+            : 1_200_000
           : 120_000,
     );
     child.on('message', (message: unknown) => {

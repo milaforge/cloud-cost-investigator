@@ -642,7 +642,7 @@ export function validateReport(value: unknown): InvestigationReport {
       6 * request.max_candidates,
     ),
     planner_calls: integer(b.planner_calls, 0, 2 + 7 * request.max_candidates),
-    elapsed_ms: integer(b.elapsed_ms, 0, 3_600_000),
+    elapsed_ms: integer(b.elapsed_ms, 0, Number.MAX_SAFE_INTEGER),
   };
   const toolAttempts = trace.filter((t) => t.phase === 'tool');
   if (

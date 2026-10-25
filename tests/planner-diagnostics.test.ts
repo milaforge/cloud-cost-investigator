@@ -16,7 +16,7 @@ const request: InvestigationRequest = {
   window: { from: '2026-09-01T00:00:00Z', to: '2026-09-29T00:00:00Z' },
 };
 
-test('live planner gets five minutes per call and aggregate budget permits slow responses', async (t) => {
+test('live planner gets sixty seconds per call', async (t) => {
   t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: Date.now() });
   const deadlines: number[] = [];
   const report = await runInvestigation(request, {
@@ -25,7 +25,7 @@ test('live planner gets five minutes per call and aggregate budget permits slow 
       mode: 'live',
       model: 'slow-test',
       async next() {
-        t.mock.timers.tick(121_000);
+        t.mock.timers.tick(59_000);
         return { type: 'finish', reason: 'No further questions' };
       },
     },
@@ -33,9 +33,9 @@ test('live planner gets five minutes per call and aggregate budget permits slow 
       if (event.event === 'planner_start') deadlines.push(event.timeout_ms);
     },
   });
-  assert.deepEqual(deadlines, [300_000]);
+  assert.deepEqual(deadlines, [60_000]);
   assert.equal(report.stop_reason, 'planner_finished');
-  assert.equal(report.budget.elapsed_ms, 121_000);
+  assert.equal(report.budget.elapsed_ms, 59_000);
   assert.ok(!report.trace.some((entry) => entry.failure_code));
 });
 

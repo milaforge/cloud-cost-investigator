@@ -116,7 +116,7 @@ evidence_ids; validated typed data or sanitized error metadata
 
 A successful query returning no matches is **not** proof of absent jobs, dependencies or risks. Scope/period mismatches and unparseable results are explicit errors or incomplete evidence, never silently joined. Preserve UTC event time separately from collection time and historical record time. Keep an investigation-local registry of **actually retrieved** evidence IDs. History IDs or H-MEM IDs may be cited as _historical context_, but cannot substitute for fresh evidence citations.
 
-Model-produced arguments/actions are validated against an allowlist. Protect all query paths with source-specific timeouts, page/size bounds, retries and a total runtime budget; no unrestricted SQL or tool-generated writes.
+Model-produced arguments/actions are validated against an allowlist. Protect all query paths with source-specific timeouts, page/size bounds and a shared total runtime budget; no unrestricted SQL or tool-generated writes. One investigation has a maximum 15-minute total budget, 60-second model-call cap and five-second report finalization reserve (proportionately smaller for short custom budgets). History waits and pacing share the deadline. Keep existing evidence-call limits, preserve completed findings on exhaustion and defer unresolved candidates. No automatic model retries. Exact execution bounds are documented in [components](components.md#runtime-ownership-and-bounds).
 
 ## 6. Decision policy
 

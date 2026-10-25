@@ -47,8 +47,9 @@ bounded browser events. Offline investigations and learning never enable remote
 history or models. Follow-through requires both server append configuration and
 an explicit browser acknowledgment and uses a unique synthetic account.
 
-Worker deadlines are 2 minutes for offline investigation/learning, 20 minutes
-when using a model, and 3 minutes for follow-through. Existing tool/model bounds
+Worker deadlines are 2 minutes for offline investigation/learning, 15 minutes
+for a model investigation, 20 minutes for the multi-investigation model learning
+demonstration, and 3 minutes for follow-through. Existing tool/model bounds
 still apply. Stop/server shutdown terminates the worker; an IPC disconnect also
 terminates an orphaned worker. Parent-owned temporary directories are cleaned on
 worker exit, including cancellation. A cancelled or failed write can leave remote
@@ -87,8 +88,16 @@ These sponsor proofs use **synthetic operational evidence**. Real persistence an
 Hard bounds: two discovery tool attempts; six tool attempts per candidate; two
 discovery plus seven planner calls per candidate (23 maximum); 5s per mock tool, 25s per AWS tool (around the collector’s 20s deadline).
 Scripted planning defaults to 15s per call and 120s overall. Live planning allows
-5 minutes per call, with an aggregate deadline based on the bounded call count
-and configured pacing plus two minutes. Explicit shorter limits still apply.
+60s per call and 15 minutes overall; explicit total limits above 15 minutes are
+rejected. All model calls, evidence calls, pacing and history recall/persistence
+share that deadline. External waits stop five seconds early for report
+finalization (10% of the budget when the total is below 50s). Explicit shorter
+limits still apply. Waiting is bounded even for adapters that ignore cancellation;
+this cannot guarantee cancellation of remote work or survive a blocked event loop.
+On exhaustion, preserve completed verdicts and evidence, defer unresolved candidates,
+and return a partial report (failed if no evidence). Persistence timeout discloses
+uncertain writes without retrying. Elapsed time records actual duration, including
+scheduler delays; report validation also accepts truthful older measurements.
 Model responses are capped at 32 KiB. Every attempted call counts, including
 failures. Identical repeated tool actions defer the active candidate. A later
 failure preserves completed candidates; exhausted aggregate budgets explicitly

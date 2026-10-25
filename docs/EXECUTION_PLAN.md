@@ -11,6 +11,47 @@
 
 ## Current status and next actions — reconciled 2026-10-24
 
+### Runtime budget defect fixed — 2026-10-25
+
+- **Gate/owner:** bounded runtime and report preservation, Milad. **Verified fixed**
+  for the runtime/report mismatch that could discard findings after an hour.
+  User replaced the prior long
+  timeout policy with a maximum **15 minutes overall** and **60 seconds per model
+  call**. This supersedes the old audit reproducer's long-run completion expectation;
+  its original failure and measurements remain historical evidence.
+- **Change:** `src/investigation/limits.ts` owns the shared 900000-ms cap and
+  5000-ms finalization reserve; `run.ts` uses one work deadline for model calls,
+  evidence, pacing and bounded history recall/persistence. Small custom budgets
+  reserve 10%. Completed verdicts/citations survive exhaustion; remaining
+  candidates defer, persistence is skipped or disclosed as uncertain, and no
+  retry occurs. `report.ts` accepts truthful safe-integer elapsed measurements
+  rather than discarding older reports at one hour. Model adapter/runner share
+  the 60000-ms cap. The single model web-investigation watchdog shares the
+  15-minute cap; multi-investigation learning stays separate.
+- **Executable regression:** `tests/runtime-budget.test.ts` checks oversize-budget
+  rejection, a slow three-candidate investigation stopping at **895000 ms** while
+  retaining conditional recommendation/rejection and deferring the last candidate,
+  noncooperative recall/persistence stopping at **900 ms** of a 1000-ms custom
+  budget, cancellation, unchanged returned reports after late adapter mutation,
+  and truthful historical 3770000-ms elapsed validation. Original timeout,
+  provenance, safe-deferral and model-error tests remain passing.
+- **Verification:** `npm test` passed **235/235**, with local loopback/subprocess
+  permissions; [retained output](evaluation/implementation-audit-2026-10-25/runtime-fix-regression.txt).
+  The restricted first run had six EPERM fixture/subprocess failures; these all
+  pass with the required permissions. `npm run typecheck`, `npm run typecheck:aws`,
+  `npm run lint`, focused `npx biome format` and `git diff --check` passed.
+  `npm run --silent evaluate -- --planner scripted` returned **8/8 correct**,
+  **0 unsafe positives**, **44/44 valid citations**;
+  [retained evaluation](evaluation/implementation-audit-2026-10-25/runtime-fix-evaluation.json).
+- **Mode/limitations/next action:** fake timers, mock current evidence and local
+  fixture histories; **zero new paid model calls** or live AWS/Zetaris probes.
+  The five-second reserve covers ordinary finalization; Node timers cannot
+  guarantee a wall-clock deadline through a blocked event loop or cancel remote
+  work that ignores abort. Repeated real-model reliability, live source coverage,
+  effective permissions and release proof remain open. The concurrent README
+  edit is preserved and currently exceeds the documented 10-line cap; this
+  runtime fix does not resolve that separate documentation conflict.
+
 ### Browser live-source diagnosis and history recall — 2026-10-24
 
 - **Gate/owner:** demo presentation and live-source diagnosis, Milad; AWS data-source access remains Zayan/team. The browser now explains that account ID is a scope check, adds explicit read-only Zetaris recall on Investigate, and displays allowlisted AWS source issue codes. Follow through retains the separate acknowledged append path.

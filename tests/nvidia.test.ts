@@ -188,7 +188,7 @@ test('NVIDIA planner propagates caller cancellation to the request', async (t) =
 test('NVIDIA internal request timeout is distinct from transport failure', async (t) => {
   const planner = configure(t);
   t.mock.method(AbortSignal, 'timeout', (milliseconds: number) => {
-    assert.equal(milliseconds, 300_000);
+    assert.equal(milliseconds, 60_000);
     return AbortSignal.abort();
   });
   t.mock.method(

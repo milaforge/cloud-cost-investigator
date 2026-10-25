@@ -215,7 +215,7 @@
 
 ## Slow, single-case model diagnostics (2026-10-24)
 
-- User requested five-minute model-call waits and gentler free-endpoint usage
+- **Superseded by the 2026-10-25 runtime decision below.** User requested five-minute model-call waits and gentler free-endpoint usage
   after HTTP 500s. Align the adapter and runner at 300000 ms; scale the aggregate
   live deadline by the bounded planner count plus pacing and a two-minute reserve.
   Keep explicit shorter limits, scripted defaults, tool deadlines and call caps.
@@ -488,3 +488,24 @@
 - Cost Explorer stays opt-in. Unknown billing currency, scheduling authority,
   operations and dependencies stay unknown; no zero-cost or positive-safety
   claims are manufactured. Tests use injected transport, not live credentials.
+
+## Fifteen-minute investigation budget (2026-10-25)
+
+- User rejected hour-long investigations. The runner owns a fixed 900000-ms
+  maximum total budget and 60000-ms model-call cap; call count must not multiply
+  the aggregate deadline. Keep evidence timeouts and attempt caps unchanged.
+- Reserve 5000 ms for final report validation/output; for custom totals below
+  50000 ms reserve 10%. Planner, evidence, pacing and history waits use the work
+  deadline. Bound history at the runner as well as sending cancellation, because
+  adapters may ignore AbortSignal. Never automatically retry ambiguous writes.
+- On exhaustion, keep completed verdicts/citations, defer unresolved candidates
+  and return partial (failed without evidence). Historical persistence timeout
+  discloses uncertain completion. Reconstruct the final validated result so late
+  adapter mutations cannot change the returned report.
+- Elapsed time is a truthful nonnegative safe-integer measurement, not a second
+  timeout policy. The old one-hour report validation cap discarded findings and
+  rejected older valid measurements; execution enforces the new total budget.
+- Share the 15-minute watchdog with the single model investigation web worker.
+  Multi-investigation learning retains its separate
+  20-minute worker limit. Deadlines bound waits, not a blocked Node event loop
+  or remote provider execution after cancellation. No new dependencies or calls.

@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import {
+  INVESTIGATION_TIMEOUT_MS,
+  REPORT_FINALIZATION_RESERVE_MS,
+} from './limits.ts';
+import {
   type Action,
   type BillingData,
   type CandidateReport,
@@ -78,7 +82,7 @@ export type InvestigationProgress =
 
 class BoundedTimeout extends Error {}
 
-// Also bounds adapters which ignore cancellation; only validated read-only tools reach here.
+// Bounds our wait even when an adapter ignores cancellation. Aborting cannot undo remote writes.
 async function bounded<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   milliseconds: number,
@@ -146,11 +150,13 @@ export async function runInvestigation(
   ); // 2 discovery + 7 per candidate
   const total = limit(
     options.limits?.total_timeout_ms,
-    options.planner.mode === 'live'
-      ? maxPlanner * (plannerTimeout + plannerInterval) + 120_000
-      : 120_000,
-    8_400_000, // 23 planner calls at maximum timeout + pacing, plus 2 minutes.
+    options.planner.mode === 'live' ? INVESTIGATION_TIMEOUT_MS : 120_000,
+    INVESTIGATION_TIMEOUT_MS,
   );
+  const workDeadline =
+    start +
+    total -
+    Math.min(REPORT_FINALIZATION_RESERVE_MS, Math.floor(total / 10));
   const history = new InvestigationHistory(options.history ?? {}, {
     account_id: request.account_id,
     region: request.region,
@@ -204,22 +210,34 @@ export async function runInvestigation(
           o.scope.instance_id === candidate?.instance_id),
     );
   const remaining = (timeout: number) =>
-    Math.max(1, Math.min(timeout, start + total - Date.now()));
+    Math.max(1, Math.min(timeout, workDeadline - Date.now()));
   const select = async (instance: string) => {
     const inventory = find('list_ec2_instances');
     const billing = find('get_ec2_billing');
     if (!inventory || !billing) throw new Error('Discovery required');
-    historicalHints =
-      runtimeExhausted ||
-      Date.now() >= start + total ||
-      plannerCalls >= maxPlanner
-        ? []
-        : await history.recall(
-            instance,
-            started_at,
-            AbortSignal.timeout(remaining(total)),
-            options.provider.mode,
-          );
+    historicalHints = [];
+    if (
+      !runtimeExhausted &&
+      Date.now() < workDeadline &&
+      plannerCalls < maxPlanner
+    ) {
+      try {
+        historicalHints = await bounded(
+          (signal) =>
+            history.recall(instance, started_at, signal, options.provider.mode),
+          remaining(total),
+        );
+      } catch (error) {
+        if (!(error instanceof BoundedTimeout)) throw error;
+        runtimeExhausted = true;
+        for (const source of ['zetaris', 'hmem'] as const)
+          if (history.result[source] === 'not_queried')
+            history.result[source] = 'unavailable';
+        history.result.limitations.push(
+          'History recall exceeded the aggregate investigation deadline; unresolved candidates deferred.',
+        );
+      }
+    }
     if (historicalHints.length)
       add(
         'evaluator',
@@ -257,7 +275,7 @@ export async function runInvestigation(
   };
   for (;;) {
     while (plannerCalls < maxPlanner) {
-      if (runtimeExhausted || Date.now() >= start + total) {
+      if (runtimeExhausted || Date.now() >= workDeadline) {
         stopReason = 'total_runtime_exhausted';
         break;
       }
@@ -269,7 +287,7 @@ export async function runInvestigation(
         const delay = remaining(plannerInterval);
         options.onProgress?.({ event: 'planner_pause', delay_ms: delay });
         await new Promise<void>((resolve) => setTimeout(resolve, delay));
-        if (Date.now() >= start + total) {
+        if (Date.now() >= workDeadline) {
           runtimeExhausted = true;
           stopReason = 'total_runtime_exhausted';
           break;
@@ -279,7 +297,7 @@ export async function runInvestigation(
       if (candidate) candidatePlannerCalls++;
       let action: Action;
       const plannerUsesRuntimeDeadline =
-        start + total - Date.now() <= plannerTimeout;
+        workDeadline - Date.now() <= plannerTimeout;
       const plannerDeadline = remaining(plannerTimeout);
       options.onProgress?.({
         event: 'planner_start',
@@ -453,7 +471,7 @@ export async function runInvestigation(
         totalCandidateAttempts++;
       }
       let observation: Observation;
-      const toolUsesRuntimeDeadline = start + total - Date.now() <= toolTimeout;
+      const toolUsesRuntimeDeadline = workDeadline - Date.now() <= toolTimeout;
       const toolDeadline = remaining(toolTimeout);
       try {
         const raw = await bounded(
@@ -667,11 +685,10 @@ export async function runInvestigation(
     stopReason = 'planner_budget_exhausted';
     candidate = await select(next);
   }
-  if (
-    runtimeExhausted ||
-    (Date.now() >= start + total && stopReason !== 'hypothesis_contradicted')
-  )
+  if (runtimeExhausted || Date.now() >= workDeadline) {
+    runtimeExhausted = true;
     stopReason = 'total_runtime_exhausted';
+  }
   add('finish', stopReason);
   const report: InvestigationReport = {
     investigation_id: randomUUID(),
@@ -680,11 +697,14 @@ export async function runInvestigation(
     started_at,
     finished_at: new Date().toISOString(),
     completion_status:
+      !runtimeExhausted &&
       candidates.length > 0 &&
       candidates.every((c) => c.verdict !== 'needs_verification') &&
       !degraded
         ? 'complete'
-        : stopReason === 'no_eligible_candidates' && !degraded
+        : !runtimeExhausted &&
+            stopReason === 'no_eligible_candidates' &&
+            !degraded
           ? 'complete'
           : evidence.length
             ? 'partial'
@@ -719,12 +739,29 @@ export async function runInvestigation(
     stop_reason: stopReason,
   };
   validateReport(report);
-  if (runtimeExhausted || Date.now() >= start + total) {
+  const markDeadlineExhausted = () => {
+    report.stop_reason = 'total_runtime_exhausted';
+    report.completion_status = evidence.length ? 'partial' : 'failed';
+    trace[trace.length - 1].reason = report.stop_reason;
+  };
+  if (runtimeExhausted || Date.now() >= workDeadline) {
+    markDeadlineExhausted();
     report.historical_context.limitations.push(
       'History persistence skipped: aggregate investigation deadline exhausted.',
     );
   } else {
-    await history.persist(report, AbortSignal.timeout(remaining(total)));
+    try {
+      await bounded(
+        (signal) => history.persist(report, signal),
+        remaining(total),
+      );
+    } catch (error) {
+      if (!(error instanceof BoundedTimeout)) throw error;
+      markDeadlineExhausted();
+      report.historical_context.limitations.push(
+        'History persistence exceeded the aggregate investigation deadline; writes may have completed. Inspect history before retrying; no automatic retry was made.',
+      );
+    }
   }
   report.finished_at = new Date().toISOString();
   report.budget.elapsed_ms = Date.now() - start;

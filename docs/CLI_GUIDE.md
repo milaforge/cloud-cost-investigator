@@ -76,6 +76,12 @@ For three reproducible input/output cases, run the same JSON command with `--sce
 | Historical-store read/write failure | Disclose it separately; current verdicts still require fresh evidence. No automatic retry after an uncertain append. |
 | Missing pricing, commitment or retained-resource assumptions | Savings stay `null`; current spend is not automatically avoidable cost. |
 
+A live investigation has a 15-minute total limit and 60-second model-call cap,
+with five seconds reserved for report finalization. Model, tool, pacing and history
+waits consume the same total budget. Exhaustion retains completed findings and
+returns partial results; unresolved candidates remain `needs_verification`.
+A timed-out history write may have completed remotely; inspect history before retrying.
+
 Deadlines and attempt limits are defined in [runtime bounds](components.md#runtime-ownership-and-bounds). Recovery means a bounded next check or explicit uncertainty; no automatic mock fallback or speculative retries are implied.
 
 ## Model configuration

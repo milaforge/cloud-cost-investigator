@@ -9,7 +9,7 @@ import { historicalPriority } from './history.ts';
 import type { PlannerState } from './run.ts';
 
 export type { PlannerState } from './run.ts';
-export const MODEL_PLANNER_TIMEOUT_MS = 300_000;
+export const MODEL_PLANNER_TIMEOUT_MS = 60_000;
 export interface Planner {
   readonly mode: 'scripted' | 'live';
   readonly model: string | null;
