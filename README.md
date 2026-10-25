@@ -8,9 +8,11 @@
 
 **User**: Infrastructure & Backend Engineers
 
-**Goal**: Answer "safe AWS EC2 shutdown windows to reduce monthly cloud costs".
+**Goal**: Evaluate cloud usage and recommend opportunities to reduce costs. For this hackathon, start with AWS EC2 off-hours scheduling.
 
-It combines five evidence categories:
+CCI challenges potential shutdown windows using operational evidence, then conditionally recommends a window, advises against it, or requests further verification. It's is read-only; every infrastructure change remains a human decision.
+
+Current five evidence categories:
 
 - instance inventory
 - billing
