@@ -689,6 +689,9 @@ input[type="checkbox"] {
   font-variant-numeric: tabular-nums;
 }
 .event-result {
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
   font-size: 0.95rem;
   font-weight: 700;
 }

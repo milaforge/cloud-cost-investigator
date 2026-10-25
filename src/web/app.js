@@ -53,9 +53,9 @@ $('dismiss-toast').addEventListener('click', () => {
   $('scenario').focus();
 });
 let infoId = 0;
-function info(label, text) {
+function info(label, text, symbol = 'i', className = 'info-button') {
   const wrapper = node('span', undefined, 'info');
-  const button = node('button', 'i', 'info-button');
+  const button = node('button', symbol, className);
   button.type = 'button';
   button.setAttribute('aria-label', label);
   const tip = node('span', text, 'tooltip');
@@ -992,11 +992,11 @@ function renderFollowup(result) {
 function renderEvents(events) {
   const root = $('run-events');
   const statuses = {
-    ok: ['✓ Complete', 'event-ok'],
-    no_match: ['○ No match', 'event-neutral'],
-    partial: ['⚠ Partial — evidence incomplete', 'event-warning'],
-    unavailable: ['✕ Unavailable', 'event-not-ok'],
-    error: ['✕ Failed', 'event-not-ok'],
+    ok: ['✓', 'event-ok', 'Complete'],
+    no_match: ['○', 'event-neutral', 'No match'],
+    partial: ['⚠', 'event-warning', 'Partial — evidence incomplete'],
+    unavailable: ['✕', 'event-not-ok', 'Unavailable'],
+    error: ['✕', 'event-not-ok', 'Failed'],
   };
   const groups = [];
   let current = null;
@@ -1037,9 +1037,9 @@ function renderEvents(events) {
         if (index) line.append(document.createTextNode(' · '));
         if (Object.hasOwn(statuses, part)) {
           const status = statuses[part];
-          const mark = node('span', status[0], `event-result ${status[1]}`);
-          mark.title = part;
-          line.append(mark);
+          line.append(
+            info(status[2], status[2], status[0], `event-result ${status[1]}`),
+          );
         } else line.append(document.createTextNode(part));
       }
       children.append(line);
