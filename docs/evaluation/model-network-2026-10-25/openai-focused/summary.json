@@ -1,0 +1,57 @@
+{
+  "measured_at": "2026-10-25T07:12:34.543Z",
+  "model": "gpt-6.1-sol",
+  "provider": "openai",
+  "response_format": "text",
+  "extra_body": {},
+  "methodology": "Three distinct previously failing states, one serial replay each with a 45-second bound; then one full actual CLI C run only if all replays pass. No retries, fallback, historical writes, A/B reruns, DNS/TLS/catalog resampling or successful checks repeated as standalone tests. C necessarily repeats discovery prerequisites with fresh mock evidence. This selected comparison is not the nine-run release gate or a controlled provider-only experiment.",
+  "replays": [
+    {
+      "state": "initial",
+      "source_report": "round-3-A.json",
+      "expected": "list_ec2_instances",
+      "elapsed_ms": 3870,
+      "outcome": "action_returned",
+      "action": "list_ec2_instances",
+      "passed": true
+    },
+    {
+      "state": "after_billing",
+      "source_report": "round-2-C.json",
+      "expected": "get_ec2_metrics",
+      "elapsed_ms": 2272,
+      "outcome": "action_returned",
+      "action": "get_ec2_metrics",
+      "passed": true
+    },
+    {
+      "state": "after_operations",
+      "source_report": "round-1-C.json",
+      "expected": "get_ec2_dependencies",
+      "elapsed_ms": 2225,
+      "outcome": "action_returned",
+      "action": "get_ec2_dependencies",
+      "passed": true
+    }
+  ],
+  "cli_c": {
+    "outcome": "complete",
+    "exit_code": 0,
+    "passed": true,
+    "checks": {
+      "cli_completed": true,
+      "real_model": true,
+      "mock_evidence": true,
+      "expected_verdict": true,
+      "no_planner_failure": true,
+      "current_citations": true,
+      "history_disabled": true,
+      "evidence_driven_revision": true,
+      "configured_model": true
+    },
+    "planner_calls": 6,
+    "elapsed_ms": 11466,
+    "failure_codes": []
+  },
+  "passed": true
+}

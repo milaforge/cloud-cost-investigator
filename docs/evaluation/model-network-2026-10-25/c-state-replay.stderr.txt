@@ -1,0 +1,1 @@
+{"event":"model_request_timing","request":1,"sent_ms":436,"tls_authorized":true,"body_sent_ms":437,"headers_ms":1260,"status":200,"outcome":"body_complete","elapsed_ms":1261}

@@ -1,0 +1,67 @@
+{
+  "investigation_id": "9325d605-840c-40da-8697-4991dc317e03",
+  "goal": "evaluate_ec2_off_hours_scheduling",
+  "request": {
+    "account_id": "reliability-synthetic",
+    "region": "us-east-1",
+    "window": {
+      "from": "2026-09-27T07:03:55.558Z",
+      "to": "2026-10-25T07:03:55.558Z"
+    },
+    "max_candidates": 1
+  },
+  "started_at": "2026-10-25T07:03:55.559Z",
+  "finished_at": "2026-10-25T07:03:56.423Z",
+  "completion_status": "failed",
+  "integration_mode": "mock",
+  "planner": {
+    "mode": "live",
+    "model": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+  },
+  "discovery": {
+    "discovered_count": 0,
+    "candidate_limit": 1,
+    "gaps": []
+  },
+  "candidates": [],
+  "evidence": [],
+  "trace": [
+    {
+      "step": 1,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "model_http_500",
+      "provider_error": {
+        "body": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}",
+        "truncated": false
+      }
+    },
+    {
+      "step": 2,
+      "phase": "finish",
+      "reason": "planner_unavailable_or_invalid",
+      "evidence_ids": []
+    }
+  ],
+  "historical_context": {
+    "zetaris": "not_configured",
+    "hmem": "not_configured",
+    "comparisons": [],
+    "context_ids": [],
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts."
+    ]
+  },
+  "budget": {
+    "discovery_attempts": 0,
+    "candidate_attempts": 0,
+    "planner_calls": 1,
+    "elapsed_ms": 864
+  },
+  "limitations": [
+    "Conditional scheduling requires human approval. Savings are estimates for the UTC calendar month following the observation window, not all-in invoice reductions.",
+    "The configured live model is not independently verified as event-approved."
+  ],
+  "stop_reason": "planner_unavailable_or_invalid"
+}

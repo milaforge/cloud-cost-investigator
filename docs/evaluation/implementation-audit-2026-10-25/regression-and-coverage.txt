@@ -1,0 +1,299 @@
+✔ five standalone exports match the async-function integration pattern (1.602942ms)
+✔ list_ec2_instances satisfies the unmodified shared runtime validator (7.919893ms)
+✔ get_ec2_billing satisfies the unmodified shared runtime validator (1.199926ms)
+✔ get_ec2_metrics satisfies the unmodified shared runtime validator (2.794293ms)
+✔ get_ec2_operations satisfies the unmodified shared runtime validator (0.219212ms)
+✔ get_ec2_dependencies satisfies the unmodified shared runtime validator (0.154254ms)
+✔ metrics summarize real samples and retain peak counter-evidence (1.601476ms)
+✔ billing adapts per-instance exact records to scoped ranking totals (0.432449ms)
+✔ missing CPU peaks never become zero or an invented complete summary (0.485245ms)
+✔ unsupported operations and dependencies do not construct AWS clients (0.261253ms)
+✔ source scope and fixture/live mode mismatches fail closed (0.389325ms)
+✔ aborted calls and invalid tool arguments cause no retrieval (0.334558ms)
+✔ empty authenticated discovery is a valid no_match observation (0.31026ms)
+✔ partial inventory preserves known rows with incomplete coverage (0.273286ms)
+✔ mixed currency billing never silently combines costs (0.397035ms)
+✔ empty results still enforce source scope and provider mode (0.261134ms)
+✔ billing retrieval errors remain error rather than becoming unavailable (0.40086ms)
+✔ collector cancellation reaches the active AWS transport (0.412585ms)
+✔ real investigation engine consumes fixture-backed AWS summaries and defers unknown safety (6.330329ms)
+✔ AWS CLI defaults to live evidence, uses complete UTC days and rejects incompatible options before retrieval (0.439289ms)
+✔ AWS CLI routes through collector and evaluator: empty, denied, missing billing and unknown safety (5.724298ms)
+✔ default window requests the agreed 14 complete UTC days without filling missing metrics (0.257835ms)
+✔ A: same envelope, full coverage, off-hours usage and conditional operational evidence (3.949991ms)
+✔ B: low average coexists with real peak and required batch counter-evidence (3.013548ms)
+✔ C: cost and workload increase match capacity-change evidence (0.308867ms)
+✔ missing scenario distinguishes partial utilization, unavailable billing and operations (0.433507ms)
+✔ invalid input fails before credentials or AWS calls (0.201004ms)
+✔ account mismatch prevents discovery (0.151594ms)
+✔ CredentialsProviderError is explicit and sanitized (0.145743ms)
+✔ AccessDeniedException is explicit and sanitized (0.071583ms)
+✔ NetworkError is explicit and sanitized (0.062556ms)
+✔ missing region is explicit (0.11194ms)
+✔ discovery consumes pages, deduplicates IDs and scopes every row (0.198503ms)
+✔ bounded discovery marks incomplete pages and retains earlier data on failure (0.318087ms)
+✔ empty discovery and metrics are no_match, never fabricated zero (0.176595ms)
+✔ real zero values survive and metric queries carry correct scope and statistics (0.244128ms)
+✔ CloudWatch PartialData pagination resolves complete coverage (0.27117ms)
+✔ missing metric, malformed samples and query errors are explicit (0.376791ms)
+✔ tools enforce a deadline even if transport ignores abort (10.064367ms)
+✔ billing is opt-in and never enables AWS features (0.163382ms)
+✔ billing filters resource, account, region, service and preserves decimals/currency (0.269667ms)
+✔ billing rejects unsupported windows and never fabricates unavailable costs (0.203211ms)
+✔ SDK factory can be constructed without resolving credentials or contacting AWS (4.2239ms)
+✔ configured region mismatch fails before any identity or resource read (0.143995ms)
+✔ malformed inventory scalar and cost grouping fields fail closed (0.380287ms)
+✔ A supports conditional approval only after both challenges, with reproducible compute savings (2.595663ms)
+✔ C explains continuous operation from newly retrieved dependency evidence (2.045062ms)
+✔ A fails closed for missing_clearance (1.226254ms)
+✔ A fails closed for non_authoritative (1.030743ms)
+✔ A fails closed for partial (0.999915ms)
+✔ A fails closed for owner_unknown (1.058231ms)
+✔ A fails closed for calendar_unknown (1.016404ms)
+✔ A fails closed for recovery_unknown (0.97239ms)
+✔ A fails closed for expired (1.016488ms)
+✔ A fails closed for mismatch (0.966466ms)
+✔ A fails closed for noncritical_job (1.129553ms)
+✔ A fails closed for coarse_metrics (0.997041ms)
+✔ A fails closed for high_peak (0.595851ms)
+✔ supported scheduling keeps savings unknown for unknown_commitments (1.104121ms)
+✔ supported scheduling keeps savings unknown for commitment_rate (0.922536ms)
+✔ supported scheduling keeps savings unknown for missing_rate (1.007618ms)
+✔ supported scheduling keeps savings unknown for retained_costs (1.07087ms)
+✔ supported scheduling keeps savings unknown for expired_price (1.128058ms)
+✔ supported scheduling keeps savings unknown for other_currency (1.30868ms)
+✔ calendar arithmetic handles leap February, reviewed exclusions, overhead and billing units (1.27863ms)
+✔ mixed top three isolate identical proposed windows, share discovery, and retain rank order (6.371162ms)
+✔ a later candidate tool failure preserves earlier supported recommendation (2.643503ms)
+✔ aggregate planner exhaustion retains finished candidates and explicitly defers remainder (1.287633ms)
+✔ report boundary rejects forged positive verdicts and arithmetic (2.792846ms)
+✔ multi-candidate local memory stores and recalls every verdict without cross-instance provenance (23.25303ms)
+✔ CLI accepts A/C/mixed and bounds candidate count at three (0.149421ms)
+✔ aggregate deadline does not restart for later candidates (50.867463ms)
+✔ positive safety requires at least a full week of utilization coverage (1.100375ms)
+✔ model transport uses candidate-specific choices and observations across all three candidates (10.373825ms)
+✔ native env loader reads a file, preserves shell values and tolerates missing files (0.619712ms)
+✔ generic settings never inherit NVIDIA credentials or provider options (0.220846ms)
+✔ configuration rejects unsafe URLs, malformed JSON and request overrides (0.307598ms)
+✔ arbitrary compatible provider completes B through the same validated loop (2.104323ms)
+✔ OpenAI defaults to completion tokens (0.375759ms)
+✔ OpenAI honors an explicit completion limit (0.22307ms)
+✔ OpenAI honors an explicit legacy limit for compatible models (0.248922ms)
+✔ other providers retain the legacy default (0.204847ms)
+✔ Zetaris requires explicit HTTP opt-in and sanitizes provider errors (1.009205ms)
+✔ web execution validates opt-ins and rejects unapproved input (0.328779ms)
+✔ isolated offline investigations and H-MEM learning return actual results with bounded progress (1373.817089ms)
+✔ stop is explicit and prevents the worker from replacing a cancelled result (1170.638119ms)
+✔ browser follow-through worker reaches the real adapter via a local HTTP fixture, without external calls (2502.005305ms)
+✔ explicit model control preserves a provider failure without scripted fallback (707.712209ms)
+✔ local viewer generates fresh A/B, validates uploads and confines its HTTP surface (89.888831ms)
+✔ browser launcher reports success and gracefully handles a missing opener (8.612737ms)
+✔ evaluation preserves all denominators and exposes heuristic unsafe and unknown positives (10.692735ms)
+✔ missing predictions remain incorrect; forged citations fail measurement (1.006856ms)
+✔ real-model failure remains in every denominator without scripted fallback or history access (4.949843ms)
+✔ evaluation CLI keeps verbose progress on stderr and stdout as final JSON (32.668386ms)
+✔ evaluation CLI rejects invalid verbose arguments without provider details (0.36462ms)
+✔ matching labels after planner failure cannot pass the evaluation gate (0.109481ms)
+✔ single-case evaluation measures only the requested case and keeps honest denominators (1.415285ms)
+✔ both follow-up paths use persisted intent; fresh review and attributed outcome remain distinct (1013.265842ms)
+✔ decision is immutable and repeat delivery does not append duplicate rows (4.879294ms)
+✔ only complete conditional recommendations can receive decisions; invalid input writes nothing (3.409728ms)
+✔ not-due, cross-account and wrong event transitions cannot start review (7.42015ms)
+✔ partial review is retained and does not close the due obligation (30.704372ms)
+✔ review rejects old reports and cross-scope evidence (30.098578ms)
+✔ outcomes require acceptance, bounded observed dates and explicit operator provenance (32.421969ms)
+✔ query saturation, invalid version-two data and append-disabled fail explicitly (4.945277ms)
+✔ CLI rejects ambiguous or incomplete requests before external effects (0.417976ms)
+✔ follow-up cannot be closed by a forged review link (30.821224ms)
+✔ manual CLI records and queries an acceptance and its attributed outcome (8.428497ms)
+✔ B discovers highest-cost running instance, proposes then rejects on a genuinely later conflict (0.929232ms)
+✔ different operational evidence changes verdict and next query rather than narrating a fixed rejection (0.977317ms)
+✔ metrics window controls the targeted query, rather than hard-coded overnight narration (1.105117ms)
+✔ unavailable operational data is distinct from no_match and never becomes safety (0.946316ms)
+✔ rejects scope evidence without joining or exposing its payload (1.007697ms)
+✔ rejects period evidence without joining or exposing its payload (0.957098ms)
+✔ rejects collected evidence without joining or exposing its payload (0.978363ms)
+✔ rejects units evidence without joining or exposing its payload (0.974829ms)
+✔ rejects malformed evidence without joining or exposing its payload (0.90825ms)
+✔ rejects secret evidence without joining or exposing its payload (0.932742ms)
+✔ rejects duplicate evidence without joining or exposing its payload (0.987669ms)
+✔ rejects false_no_match evidence without joining or exposing its payload (0.914464ms)
+✔ partial operational observation retains status and a positive conflict, while overall completeness remains partial (0.888247ms)
+✔ low averages with high peaks never support an initial hypothesis (0.671366ms)
+✔ a confirmed dependency can independently refute the window after no matching jobs (1.00721ms)
+✔ repeated identical actions terminate without another provider attempt (0.395678ms)
+✔ budget exhaustion preserves already retrieved evidence and unknown savings (0.658708ms)
+✔ planner budget stops before first call when exhausted after finite calls (0.265059ms)
+✔ model failure emits explicit failed model-dependent result without scripted fallback (0.287488ms)
+✔ invalid planner write cannot cross executor boundary (0.246029ms)
+✔ invalid planner scope cannot cross executor boundary (0.136964ms)
+✔ invalid planner instance cannot cross executor boundary (0.458824ms)
+✔ invalid planner fake_citation cannot cross executor boundary (0.650421ms)
+✔ tool timeout cancels signal and terminates a noncooperative provider in bounded time (20.160038ms)
+✔ planner timeout stops without tools or late results (10.568409ms)
+✔ aggregate planner deadline has a distinct sanitized failure code (10.482273ms)
+✔ total runtime bound applies across individual calls (10.487075ms)
+✔ planner mutation cannot alter caller scope or proposed window (0.911864ms)
+✔ provider error status is retained independently of unavailable or partial (1.293953ms)
+✔ memory evaluation preserves ties, changed-lesson regressions, teaching cost and partial outcomes (36.822654ms)
+✔ real H-MEM reference persists a scoped mock B summary and retrieves it after reload (2.300937ms)
+✔ account, region and instance boundaries prevent historical context leakage (1.009406ms)
+✔ malformed or oversized summaries cannot be persisted (0.871179ms)
+✔ malformed persisted content is rejected with a sanitized error on reload (0.944446ms)
+✔ persistence failures on open, store and retrieval disclose no paths or provider content (1.369796ms)
+✔ missing H-MEM engine rejects for caller containment instead of terminating the host (0.360961ms)
+✔ reliability gate accepts complete, cited A/B/C reports with live metadata (2.008385ms)
+✔ reliability gate rejects scripted fallback and a nonzero CLI exit (0.933276ms)
+✔ a matching rejection does not pass with the wrong contradiction source (0.601678ms)
+✔ reliability gate rejects a fabricated citation before counting a pass (0.454519ms)
+✔ request timing captures phases without headers, endpoint or payload data (25.028436ms)
+✔ request timing allowlists error codes and ignores malformed events (27.188841ms)
+✔ explicit preload observes native fetch success and cancellation with tsx (180.578206ms)
+✔ NVIDIA planner sends a bounded request only to its fixed endpoint (0.901994ms)
+✔ NVIDIA planner refuses malformed JSON actions (0.368235ms)
+✔ NVIDIA planner refuses token-truncated output (0.319753ms)
+✔ NVIDIA planner refuses a response without a completion choice (0.298848ms)
+✔ NVIDIA HTTP failure is sanitized, canceled and never retried (1001.776181ms)
+✔ NVIDIA planner cancels an oversized streaming response (0.555653ms)
+✔ NVIDIA transport errors disclose no provider diagnostics and are never retried (0.293389ms)
+✔ NVIDIA planner propagates caller cancellation to the request (0.368568ms)
+✔ NVIDIA internal request timeout is distinct from transport failure (0.37846ms)
+✔ NVIDIA caller cancellation during body reading is not malformed data (0.440905ms)
+✔ NVIDIA planner refuses disabled TLS verification before any network request (0.201343ms)
+✔ NVIDIA preset accepts configured models and requires its own credentials (0.174526ms)
+✔ NVIDIA planner bounds serialized input before any network request (0.299353ms)
+✔ NVIDIA choice binds scope and periods from trusted current state (0.351493ms)
+✔ NVIDIA choice refuses injected arguments and unsupported actions (0.718253ms)
+✔ operator rollback automatically teaches H-MEM; next investigation verifies the suggested check first (14.354834ms)
+✔ fresh clearance supersedes the rollback lesson; later runs do not resurrect old feedback (16.626843ms)
+✔ rolled_back without a structured check cannot teach a specific conflict (11.350995ms)
+✔ implemented without a structured check cannot teach a specific conflict (11.067743ms)
+✔ not_implemented without a structured check cannot teach a specific conflict (10.93354ms)
+✔ unknown checks and positive outcomes with a conflict check are rejected before write (10.625781ms)
+✔ scope, mode, future dates and schedule isolate learned strategy; no repeated H-MEM imports (13.567637ms)
+✔ forged recommendation links and unavailable/capped ledgers do not teach (12.753052ms)
+✔ an outcome-derived question cannot replace missing current evidence (11.795918ms)
+✔ failed local persistence prevents the imported strategy from influencing planning (11.92051ms)
+✔ a newer implemented outcome supersedes an earlier reported conflict without waiving checks (17.567123ms)
+✔ live planner gets five minutes per call and aggregate budget permits slow responses (0.825302ms)
+✔ pacing waits before calls and cannot exceed the aggregate deadline (6.524726ms)
+✔ full investigation exposes only sanitized model_http_400 (0.673047ms)
+✔ full investigation exposes only sanitized model_http_401 (0.404474ms)
+✔ full investigation exposes only sanitized model_http_403 (0.379849ms)
+✔ full investigation exposes only sanitized model_http_405 (0.369044ms)
+✔ full investigation exposes only sanitized model_http_429 (0.382985ms)
+✔ full investigation exposes only sanitized model_http_500 (0.372832ms)
+✔ full investigation exposes only sanitized model_http_503 (0.490217ms)
+✔ full investigation exposes only sanitized model_transport_unavailable (0.380384ms)
+✔ full investigation exposes only sanitized model_invalid_response (0.373864ms)
+✔ full investigation exposes only sanitized model_incomplete_response (0.385682ms)
+✔ full investigation exposes only sanitized model_invalid_action_json (0.428979ms)
+✔ full investigation exposes only sanitized model_invalid_choice (0.42639ms)
+✔ unknown exceptions and invalid executor actions have distinct public codes (0.350746ms)
+✔ report validator rejects arbitrary codes and failure codes attached to successful actions (0.517638ms)
+✔ provider JSON keeps useful error fields and strips request, secrets, URLs and stacks (0.242388ms)
+✔ plain text, HTML, malformed JSON and terminal escapes are bounded and redacted (0.346426ms)
+✔ oversized provider body is capped and its reader cancelled (0.225854ms)
+✔ stalled body read expires in one second and is cancelled (0.194491ms)
+✔ HTTP diagnostic survives runner and rendering; cannot attach to a non-HTTP trace (0.666034ms)
+✔ CLI discovers a candidate and emits validated mock/scripted JSON only (1.400128ms)
+✔ readable report explains rejection, provenance, trace, uncertainty and history modes (1.069533ms)
+✔ missing evidence produces partial report and status 2 (1.394766ms)
+✔ CLI rejects unknown, duplicate, missing, and out-of-range arguments (0.275379ms)
+✔ lookback uses a UTC interval without a prior investigation (0.095382ms)
+✔ NVIDIA mode without credentials fails without falling back or leaking raw errors (0.114589ms)
+✔ report rejects forged citations, historical IDs, scope/window mismatches, invalid transitions and false contradictions (3.598217ms)
+✔ end-to-end H-MEM lesson reduces work, revalidates fresh evidence and persists the correction (7.611306ms)
+✔ lessons require cited authoritative contradictions; older summaries still validate (1.491214ms)
+✔ recall filters future and different-mode records before selecting the latest correction (3.9507ms)
+✔ remembered dependency conflict cannot replace unavailable fresh evidence (3.367647ms)
+✔ remembered dependency conflict cannot replace partial fresh evidence (3.069666ms)
+✔ remembered dependency conflict cannot replace non_authoritative fresh evidence (3.077658ms)
+✔ demo retains a failed model phase and never reports a speedup or falls back (5001.558953ms)
+✔ D: learned conflict takes priority over unqueried checks and keeps current citations separate (8.627892ms)
+✔ stale rejection cannot survive fresh cleared jobs or missing operational evidence (11.411615ms)
+✔ history services fail independently and disclose no provider errors (6.635913ms)
+✔ Zetaris audit history does not dictate query order when H-MEM is unavailable (4.656792ms)
+✔ future historical records cannot influence current query order; disabled appends do not write (4.294983ms)
+✔ model adapter receives bounded historical hints and binds fresh prioritized queries (4.008342ms)
+✔ Zetaris comparison forwards A history while fresh B decides the verdict (6.569627ms)
+✔ Zetaris comparison forwards B history while fresh A decides the verdict (6.709665ms)
+✔ future and mismatched-mode Zetaris records never become comparison context (5.391131ms)
+✔ Zetaris password login uses verified UI contract and never the old token (0.598887ms)
+✔ Zetaris password login failure is sanitized without token fallback or retry (0.292634ms)
+✔ Zetaris blocks wrong org and malformed login data before querying (0.394741ms)
+✔ Zetaris accepts orgId in the login token payload, as the UI does (0.3776ms)
+✔ history append encodes values, verifies readback, reads scoped history and reuses an identical ID (2.353209ms)
+✔ history schema mismatch prevents an insert (1.285165ms)
+✔ history rejects unexpected scope returned by server (1.481006ms)
+✔ history insert failure is uncertain and never retried (1.444937ms)
+✔ history rejects unapproved targets, invalid limits and disabled writes without network (1.143609ms)
+ℹ tests 230
+ℹ suites 0
+ℹ pass 230
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14535.426398
+ℹ start of coverage report
+ℹ ---------------------------------------------------------------------------------------------------------------------------------------
+ℹ file                          | line % | branch % | funcs % | uncovered lines
+ℹ ---------------------------------------------------------------------------------------------------------------------------------------
+ℹ cli.ts                        |  95.59 |    84.29 |  100.00 | 36-38 59 147-151
+ℹ scripts                       |        |          |         |
+ℹ  demo-follow-up.ts            |  94.05 |    92.86 |  100.00 | 136-146
+ℹ  demo-warm.ts                 |  87.55 |    98.44 |   95.24 | 156-187 195
+ℹ  demo-web-jobs.ts             |  92.44 |    82.43 |   76.92 | 38-39 46 101 122 126-128 131-133 141-145 147-148
+ℹ  demo-web-worker.ts           |  90.91 |    63.64 |   66.67 | 56 67-74 81
+ℹ  demo-web.ts                  |  78.35 |    80.00 |   81.25 | 68 92-112 115-119 143-165
+ℹ  evaluate-memory.ts           |  97.68 |    92.16 |  100.00 | 188-193
+ℹ  evaluate.ts                  |  99.52 |    92.37 |  100.00 | 57-58
+ℹ  follow-up.ts                 |  76.74 |    78.57 |   83.33 | 47-48 54 97-127 133-138
+ℹ  model-request-timing.mjs     |  97.56 |    71.43 |  100.00 | 31-32
+ℹ  probe-model-reliability.ts   |  53.40 |    94.44 |   85.71 | 43-134 139-142
+ℹ src                           |        |          |         |
+ℹ  config.ts                    |  97.28 |    90.20 |  100.00 | 85-88
+ℹ  contracts.ts                 |  98.58 |    88.24 |  100.00 | 73 180 257 263 278 296-297 354-355
+ℹ  engine.ts                    |  95.56 |    87.50 |  100.00 | 24-25
+ℹ  http.ts                      | 100.00 |    91.67 |  100.00 |
+ℹ  investigation                |        |          |         |
+ℹ   follow-up-contract.ts       | 100.00 |   100.00 |  100.00 |
+ℹ   follow-up.ts                |  97.65 |    88.52 |  100.00 | 30-31 37 143 216-217 258 281 287 289
+ℹ   history.ts                  |  99.65 |    95.45 |   92.86 | 121
+ℹ   memory.ts                   |  97.63 |    88.30 |  100.00 | 50 140-141 196-198 214-215 262 276
+ℹ   mock.ts                     | 100.00 |    97.56 |  100.00 |
+ℹ   model.ts                    | 100.00 |    93.41 |  100.00 |
+ℹ   nvidia.ts                   | 100.00 |   100.00 |  100.00 |
+ℹ   planner.ts                  |  97.78 |    90.00 |  100.00 | 35 58-59
+ℹ   policy.ts                   | 100.00 |    93.42 |  100.00 |
+ℹ   provider-error.ts           |  97.44 |    86.11 |   84.62 | 18 37-38
+ℹ   report.ts                   |  98.99 |    90.04 |   98.00 | 67 138 164-165 170 312 360 493
+ℹ   run.ts                      |  99.18 |    94.69 |  100.00 | 47-48 60-61 344-345
+ℹ  tools                        |        |          |         |
+ℹ   aws-agent.ts                |  95.74 |    79.84 |   90.00 | 48 59 98 104 126-130 138-140 160-161 211 239 243 245
+ℹ   aws-evidence.ts             | 100.00 |    85.19 |  100.00 |
+ℹ   aws-synthetic.ts            |  97.15 |    84.72 |   92.86 | 35 70-72 90 118-120
+ℹ   aws.ts                      |  96.90 |    79.82 |   87.50 | 47-48 50-52 54 57-59 166-169 198 348 356-357 362-363 470 472-473 477-478
+ℹ   zetaris-history.ts          |  98.43 |    89.22 |   96.55 | 96 159 182-184 190
+ℹ   zetaris.ts                  |  96.32 |    82.35 |   88.89 | 45 67 78 117 132-134
+ℹ tests                         |        |          |         |
+ℹ  helpers                      |        |          |         |
+ℹ   zetaris-ledger.ts           |  99.03 |    96.67 |  100.00 | 51
+ℹ vendor                        |        |          |         |
+ℹ  hmem                         |        |          |         |
+ℹ   src                         |        |          |         |
+ℹ    conflictDetection.ts       |  49.21 |   100.00 |   50.00 | 15-27 29-54 56-78 80-81
+ℹ    dreaming.ts                |  46.53 |   100.00 |   40.00 | 9-24 26-66 69-86 88-89
+ℹ    embeddings.ts              | 100.00 |    95.45 |  100.00 |
+ℹ    index.ts                   | 100.00 |   100.00 |   75.00 |
+ℹ    memoryMining.ts            |  58.24 |   100.00 |   44.44 | 12-24 26-32 34-36 38-40 42-53
+ℹ    memoryRetrieval.ts         |  90.51 |    73.53 |   84.62 | 11-15 77-84
+ℹ    memoryStore.ts             |  90.74 |    66.07 |   73.91 | 39-42 54 69-72 74-77 82-85 87 89-90
+ℹ    sleepCycle.ts              |  40.31 |   100.00 |   57.14 | 9-42 44-80 82-87
+ℹ    trustLedger.ts             |  84.31 |   100.00 |   66.67 | 20 23-29
+ℹ    types.ts                   | 100.00 |   100.00 |  100.00 |
+ℹ ---------------------------------------------------------------------------------------------------------------------------------------
+ℹ all files                     |  93.35 |    87.77 |   91.06 |
+ℹ ---------------------------------------------------------------------------------------------------------------------------------------
+ℹ end of coverage report

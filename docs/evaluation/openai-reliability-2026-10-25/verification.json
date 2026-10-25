@@ -1,0 +1,42 @@
+{
+  "verified_at": "2026-10-25T08:37:39.667Z",
+  "revision": "cd0f793bbb21695c0b053e035ebcd91278602f4c",
+  "runtime_fix_revision": "c92ce34",
+  "provider": "OpenAI official API",
+  "model": "gpt-6.1-sol",
+  "response_format": "text",
+  "extra_body_keys": [],
+  "model_timeout_ms": 60000,
+  "total_timeout_ms": 900000,
+  "passed_runs": 9,
+  "total_runs": 9,
+  "planner_calls": 51,
+  "citations": {
+    "valid": 63,
+    "total": 63
+  },
+  "elapsed_ms": {
+    "min": 9555,
+    "max": 15847,
+    "aggregate": 105094
+  },
+  "request_elapsed_ms": {
+    "min": 1354,
+    "max": 3274
+  },
+  "http_200_verified_tls_complete_bodies": 51,
+  "independent_ids": 51,
+  "configured_credential_scan": "passed",
+  "modes": {
+    "planner": "live",
+    "evidence": "mock",
+    "history": "disabled"
+  },
+  "automatic_retries": 0,
+  "limitations": [
+    "Designed-fixture gate; not a production reliability estimate.",
+    "No live AWS, Zetaris or H-MEM proof from this run.",
+    "Provider token usage and billing cost unrecorded.",
+    "Earlier NVIDIA failures remain separate measurements."
+  ]
+}

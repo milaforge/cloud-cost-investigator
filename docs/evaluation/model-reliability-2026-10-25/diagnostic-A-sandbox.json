@@ -1,0 +1,86 @@
+{
+  "measured_at": "2026-10-25T06:30:15.257Z",
+  "evidence_mode": "mock",
+  "planner_mode": "model",
+  "selected_cases": [
+    "A"
+  ],
+  "planner_delay_ms": 5000,
+  "planner_timeout_ms": 300000,
+  "request": {
+    "account_id": "evaluation-synthetic",
+    "region": "us-east-1",
+    "max_candidates": 1,
+    "window": {
+      "from": "2026-09-01T00:00:00Z",
+      "to": "2026-09-29T00:00:00Z"
+    }
+  },
+  "methodology": "Selected cases from eight fixed synthetic single-candidate fixtures, one run each, sequentially; independently labeled expected dispositions. CPU baseline shares discovery ranking, recommends when average CPU <=10%, ignores peaks and operational checks. Investigation uses the existing safety evaluator. Scripted runs measure deterministic policy; model runs measure real model planning. History disabled. D is measured separately by probe:warm. Citation counts cover candidate/hypothesis references and full reports pass runtime validation. No production generalization or model superiority follows from this small designed set.",
+  "model_cost": null,
+  "cost_limitation": "Planner does not record token usage or provider billing; cost is unavailable, not zero.",
+  "cpu_baseline": {
+    "disposition_correct": 1,
+    "cases": 1,
+    "unsafe_positives": 0,
+    "unsafe_cases": 0,
+    "unverified_positives": 0,
+    "unknown_cases": 0
+  },
+  "investigation": {
+    "disposition_correct": 0,
+    "cases": 1,
+    "unsafe_positives": 0,
+    "unsafe_cases": 0,
+    "unverified_positives": 0,
+    "unknown_cases": 0
+  },
+  "execution": {
+    "cases": 1,
+    "complete": 0,
+    "partial": 0,
+    "failed": 1,
+    "planner_failure_cases": 1,
+    "matching_dispositions_with_planner_failure": 0,
+    "failure_code_counts": {
+      "model_transport_unavailable": 1
+    }
+  },
+  "rows": [
+    {
+      "case": "A",
+      "expected": "conditional_recommendation",
+      "safety": "supported",
+      "cpu_baseline": {
+        "verdict": "conditional_recommendation",
+        "elapsed_ms": 1,
+        "tool_attempts": 3,
+        "planner_calls": 0
+      },
+      "investigation": {
+        "verdict": null,
+        "completion": "failed",
+        "stop_reason": "planner_unavailable_or_invalid",
+        "planner_failures": [
+          {
+            "step": 1,
+            "code": "model_transport_unavailable"
+          }
+        ],
+        "planner": {
+          "mode": "live",
+          "model": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+        },
+        "investigation_id": "97c59cef-2e23-400c-b2a7-a3a72500302c",
+        "elapsed_ms": 5026,
+        "tool_attempts": 0,
+        "planner_calls": 1,
+        "citations": {
+          "valid": 0,
+          "total": 0
+        },
+        "savings": null
+      }
+    }
+  ]
+}

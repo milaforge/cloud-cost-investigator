@@ -7,9 +7,229 @@
 **Hackathon track:** 02 — The Agent That Can Explain Why.  
 **Approved scope (2026-10-23):** AWS EC2 off-hours scheduling safety; direct current-evidence tools; Zetaris structured history; Meterless reasoning memory; no infrastructure modification. The older cost-increase/snapshot-comparison workflow is superseded.  
 **Deadline:** 2026-10-27 23:45 UTC in recorded event notes; verify portal. Target freeze: Oct 26.  
-**Active milestone:** Days 3–4 — full user flows and live-evidence integration, reconciled Oct 24, 2026. Day 2's mock B/failure gate and separate real-model, H-MEM and Zetaris round-trips have linked historical proof. This advances the work stage, not the combined live-evidence or release gates.
+**Active milestone:** Days 3–4 — full user flows and live-evidence integration, reconciled Oct 25, 2026. Day 2's mock B/failure gate and separate real-model, H-MEM and Zetaris round-trips have linked historical proof. This advances the work stage, not the combined live-evidence or release gates.
 
-## Current status and next actions — reconciled 2026-10-24
+## Current status and next actions — reconciled 2026-10-25
+
+### Real-model reliability gate — 2026-10-25
+
+**Current provider gate: CLOSED with OpenAI, 9/9 complete.** See the
+[executed OpenAI gate](#openai-reliability-gate-closed--2026-10-25) below. The NVIDIA
+measurements and focused comparison remain separately retained historical evidence.
+
+- **Gate/owner:** repeated real-model A/B/C completion, Milad. **Historical NVIDIA initial measurement:**
+  [three-round CLI measurement](evaluation/model-reliability-2026-10-25/summary.json)
+  exited **1**, with **8/9 complete, 1/9 partial**; A **3/3**, B **3/3**, C
+  **2/3**. The failed [round 2 C report](evaluation/model-reliability-2026-10-25/round-2-C.json)
+  timed out on planner call 2 after inventory, before billing or candidate
+  selection: `planner_timeout`, **301187 ms**, CLI exit **2**, no recommendation.
+  All **57/57** candidate/hypothesis citation references resolve; the partial
+  run has no candidate references. All complete B/C reports show the expected
+  fresh operations/dependency contradiction. There were **47 planner attempts**
+  and **434943 ms** aggregate investigation time, including the timeout.
+- **Executed command/mode:** `LLM_EXTRA_BODY='{"chat_template_kwargs":{"enable_thinking":false}}' NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx scripts/probe-model-reliability.ts /tmp/cci-real-model-gate-2026-10-25`,
+  with authorized network access. The configured NVIDIA-hosted model was
+  `nvidia/nemotron-3.5-super-vl-120b-a12b`, text JSON output, existing 1024-token
+  default. Nine fresh serial CLI processes used explicit mock evidence,
+  unchanged CLI pacing, no history, retries or fallback. The probe retains every
+  report and refuses an existing output directory. [Progress log](evaluation/model-reliability-2026-10-25/gate-progress.log)
+  and [reproduction procedure](evaluation/README.md#repeated-real-model-cli-gate).
+- **Pre-gate diagnostics retained:** `NODE_TLS_REJECT_UNAUTHORIZED=1 npm run --silent evaluate -- --planner model --case A --verbose`
+  first [failed in the sandbox](evaluation/model-reliability-2026-10-25/diagnostic-A-sandbox.json)
+  with `model_transport_unavailable`; the [network-enabled run](evaluation/model-reliability-2026-10-25/diagnostic-A-network-enabled.json)
+  reached call 3, then returned HTTP 500, `Failed to generate completions`.
+  The [thinking-disabled A run](evaluation/model-reliability-2026-10-25/diagnostic-A-thinking-disabled.json)
+  completed with the same command-local override as the gate. These are three
+  separate diagnostics, **1 complete / 1 partial / 1 failed**, not replacements
+  for gate attempts. Across those diagnostics and the gate: **12 investigations,
+  9 complete / 2 partial / 1 failed**. The setting does not prove the cause of
+  HTTP 500 and does not establish reliable completion.
+- **Failure isolation:** after all nine runs finished, a single 25-second-bounded
+  [replay of the reconstructed timed-out planner state](evaluation/model-reliability-2026-10-25/state-replay.json)
+  returned validated `get_ec2_billing` in **1497 ms**, without executing any tool.
+  This is a separate diagnostic call. The same state can produce an action, so
+  a consistently invalid state/request is not demonstrated; the cause of the
+  intermittent timeout remains unknown. No planner fix or automatic retry was
+  introduced to manufacture a pass.
+- **Local proof:** `npm test` **227/227 passed** with loopback permission;
+  `node --import tsx --test --test-isolation=none tests/model-reliability.test.ts`
+  **4/4 passed**; `npm run typecheck`, `npm run lint`, scoped formatting and
+  `git diff --check` passed. A negative invocation verified that an existing
+  output directory is rejected before model execution and preserves its files.
+  Retained artifacts were checked for the configured model credential and
+  endpoint without printing either. No production dependency, `.env` or planner
+  behavior changed.
+- **Availability diagnosis before rerun:** [DNS/TLS/catalog and planner controls](evaluation/model-network-2026-10-25/network-diagnosis.json)
+  recorded three successful DNS lookups, three verified TLS 1.3 handshakes,
+  authenticated catalog HTTP **200 in 614 ms**, and **8/8** serial planner-only
+  calls in **1074–3517 ms**, alternating initial and reconstructed after-inventory
+  states. Command: `LLM_EXTRA_BODY='{"chat_template_kwargs":{"enable_thinking":false}}' NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx docs/evaluation/model-network-2026-10-25/diagnose.mjs /tmp/cci-model-network-diagnosis-new.json`.
+  These controls establish availability at those times, not sustained inference
+  reliability. Catalog response cancellation was intentional, not an outage.
+- **Latest nine-run rerun:** [retained summary](evaluation/model-network-2026-10-25/gate-rerun/summary.json)
+  exited **1**: **4/9 complete, 2/9 partial, 3/9 failed**; A **2/3**, B **2/3**,
+  C **0/3**. C timed out on planner calls **6** (after operations, before
+  dependencies) and **3** (after billing, before metrics). Final-round A/B/C each
+  failed on call 1 with HTTP **500** and sanitized `Failed to generate completions`.
+  All **36/36** candidate/hypothesis references resolve, including partial runs;
+  there were **34 planner attempts**, **669096 ms** aggregate investigation time.
+  No failed or partial attempt was counted as a pass. A concurrent
+  [catalog control](evaluation/model-network-2026-10-25/concurrent-catalog-control.json)
+  returned HTTP **200 in 553 ms** during the first C stall; a general service
+  reachability outage at that moment is not supported.
+- **Rerun command/instrumentation limit:** the initial gate command above used
+  `/tmp/cci-real-model-gate-instrumented-2026-10-25` and additionally attempted
+  `NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--import=./scripts/model-request-timing.mjs"`.
+  [Progress](evaluation/model-network-2026-10-25/gate-rerun/gate-progress.log) and
+  all reports are retained. The execution environment did not propagate that
+  variable: **all nine stderr timing files are empty**, so the stalled request
+  phases cannot be determined retrospectively. The gate now explicitly preloads
+  the observer in each child; a local native-fetch success/cancellation test
+  verifies actual event delivery with `tsx`. Planner behavior is unchanged.
+- **One targeted instrumented diagnostic after rerun:**
+  `LLM_EXTRA_BODY='{"chat_template_kwargs":{"enable_thinking":false}}' NODE_TLS_REJECT_UNAUTHORIZED=1 node --import ./scripts/model-request-timing.mjs --import tsx docs/evaluation/model-network-2026-10-25/replay-c.mjs /tmp/cci-model-network-c-replay-new.json`
+  reconstructed the first stalled C state and returned validated
+  [get_ec2_dependencies in 1276 ms](evaluation/model-network-2026-10-25/c-state-replay.json).
+  Its [request timing](evaluation/model-network-2026-10-25/c-state-replay.stderr.txt)
+  shows verified TLS, body write at **437 ms**, HTTP **200** headers at **1260 ms**
+  and body complete at **1261 ms**. This separate single call used a 45-second
+  diagnostic bound and executed no tool. It cannot explain the earlier timeout
+  or close the failed gate. No further inference reruns were made.
+- **Final local proof:** `npm test` **230/230 passed** with loopback/subprocess
+  permission; focused observer/gate tests **7/7 passed**. Typecheck, lint, scoped
+  formatting, syntax, documentation hierarchy/link and diff whitespace checks
+  passed. Artifacts were scanned for configured credentials and endpoint without
+  printing either. No production dependency, secret or planner transport changed.
+- **OpenAI focused comparison, requested to conserve quota:** after the user
+  changed project configuration to OpenAI `gpt-6.1-sol`,
+  `NODE_TLS_REJECT_UNAUTHORIZED=1 node --import ./scripts/model-request-timing.mjs --import tsx docs/evaluation/model-network-2026-10-25/compare-openai.mjs /tmp/cci-openai-focused-2026-10-25`
+  exited **0**. [Selected comparison](evaluation/model-network-2026-10-25/openai-focused/summary.json)
+  passed **3/3** distinct failed-state replays: initial inventory (**3870 ms**),
+  after billing → metrics (**2272 ms**), and after operations → dependencies
+  (**2225 ms**). Then one fresh actual [CLI C investigation](evaluation/model-network-2026-10-25/openai-focused/C.json)
+  completed in **11466 ms**, **6 planner calls**, expected `not_recommended`,
+  fresh dependency contradiction and valid current-run citations. All **9/9**
+  model requests returned HTTP **200** with verified TLS and completed bodies;
+  [replay timings](evaluation/model-network-2026-10-25/openai-focused/comparison-progress.log)
+  and [CLI timings](evaluation/model-network-2026-10-25/openai-focused/C.stderr.txt)
+  are retained. No retries/fallback, separate A/B investigations, successful
+  standalone checks, network controls, history or AWS calls were repeated.
+  C necessarily repeated its discovery prerequisites against fresh mock evidence.
+  Actual token usage/provider cost is unrecorded, not zero.
+- **Comparison interpretation/limits:** the same planner/executor/evaluator can
+  complete these formerly failing paths with the new provider/model. This
+  supports provider/model-specific instability in the earlier NVIDIA path;
+  it does not prove its timeout cause or establish absence of implementation
+  defects. This is not a controlled provider-only experiment: model, timing and
+  generation settings differ. OpenAI used configured text output, no extra-body
+  overrides and the existing official-OpenAI `max_completion_tokens: 1024`
+  default; NVIDIA used its legacy token parameter and thinking-disabled override.
+  Existing compatible transport was reused without product code changes.
+  [Official model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-sol)
+  supports Chat Completions without native tool calling; this planner returns
+  action JSON, and the executor owns tool execution. The selected comparison
+  does **not** replace the failed nine-run gates or establish OpenAI A/B/repeated
+  reliability, event approval, or new NVIDIA sponsor contribution.
+- **Focused comparison verification:** report/gate acceptance checks passed;
+  syntax, lint, typecheck, docs hierarchy/links, whitespace and artifact credential
+  scan passed. The previous **230/230** full-suite result remains separate;
+  no product code changed and the full suite was not repeated for this probe.
+- **Blocker/next action:** original intermittent inference failures remain: actual HTTP
+  500 responses establish API errors, while the two timeout phases/root causes
+  remain unknown. The requested focused OpenAI comparison is complete and green;
+  at that point the repeated release gate remained open on the chosen release
+  provider. No full rerun was made during that focused comparison, per the
+  quota-saving scope. The later OpenAI gate below closes that separate gate. Provider/API owner logs are needed
+  to explain the earlier NVIDIA time windows; do not infer queueing, overload,
+  rate limiting or a client defect. Preserve both
+  nine-run measurements. Model/event eligibility, live AWS evidence and Zetaris
+  effective permissions remain separate gates; these runs use synthetic EC2
+  evidence and histories disabled, not live AWS or production reliability proof.
+
+### OpenAI reliability gate closed — 2026-10-25
+
+- **Gate/owner/status:** repeated real-model A/B/C completion, Milad — **CLOSED**
+  on the configured official OpenAI API using **gpt-6.1-sol**. Three independent
+  serial rounds passed **9/9**, A/B/C each **3/3**. Every CLI exited **0**, returned
+  `complete`, matched the expected verdict and cited fresh retrieved evidence.
+  All B/C reports show proposed → contradicted transitions with the correct
+  operations/dependency source. [Full summary](evaluation/openai-reliability-2026-10-25/summary.json),
+  [independent saved-report verification](evaluation/openai-reliability-2026-10-25/verification.json)
+  and [progress log](evaluation/openai-reliability-2026-10-25/gate-progress.log).
+- **Command:** `NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx scripts/probe-model-reliability.ts docs/evaluation/openai-reliability-2026-10-25`
+  exited **0** with authorized network access. Loaded project `.env` while keeping
+  shell precedence; verified official OpenAI destination and key presence without
+  printing secrets. Text response format, no extra-body overrides, unchanged
+  generation defaults and CLI pacing. Executed revision **cd0f793** includes runtime
+  fix **c92ce34**; model-call cap **60000 ms**, total **900000 ms** per investigation.
+- **Measurement:** **51/51** real model requests returned HTTP **200**, verified
+  TLS and completed bodies. Request times **1354–3274 ms**; investigations
+  **9555–15847 ms**, **105094 ms** combined. **63/63** candidate/hypothesis citation
+  references resolve; all investigation/evidence IDs are disjoint across runs.
+  No planner failures, retries or scripted fallback. No earlier diagnostics or
+  state replays were repeated; every one of these nine attempts is retained.
+- **Independent verification:** revalidated all nine full reports, expected
+  dispositions, gate checks, model identity, distinct IDs, report/summary budgets,
+  per-process request counts, HTTP/TLS/body completion and runtime bounds.
+  Scanned retained artifacts for the configured API key and private-key markers
+  without printing them. Local gate-assessment tests passed **4/4** with
+  `node --import tsx --test --test-isolation=none tests/model-reliability.test.ts`.
+  The verifier's first local metadata collection encountered sandbox `spawnSync
+  git EPERM`; revision capture through the shell then completed verification.
+  No paid requests were rerun and no product code was changed.
+- **Modes/limits/next action:** real OpenAI planning over explicit **mock EC2
+  evidence**, histories disabled. This closes the designed-fixture release gate,
+  not production reliability, live AWS coverage, effective Zetaris permissions,
+  event/model eligibility or a full warm-memory flow on OpenAI. Token usage and
+  billed cost are unrecorded. Earlier NVIDIA failures remain intact and their
+  cause remains unresolved. Next: integrated live-source verification with Zayan,
+  independent clean-checkout/artifact review, final deck/video and portal checks.
+
+### Implementation verification audit — 2026-10-25
+
+- **Gate/owner:** core implementation correctness review, Milad. User requested
+  proof of a defect-free implementation. **Failed:** an independently reproduced
+  runtime/report contract mismatch prevents that claim. No product fix was made
+  in this verification-only audit; earlier provider comparison remains distinct.
+- **Confirmed defect:** `runInvestigation` permits up to **8400000 ms** aggregate
+  runtime and defaults to **7020000 ms** for a live three-candidate run, while
+  `validateReport` accepts `budget.elapsed_ms` only up to **3600000 ms**.
+  A valid slow investigation can complete its evidence checks within all engine
+  limits and then throw `Invalid integer`, losing the returned report instead
+  of returning its completed/partial findings. Locations:
+  [`run.ts`](../src/investigation/run.ts), [`report.ts`](../src/investigation/report.ts).
+- **Independent reproducer:**
+  `node --import tsx --test --test-isolation=none docs/evaluation/implementation-audit-2026-10-25/reproduce-runtime-limit.test.ts`
+  failed **0/1 passed**, with the retained [stack/output](evaluation/implementation-audit-2026-10-25/runtime-limit-failure.txt).
+  Fake Date/timers simulate **13 calls × 290000 ms = 3770000 ms** (**62m50s**),
+  each below its 300000-ms deadline, using the existing mixed mock provider and
+  scripted choices behind a simulated live-planner interface. No network/model,
+  real-hour wait, history or AWS access. The failure occurs at report validation
+  after the investigation, not in a provider request.
+- **Passing baseline, separately retained:**
+  `node --import tsx --test --test-isolation=none --experimental-test-coverage tests/*.test.ts`
+  passed **230/230** with local loopback/subprocess permissions;
+  [output/coverage](evaluation/implementation-audit-2026-10-25/regression-and-coverage.txt).
+  Core observed line/branch coverage: model **100% / 93.41%**, engine
+  **99.18% / 94.69%**, policy **100% / 93.42%**, report **98.99% / 90.04%**.
+  These are coverage measurements, not completeness/correctness proofs.
+  `npm run --silent evaluate -- --planner scripted` passed the eight designed
+  cases, **8/8 correct**, **0 unsafe positives**, with valid current-run citations;
+  [retained evaluation](evaluation/implementation-audit-2026-10-25/scripted-evaluation.json).
+  `npm run typecheck`, `npm run typecheck:aws`, `npm run lint`, focused formatting
+  and whitespace checks passed. The final docs hierarchy check **failed** its
+  README length assertion: a concurrent, unrelated README edit increased it to
+  **14 lines**, above the recorded 10-line cap; that edit was preserved.
+  Retained logs were scanned for the configured model credential without printing it.
+- **Scope/limits/next action:** reviewed planner output binding, executor scope
+  and attempt/deadline boundaries, report evidence registration and chronology,
+  deterministic safety/savings, and existing failure tests. No new paid calls;
+  previous nine-request OpenAI proof is reused. Align runtime/report bounds and
+  keep the adversarial reproducer as a regression before claiming this defect
+  resolved. Live AWS coverage, remote Zetaris effective permissions, browser
+  visual behavior, independent clean-checkout proof and repeated real-model
+  reliability remain separate unclosed gates. This audit cannot establish the
+  absence of other defects.
 
 ### Runtime budget defect fixed — 2026-10-25
 
@@ -64,12 +284,12 @@ This table summarizes the release checklist below. [Historical execution receipt
 | --- | --- | --- |
 | Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
 | AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). Live proof is limited to authenticated empty discovery. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
-| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. | Effective dedicated-user least privilege remains unverified; Zayan/user. Reliable real-model A/B/C completion remains open; Milad. |
+| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Effective dedicated-user least privilege remains unverified; Zayan/user. Live evidence and event eligibility remain separate. |
 | Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
 | Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
 | Release | README/setup and retained proof exist; release is **not complete**. | Clean-checkout/independent reproduction, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
 
-**Next slice:** Zayan/team verifies populated live CloudWatch and opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. Continue model reliability work with retained failures, then complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
+**Next slice:** Zayan/team verifies populated live CloudWatch and opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. The repeated OpenAI A/B/C gate is closed; retain prior failures and complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
 
 ## Owners
 
@@ -101,7 +321,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 - [x] Conditional-recommendation guards for peaks/jobs/dependencies and human approval tested with mock evidence; AWS adapter path is read-only. Live operational authority remains open.
 - [x] Null-savings guards and reproducible marginal-compute arithmetic verified with synthetic pricing; live rates/commitment coverage remain open.
 - [x] A/B/C/D and bounded source/model/history/memory failure paths reproducible offline; real sponsor warm proof recorded separately.
-- [ ] Demonstrate reliable real-model A/B/C execution; retain all failed measurements and explicit safe partial outcomes.
+- [x] Demonstrate repeated real-model A/B/C execution: Oct 25 [OpenAI three-round gate](#openai-reliability-gate-closed--2026-10-25) passed **9/9 complete** under the 15-minute total / 60-second call limits, with mock evidence and histories disabled. Earlier failed NVIDIA measurements remain retained.
 - [x] Measured evaluation against CPU heuristic and H-MEM against both fixed orders recorded with full denominators, failures, teaching cost and limitations.
 - [ ] No credentials, sensitive exports, or raw secret-bearing provider responses in code/fixtures/reports.
 - [ ] README, reproducible clean setup, slide deck, sponsor explanation and **1–4 minute demo** ready. Use [demo/deck preparation](DEMO.md) and [trace capture](CLI_GUIDE.md#capture-and-read-the-decision-trace); final artifacts and independent reproduction remain required.

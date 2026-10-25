@@ -1,0 +1,360 @@
+{
+  "measured_at": "2026-10-25T06:50:11.634Z",
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "node": "v24.19.0",
+  "undici": "7.29.0",
+  "thinking_disabled": true,
+  "methodology": "Three serial DNS/TLS samples, one authenticated catalog request, four serial pairs of initial and reconstructed timed-out planner states. No tools/history, retries, fallback, prompts, raw responses, headers, hostnames or IPs recorded. Planner diagnostic deadline 45 seconds; this does not replace the failed release gate. Connection events are global pool observations, not per-request attribution.",
+  "network": [
+    {
+      "sample": 1,
+      "test": "dns",
+      "outcome": "ok",
+      "elapsed_ms": 119,
+      "address_count": 2,
+      "families": [
+        4
+      ]
+    },
+    {
+      "sample": 1,
+      "test": "tls",
+      "outcome": "ok",
+      "elapsed_ms": 446,
+      "authorized": true,
+      "protocol": "TLSv1.3"
+    },
+    {
+      "sample": 2,
+      "test": "dns",
+      "outcome": "ok",
+      "elapsed_ms": 1,
+      "address_count": 2,
+      "families": [
+        4
+      ]
+    },
+    {
+      "sample": 2,
+      "test": "tls",
+      "outcome": "ok",
+      "elapsed_ms": 398,
+      "authorized": true,
+      "protocol": "TLSv1.3"
+    },
+    {
+      "sample": 3,
+      "test": "dns",
+      "outcome": "ok",
+      "elapsed_ms": 0,
+      "address_count": 2,
+      "families": [
+        4
+      ]
+    },
+    {
+      "sample": 3,
+      "test": "tls",
+      "outcome": "ok",
+      "elapsed_ms": 436,
+      "authorized": true,
+      "protocol": "TLSv1.3"
+    }
+  ],
+  "model_calls": [
+    {
+      "pair": 1,
+      "state": "initial",
+      "elapsed_ms": 1168,
+      "outcome": "action_returned",
+      "action": "list_ec2_instances"
+    },
+    {
+      "pair": 1,
+      "state": "after_inventory",
+      "elapsed_ms": 1623,
+      "outcome": "action_returned",
+      "action": "get_ec2_billing"
+    },
+    {
+      "pair": 2,
+      "state": "initial",
+      "elapsed_ms": 1143,
+      "outcome": "action_returned",
+      "action": "list_ec2_instances"
+    },
+    {
+      "pair": 2,
+      "state": "after_inventory",
+      "elapsed_ms": 1344,
+      "outcome": "action_returned",
+      "action": "get_ec2_billing"
+    },
+    {
+      "pair": 3,
+      "state": "initial",
+      "elapsed_ms": 1146,
+      "outcome": "action_returned",
+      "action": "list_ec2_instances"
+    },
+    {
+      "pair": 3,
+      "state": "after_inventory",
+      "elapsed_ms": 1167,
+      "outcome": "action_returned",
+      "action": "get_ec2_billing"
+    },
+    {
+      "pair": 4,
+      "state": "initial",
+      "elapsed_ms": 1074,
+      "outcome": "action_returned",
+      "action": "list_ec2_instances"
+    },
+    {
+      "pair": 4,
+      "state": "after_inventory",
+      "elapsed_ms": 3517,
+      "outcome": "action_returned",
+      "action": "get_ec2_billing"
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "phase": "catalog",
+      "created_ms": 1413,
+      "sent_ms": 1849,
+      "tls_authorized": true,
+      "body_sent_ms": 1849,
+      "headers_ms": 2011,
+      "status": 200,
+      "first_body_ms": 2012,
+      "response_bytes": 3960,
+      "error_ms": 2013,
+      "error_code": "other"
+    },
+    {
+      "id": 2,
+      "phase": "pair-1-initial",
+      "created_ms": 2016,
+      "sent_ms": 2439,
+      "tls_authorized": true,
+      "body_sent_ms": 2440,
+      "headers_ms": 3181,
+      "status": 200,
+      "first_body_ms": 3181,
+      "response_bytes": 735,
+      "complete_ms": 3181
+    },
+    {
+      "id": 3,
+      "phase": "pair-1-after_inventory",
+      "created_ms": 3183,
+      "sent_ms": 4046,
+      "tls_authorized": true,
+      "body_sent_ms": 4046,
+      "headers_ms": 4805,
+      "status": 200,
+      "first_body_ms": 4805,
+      "response_bytes": 747,
+      "complete_ms": 4805
+    },
+    {
+      "id": 4,
+      "phase": "pair-2-initial",
+      "created_ms": 4806,
+      "sent_ms": 5259,
+      "tls_authorized": true,
+      "body_sent_ms": 5259,
+      "headers_ms": 5948,
+      "status": 200,
+      "first_body_ms": 5949,
+      "response_bytes": 738,
+      "complete_ms": 5949
+    },
+    {
+      "id": 5,
+      "phase": "pair-2-after_inventory",
+      "created_ms": 5949,
+      "sent_ms": 6391,
+      "tls_authorized": true,
+      "body_sent_ms": 6391,
+      "headers_ms": 7292,
+      "status": 200,
+      "first_body_ms": 7292,
+      "response_bytes": 736,
+      "complete_ms": 7293
+    },
+    {
+      "id": 6,
+      "phase": "pair-3-initial",
+      "created_ms": 7294,
+      "sent_ms": 7707,
+      "tls_authorized": true,
+      "body_sent_ms": 7707,
+      "headers_ms": 8439,
+      "status": 200,
+      "first_body_ms": 8439,
+      "response_bytes": 746,
+      "complete_ms": 8439
+    },
+    {
+      "id": 7,
+      "phase": "pair-3-after_inventory",
+      "created_ms": 8440,
+      "sent_ms": 8884,
+      "tls_authorized": true,
+      "body_sent_ms": 8884,
+      "headers_ms": 9606,
+      "status": 200,
+      "first_body_ms": 9606,
+      "response_bytes": 736,
+      "complete_ms": 9606
+    },
+    {
+      "id": 8,
+      "phase": "pair-4-initial",
+      "created_ms": 9607,
+      "sent_ms": 10004,
+      "tls_authorized": true,
+      "body_sent_ms": 10004,
+      "headers_ms": 10675,
+      "status": 200,
+      "first_body_ms": 10680,
+      "response_bytes": 742,
+      "complete_ms": 10680
+    },
+    {
+      "id": 9,
+      "phase": "pair-4-after_inventory",
+      "created_ms": 10680,
+      "sent_ms": 11090,
+      "tls_authorized": true,
+      "body_sent_ms": 11090,
+      "headers_ms": 14197,
+      "status": 200,
+      "first_body_ms": 14197,
+      "response_bytes": 730,
+      "complete_ms": 14197
+    }
+  ],
+  "connections": [
+    {
+      "event": "connection_started",
+      "phase": "catalog",
+      "elapsed_ms": 1413
+    },
+    {
+      "event": "connection_established",
+      "phase": "catalog",
+      "elapsed_ms": 1849,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-1-initial",
+      "elapsed_ms": 2016
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-1-initial",
+      "elapsed_ms": 2017
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-1-initial",
+      "elapsed_ms": 2439,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-1-initial",
+      "elapsed_ms": 2440,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-1-after_inventory",
+      "elapsed_ms": 3184
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-1-after_inventory",
+      "elapsed_ms": 4046,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-2-initial",
+      "elapsed_ms": 4806
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-2-initial",
+      "elapsed_ms": 5259,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-2-after_inventory",
+      "elapsed_ms": 5949
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-2-after_inventory",
+      "elapsed_ms": 6391,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-3-initial",
+      "elapsed_ms": 7294
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-3-initial",
+      "elapsed_ms": 7707,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-3-after_inventory",
+      "elapsed_ms": 8440
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-3-after_inventory",
+      "elapsed_ms": 8884,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-4-initial",
+      "elapsed_ms": 9607
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-4-initial",
+      "elapsed_ms": 10004,
+      "tls_authorized": true
+    },
+    {
+      "event": "connection_started",
+      "phase": "pair-4-after_inventory",
+      "elapsed_ms": 10680
+    },
+    {
+      "event": "connection_established",
+      "phase": "pair-4-after_inventory",
+      "elapsed_ms": 11090,
+      "tls_authorized": true
+    }
+  ],
+  "proxy_configured": false,
+  "catalog": {
+    "status": 200,
+    "elapsed_ms": 614
+  },
+  "elapsed_ms": 14198
+}

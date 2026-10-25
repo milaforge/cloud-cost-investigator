@@ -1,5 +1,52 @@
 # Project Memory
 
+## Focused provider comparison (2026-10-25)
+
+- When conserving model quota, replay each distinct failed planner state once,
+  then run the failing end-to-end scenario only if those states pass. Skip
+  standalone successful controls; retain all failed attempts and use a separate
+  selected-test denominator. Do not combine passes from different providers into
+  a full release-gate claim.
+- A successful provider/model change localizes compatibility and demonstrated
+  behavior, not the cause of an intermittent failure. Model, generation settings
+  and measurement time confound provider-only attribution. Reuse the existing
+  compatible transport and keep protocol differences explicit in the receipt.
+
+## Diagnosing model-request availability (2026-10-25)
+
+- Record DNS/TLS controls separately from authenticated service reachability and
+  actual inference. A healthy catalog request does not prove model availability;
+  a successful replay does not explain an earlier timeout.
+- Use the optional native diagnostics-channel preload to distinguish request
+  transmission, response headers and response completion without touching the
+  planner transport. Never print headers, hosts, IPs, credentials, model text or
+  exception messages. Keep timing logs optional and correlated with each saved
+  CLI report; retain failed measurements when making another instrumented run.
+- Pass the observer explicitly with Node's `--import` in each gate child. The
+  execution environment removed `NODE_OPTIONS` in the measured invocation;
+  synthetic channel events alone did not prove native-fetch instrumentation.
+  Verify the actual preload with a local native-fetch success/cancellation test.
+- A completed write on a verified TLS socket followed by a wait for headers
+  localizes the failure after connection setup. Remote generation, gateway/queue
+  behavior and the response network path require further evidence to distinguish;
+  do not invent overload, rate limiting or a provider fix from timing alone.
+
+## Repeated real-model gate and generation settings (2026-10-25)
+
+- Use the existing CLI for the A/B/C reliability proof: fresh serial processes,
+  three rounds, full retained reports, unique evidence IDs and strict completion
+  checks. Matching a safe deferral after a planner failure is not a pass. Keep
+  provider diagnostics and prior failed measurements; do not retry into success.
+- Generic `LLM_*` configuration intentionally does not inherit model-specific
+  NVIDIA preset options. The configured Nemotron 3.5 Super VL can use the
+  documented command-local `chat_template_kwargs.enable_thinking=false` option
+  for short action JSON. Do not silently apply this option to arbitrary models,
+  change credentials or disable TLS. The successful setting alone does not
+  establish why an earlier provider request returned HTTP 500.
+- This is a real-model proof over synthetic evidence with history disabled;
+  live AWS coverage, event eligibility and production reliability remain separate.
+  Procedures belong in `docs/evaluation/README.md`, results in the execution plan.
+
 ## Browser AWS scope and Zetaris recall (2026-10-24)
 
 - The browser account field binds an investigation to the authenticated AWS account; it is not a credential input. Keep AWS credentials server-side in the SDK provider chain and show only safe issue codes when a source fails.

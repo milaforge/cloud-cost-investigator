@@ -1,0 +1,534 @@
+{
+  "investigation_id": "755e7cd9-5683-4d50-bbb1-26f91bd3a511",
+  "goal": "evaluate_ec2_off_hours_scheduling",
+  "request": {
+    "account_id": "reliability-synthetic",
+    "region": "us-east-1",
+    "window": {
+      "from": "2026-09-27T07:12:43.165Z",
+      "to": "2026-10-25T07:12:43.165Z"
+    },
+    "max_candidates": 1
+  },
+  "started_at": "2026-10-25T07:12:43.166Z",
+  "finished_at": "2026-10-25T07:12:54.632Z",
+  "completion_status": "complete",
+  "integration_mode": "mock",
+  "planner": {
+    "mode": "live",
+    "model": "gpt-6.1-sol"
+  },
+  "discovery": {
+    "discovered_count": 2,
+    "candidate_limit": 1,
+    "gaps": []
+  },
+  "candidates": [
+    {
+      "instance_id": "i-mock-primary",
+      "selection_reason": "Selected in descending observed compute cost among discovered running instances with positive matching billing; ties by instance ID.",
+      "selection_evidence_ids": [
+        "mock-ec2-evidence-5c281fdd-d007-409e-9817-426ac68c7976",
+        "mock-ec2-evidence-a8cb1c27-3117-46ae-b4b0-5587d1accef1"
+      ],
+      "proposed_window": {
+        "start_hour_utc": 0,
+        "end_hour_utc": 6
+      },
+      "verdict": "not_recommended",
+      "explanation": "A retrieved dependency requires continuous operation; reject this window.",
+      "supporting_evidence_ids": [
+        "mock-ec2-evidence-d94c4a3a-d8ac-4989-a057-b0a7b63280b0"
+      ],
+      "contradicting_evidence_ids": [
+        "mock-ec2-evidence-f90bb516-b8f6-4d07-ba1a-308416ba5374"
+      ],
+      "hypotheses": [
+        {
+          "window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          },
+          "state": "proposed",
+          "evidence_ids": [
+            "mock-ec2-evidence-d94c4a3a-d8ac-4989-a057-b0a7b63280b0"
+          ],
+          "reason": "Low observed average and peak CPU suggest a question; operational safety is unverified."
+        },
+        {
+          "window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          },
+          "state": "contradicted",
+          "evidence_ids": [
+            "mock-ec2-evidence-f90bb516-b8f6-4d07-ba1a-308416ba5374"
+          ],
+          "reason": "A retrieved dependency requires continuous operation; reject this window."
+        }
+      ],
+      "risks": [
+        "Stopping requires an authorized human decision."
+      ],
+      "missing_checks": [
+        "Other shutdown windows have not been evaluated."
+      ],
+      "assumptions": [
+        "UTC daily same-day schedule only; exceptions are not inferred.",
+        "Savings eligibility, commitments and retained charges have not been established."
+      ],
+      "next_human_actions": [
+        "Keep the proposed window rejected; review the cited conflict with the resource owner."
+      ],
+      "estimated_monthly_savings": null,
+      "savings_calculation": null
+    }
+  ],
+  "evidence": [
+    {
+      "tool": "list_ec2_instances",
+      "status": "ok",
+      "source": "mock-ec2-instances",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1"
+      },
+      "observed_window": {
+        "from": "2026-09-27T07:12:43.165Z",
+        "to": "2026-10-25T07:12:43.165Z"
+      },
+      "collected_at": "2026-10-25T07:12:45.924Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "instances",
+      "evidence_id": "mock-ec2-evidence-5c281fdd-d007-409e-9817-426ac68c7976",
+      "data": {
+        "instances": [
+          {
+            "instance_id": "i-mock-primary",
+            "state": "running"
+          },
+          {
+            "instance_id": "i-mock-secondary",
+            "state": "running"
+          }
+        ]
+      }
+    },
+    {
+      "tool": "get_ec2_billing",
+      "status": "ok",
+      "source": "mock-ec2-billing",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1"
+      },
+      "observed_window": {
+        "from": "2026-09-27T07:12:43.165Z",
+        "to": "2026-10-25T07:12:43.165Z"
+      },
+      "collected_at": "2026-10-25T07:12:48.019Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "currency",
+      "evidence_id": "mock-ec2-evidence-a8cb1c27-3117-46ae-b4b0-5587d1accef1",
+      "data": {
+        "costs": [
+          {
+            "instance_id": "i-mock-primary",
+            "compute_cost": 480
+          },
+          {
+            "instance_id": "i-mock-secondary",
+            "compute_cost": 80
+          }
+        ],
+        "currency": "USD",
+        "commitment_coverage_known": false
+      }
+    },
+    {
+      "tool": "get_ec2_metrics",
+      "status": "ok",
+      "source": "mock-ec2-metrics",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1",
+        "instance_id": "i-mock-primary"
+      },
+      "observed_window": {
+        "from": "2026-09-27T07:12:43.165Z",
+        "to": "2026-10-25T07:12:43.165Z"
+      },
+      "collected_at": "2026-10-25T07:12:49.807Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "percent",
+      "evidence_id": "mock-ec2-evidence-d94c4a3a-d8ac-4989-a057-b0a7b63280b0",
+      "data": {
+        "average_cpu_percent": 2,
+        "peak_cpu_percent": 8,
+        "suggested_window": {
+          "start_hour_utc": 0,
+          "end_hour_utc": 6
+        },
+        "aggregation_minutes": 5
+      }
+    },
+    {
+      "tool": "get_ec2_operations",
+      "status": "no_match",
+      "source": "mock-ec2-operations",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1",
+        "instance_id": "i-mock-primary"
+      },
+      "observed_window": {
+        "from": "2026-09-27T07:12:43.165Z",
+        "to": "2026-10-25T07:12:43.165Z"
+      },
+      "collected_at": "2026-10-25T07:12:52.968Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "UTC-hours",
+      "evidence_id": "mock-ec2-evidence-86276d2f-6abb-4110-8354-a1c50b2cc414",
+      "data": {
+        "jobs": []
+      }
+    },
+    {
+      "tool": "get_ec2_dependencies",
+      "status": "ok",
+      "source": "mock-ec2-dependencies",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1",
+        "instance_id": "i-mock-primary"
+      },
+      "observed_window": {
+        "from": "2026-09-27T07:12:43.165Z",
+        "to": "2026-10-25T07:12:43.165Z"
+      },
+      "collected_at": "2026-10-25T07:12:54.630Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "boolean",
+      "evidence_id": "mock-ec2-evidence-f90bb516-b8f6-4d07-ba1a-308416ba5374",
+      "data": {
+        "requires_continuous_operation": true
+      }
+    }
+  ],
+  "trace": [
+    {
+      "step": 1,
+      "phase": "planner",
+      "reason": "Which EC2 instances are in scope for the scheduling investigation?",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          }
+        },
+        "reason": "Which EC2 instances are in scope for the scheduling investigation?"
+      }
+    },
+    {
+      "step": 2,
+      "phase": "tool",
+      "reason": "Validated current-investigation observation registered.",
+      "evidence_ids": [
+        "mock-ec2-evidence-5c281fdd-d007-409e-9817-426ac68c7976"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          }
+        },
+        "reason": "Which EC2 instances are in scope for the scheduling investigation?"
+      },
+      "status": "ok"
+    },
+    {
+      "step": 3,
+      "phase": "planner",
+      "reason": "What does billing show for the discovered instances to identify a scheduling candidate?",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_billing",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          }
+        },
+        "reason": "What does billing show for the discovered instances to identify a scheduling candidate?"
+      }
+    },
+    {
+      "step": 4,
+      "phase": "tool",
+      "reason": "Validated current-investigation observation registered.",
+      "evidence_ids": [
+        "mock-ec2-evidence-a8cb1c27-3117-46ae-b4b0-5587d1accef1"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_billing",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          }
+        },
+        "reason": "What does billing show for the discovered instances to identify a scheduling candidate?"
+      },
+      "status": "ok"
+    },
+    {
+      "step": 5,
+      "phase": "evaluator",
+      "reason": "Selected in descending observed compute cost among discovered running instances with positive matching billing; ties by instance ID.",
+      "evidence_ids": [
+        "mock-ec2-evidence-5c281fdd-d007-409e-9817-426ac68c7976",
+        "mock-ec2-evidence-a8cb1c27-3117-46ae-b4b0-5587d1accef1"
+      ]
+    },
+    {
+      "step": 6,
+      "phase": "planner",
+      "reason": "Do the selected candidate’s average and peak CPU metrics indicate inactive hours and suggest a UTC scheduling window?",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_metrics",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Do the selected candidate’s average and peak CPU metrics indicate inactive hours and suggest a UTC scheduling window?"
+      }
+    },
+    {
+      "step": 7,
+      "phase": "tool",
+      "reason": "Validated current-investigation observation registered.",
+      "evidence_ids": [
+        "mock-ec2-evidence-d94c4a3a-d8ac-4989-a057-b0a7b63280b0"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_metrics",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Do the selected candidate’s average and peak CPU metrics indicate inactive hours and suggest a UTC scheduling window?"
+      },
+      "status": "ok"
+    },
+    {
+      "step": 8,
+      "phase": "planner",
+      "reason": "Do low average and peak CPU support a shutdown hypothesis for the metrics-suggested 00:00–06:00 UTC window?",
+      "evidence_ids": [
+        "mock-ec2-evidence-d94c4a3a-d8ac-4989-a057-b0a7b63280b0"
+      ],
+      "action": {
+        "type": "propose",
+        "window": {
+          "start_hour_utc": 0,
+          "end_hour_utc": 6
+        },
+        "evidence_ids": [
+          "mock-ec2-evidence-d94c4a3a-d8ac-4989-a057-b0a7b63280b0"
+        ],
+        "reason": "Do low average and peak CPU support a shutdown hypothesis for the metrics-suggested 00:00–06:00 UTC window?"
+      }
+    },
+    {
+      "step": 9,
+      "phase": "evaluator",
+      "reason": "Plausible window proposed. Require a fresh targeted operations challenge; low CPU is not scheduling authority.",
+      "evidence_ids": [
+        "mock-ec2-evidence-d94c4a3a-d8ac-4989-a057-b0a7b63280b0"
+      ]
+    },
+    {
+      "step": 10,
+      "phase": "planner",
+      "reason": "Do any critical jobs overlap the proposed 00:00–06:00 UTC window?",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_operations",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          },
+          "instance_id": "i-mock-primary",
+          "proposed_window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          }
+        },
+        "reason": "Do any critical jobs overlap the proposed 00:00–06:00 UTC window?"
+      }
+    },
+    {
+      "step": 11,
+      "phase": "tool",
+      "reason": "Validated current-investigation observation registered.",
+      "evidence_ids": [
+        "mock-ec2-evidence-86276d2f-6abb-4110-8354-a1c50b2cc414"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_operations",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          },
+          "instance_id": "i-mock-primary",
+          "proposed_window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          }
+        },
+        "reason": "Do any critical jobs overlap the proposed 00:00–06:00 UTC window?"
+      },
+      "status": "no_match"
+    },
+    {
+      "step": 12,
+      "phase": "planner",
+      "reason": "Does any dependency require continuous uptime during the proposed 00:00–06:00 UTC window? Empty job results do not establish safety.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_dependencies",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Does any dependency require continuous uptime during the proposed 00:00–06:00 UTC window? Empty job results do not establish safety."
+      }
+    },
+    {
+      "step": 13,
+      "phase": "tool",
+      "reason": "Validated current-investigation observation registered.",
+      "evidence_ids": [
+        "mock-ec2-evidence-f90bb516-b8f6-4d07-ba1a-308416ba5374"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_dependencies",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T07:12:43.165Z",
+            "to": "2026-10-25T07:12:43.165Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Does any dependency require continuous uptime during the proposed 00:00–06:00 UTC window? Empty job results do not establish safety."
+      },
+      "status": "ok"
+    },
+    {
+      "step": 14,
+      "phase": "evaluator",
+      "reason": "A retrieved dependency requires continuous operation; reject this window.",
+      "evidence_ids": [
+        "mock-ec2-evidence-f90bb516-b8f6-4d07-ba1a-308416ba5374"
+      ]
+    },
+    {
+      "step": 15,
+      "phase": "finish",
+      "reason": "hypothesis_contradicted",
+      "evidence_ids": []
+    }
+  ],
+  "historical_context": {
+    "zetaris": "not_configured",
+    "hmem": "not_configured",
+    "comparisons": [],
+    "context_ids": [],
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts."
+    ]
+  },
+  "budget": {
+    "discovery_attempts": 2,
+    "candidate_attempts": 3,
+    "planner_calls": 6,
+    "elapsed_ms": 11466
+  },
+  "limitations": [
+    "Conditional scheduling requires human approval. Savings are estimates for the UTC calendar month following the observation window, not all-in invoice reductions.",
+    "The configured live model is not independently verified as event-approved."
+  ],
+  "stop_reason": "hypothesis_contradicted"
+}

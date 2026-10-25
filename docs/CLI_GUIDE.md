@@ -107,6 +107,11 @@ With no `LLM_*` settings, `--planner model` falls back to `NVIDIA_API_KEY` and o
 
 All model paths preserve bounded requests, validated actions, trusted argument binding and deterministic verdicts. Redirects are refused. Failures return incomplete results without scripted fallback. Evidence selection is independent: read-only AWS by default, synthetic evidence with `--evidence mock`. See [the execution plan](EXECUTION_PLAN.md) for actual integration proof.
 
+For the NVIDIA-hosted Nemotron 3.5 Super VL configuration, see the
+[tested generation setting and repeated CLI gate](evaluation/README.md#repeated-real-model-cli-gate).
+Generic `LLM_*` configuration uses its own options; it does not inherit the
+legacy NVIDIA preset's thinking-disabled setting.
+
 ## Diagnostics
 
 HTTP failures now retain `provider_error: { body, truncated }` in
@@ -146,6 +151,36 @@ TLS refusal and oversized input retain `model_tls_verification_required` and
 `model_state_too_large`. No retries or scripted fallback were added. These codes
 describe new runs; exact causes cannot be reconstructed from older generic
 `planner_unavailable_or_invalid` results.
+
+### Request-phase timing
+
+The optional [Node preload](../scripts/model-request-timing.mjs) observes native
+fetch diagnostics and writes one `model_request_timing` JSON line per Chat
+Completions request to stderr. It does not change requests, deadlines or retries.
+It records request numbers, elapsed milliseconds, TLS authorization, HTTP status
+and allowlisted network error codes. It omits hostnames, IPs, headers, credentials,
+prompts, model output and exception messages. Enable it only for diagnosis;
+[the repeated-gate procedure](evaluation/README.md#repeated-real-model-cli-gate)
+shows the invocation and artifact locations.
+
+- `sent_ms` records the point immediately before headers are written to a socket;
+  `body_sent_ms` records completion of the request-body write.
+- `headers_ms` records receipt of HTTP response headers; `status` is the actual
+  response status. `body_complete` means the response stream ended, not that its
+  content passed the planner's validation.
+- A failed request with `body_sent_ms` and verified TLS but no `headers_ms`
+  waited after transmission. This excludes an initial DNS/TLS setup failure for
+  that request; it cannot distinguish a remote queue/generation/gateway stall
+  from a post-connection network stall without provider-side evidence.
+- A request with headers but no completed body stopped during response delivery.
+  `other` means an error code was not allowlisted; the report's planner failure
+  code still distinguishes the investigation deadline or cancellation.
+
+Missing timing fields are unobserved phases, not zero-duration phases. Request
+numbers restart in each CLI process and correspond to its ordered model calls.
+[Undici's channel reference](https://undici.nodejs.org/api/DiagnosticsChannel)
+defines these event boundaries. A healthy catalog read demonstrates service
+reachability and authentication, not availability of a particular model request.
 
 ## Linting and formatting
 

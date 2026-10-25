@@ -1,0 +1,9 @@
+{
+  "measured_at": "2026-10-25T07:04:37.932Z",
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "source_report": "gate-rerun/round-1-C.json",
+  "methodology": "One 45-second-bounded replay of reconstructed C state after operations, before dependencies. Explicit metadata-only preload; no tools, retries, fallback or history. Separate diagnostic, not a gate attempt.",
+  "elapsed_ms": 1276,
+  "outcome": "action_returned",
+  "action": "get_ec2_dependencies"
+}

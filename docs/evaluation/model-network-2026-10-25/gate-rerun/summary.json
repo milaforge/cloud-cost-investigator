@@ -1,0 +1,267 @@
+{
+  "measured_at": "2026-10-25T07:03:57.511Z",
+  "evidence_mode": "mock",
+  "planner_mode": "live",
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "response_format": "text",
+  "thinking_disabled": true,
+  "methodology": "Three serial A/B/C rounds through the actual CLI, fresh processes and evidence, no history, retries or fallback. CLI pacing is unchanged. All nine attempts remain in the denominator. This is a designed-fixture release gate, not a production reliability estimate. Earlier diagnostics are recorded separately.",
+  "passed": false,
+  "passed_runs": 4,
+  "total_runs": 9,
+  "rows": [
+    {
+      "round": 1,
+      "scenario": "A",
+      "exit_code": 0,
+      "checks": {
+        "cli_completed": true,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": true,
+        "no_planner_failure": true,
+        "current_citations": true,
+        "history_disabled": true,
+        "evidence_driven_revision": true,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": true,
+      "completion": "complete",
+      "verdict": "conditional_recommendation",
+      "planner_calls": 6,
+      "elapsed_ms": 5830,
+      "citations": {
+        "valid": 9,
+        "total": 9
+      },
+      "failure_codes": []
+    },
+    {
+      "round": 1,
+      "scenario": "B",
+      "exit_code": 0,
+      "checks": {
+        "cli_completed": true,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": true,
+        "no_planner_failure": true,
+        "current_citations": true,
+        "history_disabled": true,
+        "evidence_driven_revision": true,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": true,
+      "completion": "complete",
+      "verdict": "not_recommended",
+      "planner_calls": 5,
+      "elapsed_ms": 5777,
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "failure_codes": []
+    },
+    {
+      "round": 1,
+      "scenario": "C",
+      "exit_code": 2,
+      "checks": {
+        "cli_completed": false,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": false,
+        "no_planner_failure": false,
+        "current_citations": true,
+        "history_disabled": true,
+        "evidence_driven_revision": false,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": false,
+      "completion": "partial",
+      "verdict": "needs_verification",
+      "planner_calls": 6,
+      "elapsed_ms": 316085,
+      "citations": {
+        "valid": 4,
+        "total": 4
+      },
+      "failure_codes": [
+        "planner_timeout"
+      ]
+    },
+    {
+      "round": 2,
+      "scenario": "A",
+      "exit_code": 0,
+      "checks": {
+        "cli_completed": true,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": true,
+        "no_planner_failure": true,
+        "current_citations": true,
+        "history_disabled": true,
+        "evidence_driven_revision": true,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": true,
+      "completion": "complete",
+      "verdict": "conditional_recommendation",
+      "planner_calls": 6,
+      "elapsed_ms": 31193,
+      "citations": {
+        "valid": 9,
+        "total": 9
+      },
+      "failure_codes": []
+    },
+    {
+      "round": 2,
+      "scenario": "B",
+      "exit_code": 0,
+      "checks": {
+        "cli_completed": true,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": true,
+        "no_planner_failure": true,
+        "current_citations": true,
+        "history_disabled": true,
+        "evidence_driven_revision": true,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": true,
+      "completion": "complete",
+      "verdict": "not_recommended",
+      "planner_calls": 5,
+      "elapsed_ms": 4896,
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "failure_codes": []
+    },
+    {
+      "round": 2,
+      "scenario": "C",
+      "exit_code": 2,
+      "checks": {
+        "cli_completed": false,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": false,
+        "no_planner_failure": false,
+        "current_citations": true,
+        "history_disabled": true,
+        "evidence_driven_revision": false,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": false,
+      "completion": "partial",
+      "verdict": "needs_verification",
+      "planner_calls": 3,
+      "elapsed_ms": 302722,
+      "citations": {
+        "valid": 2,
+        "total": 2
+      },
+      "failure_codes": [
+        "planner_timeout"
+      ]
+    },
+    {
+      "round": 3,
+      "scenario": "A",
+      "exit_code": 1,
+      "checks": {
+        "cli_completed": false,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": false,
+        "no_planner_failure": false,
+        "current_citations": false,
+        "history_disabled": true,
+        "evidence_driven_revision": true,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": false,
+      "completion": "failed",
+      "verdict": null,
+      "planner_calls": 1,
+      "elapsed_ms": 915,
+      "citations": {
+        "valid": 0,
+        "total": 0
+      },
+      "failure_codes": [
+        "model_http_500"
+      ]
+    },
+    {
+      "round": 3,
+      "scenario": "B",
+      "exit_code": 1,
+      "checks": {
+        "cli_completed": false,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": false,
+        "no_planner_failure": false,
+        "current_citations": false,
+        "history_disabled": true,
+        "evidence_driven_revision": false,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": false,
+      "completion": "failed",
+      "verdict": null,
+      "planner_calls": 1,
+      "elapsed_ms": 864,
+      "citations": {
+        "valid": 0,
+        "total": 0
+      },
+      "failure_codes": [
+        "model_http_500"
+      ]
+    },
+    {
+      "round": 3,
+      "scenario": "C",
+      "exit_code": 1,
+      "checks": {
+        "cli_completed": false,
+        "real_model": true,
+        "mock_evidence": true,
+        "expected_verdict": false,
+        "no_planner_failure": false,
+        "current_citations": false,
+        "history_disabled": true,
+        "evidence_driven_revision": false,
+        "configured_model": true,
+        "independent_run": true
+      },
+      "passed": false,
+      "completion": "failed",
+      "verdict": null,
+      "planner_calls": 1,
+      "elapsed_ms": 814,
+      "citations": {
+        "valid": 0,
+        "total": 0
+      },
+      "failure_codes": [
+        "model_http_500"
+      ]
+    }
+  ]
+}

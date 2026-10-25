@@ -20,6 +20,64 @@ ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run --silent investigate -- --evide
 
 Run IDs, evidence IDs, lookback timestamps and elapsed time vary. Assess the disposition, cited observations and hypothesis transition rather than byte equality. [Trace interpretation and failure behavior](../CLI_GUIDE.md#capture-and-read-the-decision-trace) explain what the reports prove. The synthetic pricing and authority in A establish neither live AWS safety nor realized savings.
 
+## Repeated real-model CLI gate
+
+With configured Chat Completions access, run three serial A/B/C rounds through
+the actual CLI. Supply a **new output directory**; an existing directory is
+refused so an earlier measurement cannot be overwritten:
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=1 node --import tsx scripts/probe-model-reliability.ts /tmp/cci-model-reliability
+```
+
+The probe uses explicit mock evidence, fresh CLI processes, unchanged CLI pacing,
+and disabled H-MEM/Zetaris history regardless of `.env`. It saves every full report
+and CLI stderr, followed by `summary.json`. All nine attempts count; there are no
+retries or scripted fallbacks. Exit 0 requires complete expected verdicts, live
+planner metadata matching the configured model, valid current-run citations,
+independent run/evidence IDs, and B/C proposal-to-contradiction transitions citing
+the correct operational source. Partial or failed reports never pass this gate.
+The designed fixtures do not establish production reliability or live AWS safety.
+
+The current OpenAI result and remaining release work are recorded in the
+[execution tracker](../EXECUTION_PLAN.md#openai-reliability-gate-closed--2026-10-25).
+Earlier NVIDIA measurements remain separate; do not combine providers in a gate.
+
+For the NVIDIA-hosted `nvidia/nemotron-3.5-super-vl-120b-a12b`, the tested
+command-local generation setting is below. The NVIDIA repeated gate remains failed;
+this is a reproduction setting, not a reliability guarantee:
+
+```bash
+LLM_EXTRA_BODY='{"chat_template_kwargs":{"enable_thinking":false}}' \
+NODE_TLS_REJECT_UNAUTHORIZED=1 \
+node --import tsx scripts/probe-model-reliability.ts /tmp/cci-model-reliability-thinking-off
+```
+
+This uses the existing endpoint, model and credential. It replaces
+`LLM_EXTRA_BODY` only for that command and leaves `.env` untouched. Do not apply
+NVIDIA-specific options to another provider. [NVIDIA documents](https://docs.nvidia.com/nim/large-language-models/latest/get-started/advanced/get-started-nemotron-3.5-super-vl.html#control-reasoning)
+that reasoning is enabled by default and shares the output-token budget; this
+planner needs a short action JSON rather than a reasoning trace. A successful
+thinking-disabled run does not prove the cause of a preceding HTTP 500.
+
+The [execution tracker](../EXECUTION_PLAN.md#real-model-reliability-gate--2026-10-25)
+records the measured result and links both the full reports and preceding
+diagnostics. Model/event eligibility and live operational evidence remain
+separate gates.
+
+The gate explicitly preloads the metadata-only observer in each child CLI;
+each `round-N-SCENARIO.stderr.txt` contains that process's timing lines.
+Do not rely on `NODE_OPTIONS` propagation: it was absent in the diagnostic
+execution environment, leaving the earlier intended instrumented run without
+request timings. For a single diagnostic CLI run, use
+`node --import ./scripts/model-request-timing.mjs --import tsx cli.ts investigate`
+with the explicit evidence/planner/scope flags from the CLI guide.
+
+`summary.json` and all acceptance conditions remain unchanged. See
+[timing interpretation](../CLI_GUIDE.md#request-phase-timing) before assigning a
+failure to the network or provider. An instrumented rerun is a separate
+measurement; retain previous failed runs.
+
 ## Memory-order comparison
 
 ```bash

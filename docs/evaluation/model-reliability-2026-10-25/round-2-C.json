@@ -1,0 +1,139 @@
+{
+  "investigation_id": "48bd37d0-2558-49f0-9a39-0e90f8b6b028",
+  "goal": "evaluate_ec2_off_hours_scheduling",
+  "request": {
+    "account_id": "reliability-synthetic",
+    "region": "us-east-1",
+    "window": {
+      "from": "2026-09-27T06:35:05.942Z",
+      "to": "2026-10-25T06:35:05.942Z"
+    },
+    "max_candidates": 1
+  },
+  "started_at": "2026-10-25T06:35:05.943Z",
+  "finished_at": "2026-10-25T06:40:07.130Z",
+  "completion_status": "partial",
+  "integration_mode": "mock",
+  "planner": {
+    "mode": "live",
+    "model": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+  },
+  "discovery": {
+    "discovered_count": 2,
+    "candidate_limit": 1,
+    "gaps": []
+  },
+  "candidates": [],
+  "evidence": [
+    {
+      "tool": "list_ec2_instances",
+      "status": "ok",
+      "source": "mock-ec2-instances",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1"
+      },
+      "observed_window": {
+        "from": "2026-09-27T06:35:05.942Z",
+        "to": "2026-10-25T06:35:05.942Z"
+      },
+      "collected_at": "2026-10-25T06:35:07.128Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "instances",
+      "evidence_id": "mock-ec2-evidence-2ca5b95b-d9a3-4d5d-892f-ed387631c972",
+      "data": {
+        "instances": [
+          {
+            "instance_id": "i-mock-primary",
+            "state": "running"
+          },
+          {
+            "instance_id": "i-mock-secondary",
+            "state": "running"
+          }
+        ]
+      }
+    }
+  ],
+  "trace": [
+    {
+      "step": 1,
+      "phase": "planner",
+      "reason": "Discover EC2 inventory to select the candidate for billing and metric review.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T06:35:05.942Z",
+            "to": "2026-10-25T06:35:05.942Z"
+          }
+        },
+        "reason": "Discover EC2 inventory to select the candidate for billing and metric review."
+      }
+    },
+    {
+      "step": 2,
+      "phase": "tool",
+      "reason": "Validated current-investigation observation registered.",
+      "evidence_ids": [
+        "mock-ec2-evidence-2ca5b95b-d9a3-4d5d-892f-ed387631c972"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-27T06:35:05.942Z",
+            "to": "2026-10-25T06:35:05.942Z"
+          }
+        },
+        "reason": "Discover EC2 inventory to select the candidate for billing and metric review."
+      },
+      "status": "ok"
+    },
+    {
+      "step": 3,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "planner_timeout"
+    },
+    {
+      "step": 4,
+      "phase": "finish",
+      "reason": "planner_unavailable_or_invalid",
+      "evidence_ids": []
+    }
+  ],
+  "historical_context": {
+    "zetaris": "not_configured",
+    "hmem": "not_configured",
+    "comparisons": [],
+    "context_ids": [],
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts."
+    ]
+  },
+  "budget": {
+    "discovery_attempts": 1,
+    "candidate_attempts": 0,
+    "planner_calls": 2,
+    "elapsed_ms": 301187
+  },
+  "limitations": [
+    "Conditional scheduling requires human approval. Savings are estimates for the UTC calendar month following the observation window, not all-in invoice reductions.",
+    "The configured live model is not independently verified as event-approved."
+  ],
+  "stop_reason": "planner_unavailable_or_invalid"
+}
