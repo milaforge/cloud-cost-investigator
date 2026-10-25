@@ -11,6 +11,21 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Recommendation policy and validation regression proof — 2026-10-25
+
+- **Gate/owner/mode:** preservation of safety policy, Milad; local synthetic and
+  fixture tests only. Added eleven focused regressions for both operational
+  channels: missing clearance, partial/unavailable/error sources, missing authority
+  and invalid partial payloads. Forged positive report text, real citation IDs and
+  empty checklists cannot bypass the existing final-report safety proof.
+- **Verification:** focused recommendation/investigation/scenario/AWS-adapter/
+  report tests passed **95/95**; `npm run typecheck` and scoped Biome lint passed.
+  Full `npm test` with local loopback/subprocess access passed **246/246**.
+  No production policy or validator changes are part of this regression slice.
+- **Limits/next action:** no paid inference, live AWS or remote persistence;
+  step 4 requires identifying actual job/dependency systems and their contracts.
+  No connector, authority or live operational coverage is inferred from fixtures.
+
 ### Actionable unresolved recommendation checks — 2026-10-25
 
 - **Gate/owner/mode:** report usefulness, Milad; synthetic/fixture evidence.

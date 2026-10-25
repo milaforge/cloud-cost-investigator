@@ -1,5 +1,16 @@
 # Project Memory
 
+## Recommendation boundary regression proof (2026-10-25)
+
+- Protect both operational channels against promotion of incomplete evidence:
+  absent clearance, partial/unavailable/error sources and non-authoritative
+  observations cannot become recommendations through persuasive report text,
+  retrieved citation IDs or an emptied action checklist. The report validator
+  independently recomputes policy proof.
+- Keep invalid partial payloads outside the current-evidence registry while
+  retaining their failed tool attempt. Existing policy and validation rules
+  remain authoritative; test proof does not establish live integration.
+
 ## Actionable unresolved checks (2026-10-25)
 
 - Keep diagnostic reasons in the scheduling policy beside the checks they
