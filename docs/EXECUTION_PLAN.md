@@ -1,6 +1,6 @@
 # Cloud Cost Investigator — Execution Plan (Milad + Zayan)
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
 > **Sole execution tracker.** Event requirements are recorded in [`RULES.md`](RULES.md); approved product and safety contracts are in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md); agent workflow in [`../AGENTS.md`](../AGENTS.md). A task is complete only with executed evidence. Preserve the distinction between team decisions, planned work, mocks and verified live integrations.
 
@@ -10,6 +10,85 @@
 **Active milestone:** Days 3–4 — full user flows and live-evidence integration, reconciled Oct 25, 2026. Day 2's mock B/failure gate and separate real-model, H-MEM and Zetaris round-trips have linked historical proof. This advances the work stage, not the combined live-evidence or release gates.
 
 ## Current status and next actions — reconciled 2026-10-25
+
+### Zetaris installation and storage guide — 2026-10-25
+
+- **Gate/owner/mode:** reproducible service setup documentation, Milad; documentation only.
+  Added [Zetaris setup](ZETARIS_SETUP.md), linked from README Setup and How, with
+  official installation sources and the existing server-side persistent directory
+  and lakehouse procedure. The history guide links there and retains the canonical
+  table, restricted account, connection and read/append verification instructions.
+- **Verification:** official Docker/deployment links opened successfully. A Python
+  documentation check passed new/changed local links and anchors, balanced code
+  fences, required storage instructions and new-file whitespace.
+  `git diff --check -- README.md docs/HOW.md docs/ZETARIS_SETUP.md docs/ZETARIS_HISTORY.md docs/EXECUTION_PLAN.md memory.md`
+  passed. Existing history-guide storage anchor remains available.
+- **Limits/next action:** no installation, provisioning, secret edits or service/model
+  calls performed. Follow the guide against the deployed Compose version; the
+  restricted-identity permission gate remains open as recorded below.
+
+### Visitor-facing agent overview — 2026-10-25
+
+- **Gate/owner/mode:** submission architecture clarity, Milad; documentation only.
+  Filled the requested README Mermaid with decision authority, shared state,
+  sponsor boundaries, bounded replanning, explicit sample selection, failure
+  handling and stdout trace capture. No runtime or integration claim changed.
+- **User-directed refinement:** decision diamonds and a shaded agentic loop
+  foreground dynamic action selection and evidence-driven replanning. Zetaris
+  now shows recommendation follow-through, reviews/outcomes and validated
+  rollback feedback teaching H-MEM. Dotted arrows mark cross-run state.
+- **Additional abstraction:** added a seven-node at-a-glance diagram before the
+  existing view, grouping execution and shared evidence while retaining dynamic
+  decisions, replanning, sponsor roles and outcome learning. Python checks of
+  both overview blocks and `git diff --check` passed; no renderer proof added.
+- **Zetaris emphasis:** highlighted the durable decision record in four README
+  diagrams and grouped it with H-MEM under long-term improvement in the overview.
+  The explanation connects retained decisions/outcomes to future check priority.
+  Python diagram checks and `git diff --check` passed; documentation only.
+- **Overview consolidation:** removed the duplicate introductory diagram and
+  sentence from `components.md`, replacing them with a README link. Python checks
+  confirmed the link resolves and all responsibility/technical content remains
+  verbatim; `git diff --check` passed. Documentation only; no runtime change.
+- **Verification:** a Python README check passed coverage of the seven requested
+  topics, decision notation, learning feedback, balanced node delimiters and
+  local link targets; `git diff --check` passed after refinement. Mermaid
+  rendering was not checked. Next action: visual review in the
+  README renderer; live-integration and release blockers remain unchanged.
+
+### Zetaris deployment permission review — 2026-10-25
+
+- **Gate/owners/status:** effective least privilege — **OPEN; current admin identity
+  does not meet the gate**. User confirmed they control the deployment and that
+  the current account has an administrator role with read/write access. This is
+  administrator-reported identity evidence; role membership was not independently
+  enumerated. User provisions/reviews the replacement identity; Milad verifies it.
+- **Live read-only checks:** loaded the project `.env` without printing credentials
+  or private endpoints. Password auth, dedicated history target and append enablement
+  are configured. Under the configured identity, `verifyZetarisHistorySchema()`
+  passed. `SHOW GRANT ON CCI_HISTORY.investigations.records` and the existing
+  `SHOW GRANT ON ALL` inspection each returned sanitized **zetaris_http_400**.
+  Those responses do not distinguish SQL support from permission enforcement and
+  do not prove access is restricted. No writes, grants, account changes, secret
+  edits or destructive denial probes were performed.
+- **Requested documentation change:** the [canonical account setup](ZETARIS_HISTORY.md#4-configure-the-app-identity-and-environment)
+  explicitly requires a new **general/non-admin** account, table-only SELECT/INSERT
+  for `CCI_HISTORY.investigations.records`, Grant Option disabled, inheritance review
+  and backend/server-policy overwrite restriction. Keep the provisioning admin
+  separate and configure the new credentials locally. Token mode must also use
+  the restricted identity. Official Zetaris SQL/user/role documentation was checked;
+  Context7 resolution had no relevant Zetaris documentation match.
+- **Verification:** new setup requirements, added local links and scoped
+  `git diff --check -- docs/ZETARIS_HISTORY.md docs/EXECUTION_PLAN.md memory.md`
+  passed. The wider link check found the pre-existing missing;
+  repository-wide whitespace checking found a concurrent README trailing-space
+  edit. Both remain outside this slice. Documentation only; no product-code
+  change or new model calls. Existing successful administrator append/read
+  measurements remain functionality proof, not restricted-identity proof.
+- **Next action:** user creates and configures the dedicated account with appends
+  disabled, supplies non-secret effective permission/role/overwrite evidence,
+  then Milad verifies reads and an explicitly enabled retained synthetic append
+  with that identity. Close only after those conditions pass. Deployment version
+  and actual append-only enforcement remain unverified.
 
 ### Real-model reliability gate — 2026-10-25
 
@@ -284,7 +363,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 | --- | --- | --- |
 | Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
 | AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). Live proof is limited to authenticated empty discovery. | Verify populated metrics and opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
-| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Effective dedicated-user least privilege remains unverified; Zayan/user. Live evidence and event eligibility remain separate. |
+| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Current admin identity fails least privilege; user provisions the dedicated account and Milad verifies it ([permission review](#zetaris-deployment-permission-review--2026-10-25)). Live evidence and event eligibility remain separate. |
 | Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
 | Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
 | Release | README/setup and retained proof exist; release is **not complete**. | Clean-checkout/independent reproduction, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
@@ -313,7 +392,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 - [x] API-backed AWS provider is wired and default; injected-transport tests pass and authenticated empty discovery has live proof. Modes remain explicit.
 - [ ] Verify populated live metrics/billing and authoritative operational coverage through the integrated CLI; disclose unavailable sources and keep unsafe/unknown opportunities deferred.
 - [x] Genuine scoped Zetaris history append/readback and useful subsequent-run recall demonstrated with synthetic records.
-- [ ] Verify effective least-privilege deployment permissions separately from successful history functionality.
+- [ ] Verify effective least-privilege deployment permissions separately from successful history functionality: [current admin identity requires a new restricted app account](#zetaris-deployment-permission-review--2026-10-25); deployment owner is the user, verification owner Milad.
 - [x] Genuine local H-MEM store/retrieve changes fresh query order; changed evidence corrects stale lessons. Eight-workload comparison ties fixed ordering; no general benefit claimed.
 - [x] Team-approved real-model call and genuine NVIDIA contribution recorded; organizer/portal verification is separate.
 - [ ] Describe actual Cursor use accurately in submission assets.

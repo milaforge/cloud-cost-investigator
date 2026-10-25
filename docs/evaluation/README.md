@@ -1,6 +1,6 @@
 # Evaluation and demonstrations
 
-[What](../../README.md) · [Why](../WHY.md) · [How](../HOW.md)
+[What](../../README.md) · [How](../HOW.md)
 
 These procedures separate synthetic evidence, real local memory, real remote persistence and live model calls. They do not establish live operational safety or measured production savings. See the [current status](../EXECUTION_PLAN.md) before interpreting a proof.
 

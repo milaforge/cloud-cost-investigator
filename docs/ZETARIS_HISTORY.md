@@ -1,101 +1,18 @@
 # Dedicated investigation history
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
 The app works on its first run without history. To demonstrate useful history on a
 later run, it needs one durable table containing compact, timestamped decisions.
 Current AWS facts continue to come from Zayan's direct tools. Do not copy AWS exports
 or credentials into this table, and do not treat past records as current evidence.
 
-## Smallest suitable deployment
-
-Use a dedicated local lakehouse on the Zetaris server **if its local storage is
-persistent across service restarts**. This avoids adding a database service or AWS
-resources. If the administrator already operates a writable JDBC database, a dedicated
-table there is also suitable. A Lightning database containing demo file registrations
-is not proof of an appendable backing store.
-
-For current deployment proof and permission gaps, see the [execution plan](EXECUTION_PLAN.md). Connectivity or a lakehouse registration alone does not prove scoped append/read support.
-
 ## Required local Docker setup: history lakehouse
 
-Complete this once before enabling Zetaris persistence. It is optional for a first investigation; directory provisioning alone does not prove history append/read.
-
-The supplied Compose deployment mounts the persistent `customer-data` named volume
-read/write in both `driver` and `api`. Both services set:
-
-```yaml
-ZETARIS_LOCAL_FILE_SYTEM_ROOT_PATH: /home/zetaris/customer-data/shared
-```
-
-Use a dedicated directory **under that configured access root**. The sibling
-`/home/zetaris/customer-data/cci-history` was rejected with “Invalid file path to
-access”, despite being inside the same volume. `/` is not the lakehouse storage path.
-“Local” means the filesystem visible to Zetaris inside its containers.
-
-### Configure the provisioning path
-
-On a fresh computer, first follow [the app setup](HOW.md#configure-your-investigation).
-Record this non-secret setting in the app's local `.env`:
-
-```dotenv
-ZETARIS_CCI_HISTORY_PATH=/home/zetaris/customer-data/shared/cci-history
-```
-
-This is a **provisioning reference**, not a runtime app setting. The app does not
-read it, create the directory or register a lakehouse. Use the same value for
-`history_dir` in step 1 and `storagePath` in step 2 (or the UI Storage path).
-For remote Zetaris, the path belongs to the server containers, not your computer.
-The app's `.env` is not automatically loaded by the deployment shell or SQL editor;
-substitute the path explicitly in both places. Keep it under the deployment's
-configured access root and on persistent storage.
-
-### 1. Create the directory and verify access
-
-Run from the directory containing the **Zetaris deployment's Compose file**, not
-from this app repository unless it also contains that deployment:
-
-```bash
-history_dir=/home/zetaris/customer-data/shared/cci-history
-
-docker compose exec driver mkdir -p "$history_dir"
-docker compose exec driver chgrp 1001 "$history_dir"
-docker compose exec driver chmod 2770 "$history_dir"
-
-docker compose exec driver test -w "$history_dir"
-docker compose exec api test -w "$history_dir"
-```
-
-Both `test -w` commands must exit 0; they print nothing on success. Group `1001`
-matches the supplied deployment's driver group and the API's `group_add`. Mode
-`2770` gives the owner/group access and makes new entries inherit the directory
-group. If using a different deployment, verify its service identities and configured
-root rather than copying these values. No Compose changes or restarts are needed
-for directory creation in the existing shared volume. Retain that named volume to
-retain the lakehouse across container recreation.
-
-### 2. Register the lakehouse
-
-Use either the lakehouse creation form with these values:
-
-| Field | Value |
-| --- | --- |
-| Name | `CCI_HISTORY` |
-| Storage type | `Local` |
-| Storage path | `/home/zetaris/customer-data/shared/cci-history` |
-
-Or execute this once in the SQL editor:
-
-```sql
-CREATE DATALAKE CCI_HISTORY OPTIONS (
-  storageType 'Local',
-  storagePath '/home/zetaris/customer-data/shared/cci-history'
-);
-```
-
-Choose one registration method; do not repeat creation if the lakehouse already
-exists. Check `SHOW DATALAKES` for `CCI_HISTORY` before proceeding to the table and
-permission steps below.
+Follow [Zetaris installation and persistent storage provisioning](ZETARIS_SETUP.md)
+to create the server-visible directory and register `CCI_HISTORY`. Then complete
+the table, restricted app account and verification steps below. Directory creation
+or lakehouse registration alone does not prove scoped append/read support.
 
 ## Required app configuration and table setup
 
@@ -114,13 +31,50 @@ An existing table must be inspected rather than overwritten or silently accepted
 
 ### 4. Configure the app identity and environment
 
-In Zetaris Access Control, grant your dedicated app user the required table-scoped
-read/append access. Keep the runtime user separate from the provisioning administrator.
-The application never grants itself privileges. Verify effective permissions, including
-any inherited roles and backend overwrite semantics, before enabling appends.
+Create a **new dedicated non-administrator app account** before using history
+persistence in the deployed app. An administrator account with read/write access
+can demonstrate functionality, but does not pass the least-privilege check.
+Keep your existing administrator account for provisioning and permission management.
 
-Add the Zetaris section of [.env.example](../.env.example) to your existing local
-`.env`; preserve other credentials and do not commit it:
+As the deployment administrator:
+
+1. In **User Management**, create a separate account with user level **general**
+   (the end-user level), a unique locally managed password, and no administrator
+   role. Review all assigned and inherited roles; none may confer administrator
+   access or broader data access. Zetaris distinguishes admin/general levels and
+   separately assigned roles in its [SQL manual](https://kbase.zetaris.com/knowledge/sql-manual).
+2. In **Access Control**, grant that app account **SELECT** and **INSERT** on
+   **`CCI_HISTORY.investigations.records` only**. Use the most specific supported
+   table scope; avoid granting all of `CCI_HISTORY`, all tables, or other data
+   sources. Leave **Grant Option disabled**. Prefer direct table grants for this
+   single app account; a dedicated role is optional, but its effective privileges
+   must be equally narrow. Widget visibility alone does not establish table access;
+   see [Zetaris roles and permissions](https://kbase.zetaris.com/knowledge/roles-permissions).
+3. Confirm the account has no effective UPDATE, DELETE, TRUNCATE, DROP, ALTER,
+   object-creation, user-management or privilege-granting authority. Check both
+   direct grants and role inheritance, not only the visible SELECT/INSERT labels.
+4. Verify the deployed backend or server-enforced policy prevents **INSERT
+   OVERWRITE** for this identity. Zetaris documents INSERT as covering both inserts
+   and overwrites; SELECT/INSERT labels alone cannot certify append-only access
+   ([SQL guide](https://kbase.zetaris.com/knowledge/sql-guide)).
+   If overwrite cannot be restricted, record the gap and keep the permission gate
+   open rather than claiming append-only enforcement. Do not test destructive
+   operations on the real history table. Any required denial tests belong on an
+   administrator-provisioned disposable target with equivalent backend and policy.
+5. Configure the app to authenticate as this new account, then perform the
+   read/append verification in step 5 below. Record the user level, effective
+   scope/privileges, Grant Option, inheritance review and overwrite enforcement
+   in the [execution plan](EXECUTION_PLAN.md). Earlier administrator-based success
+   does not replace verification under the new identity.
+
+The application never creates users or grants itself privileges. The SQL adapter's
+allowlisted append operation is an additional application safeguard; it does not
+reduce the database permissions of an administrator credential.
+
+Update only the Zetaris identity settings in your local `.env`; preserve unrelated
+configuration and credentials. Use [.env.example](../.env.example) as a reference,
+not as a replacement for the entire file. Fill in the new account locally and
+never send or commit its password. Keep appends disabled during configuration:
 
 ```dotenv
 ZETARIS_BASE_URL=http://127.0.0.1:3000
@@ -147,7 +101,9 @@ deadline; there is no refresh/write retry. Password mode never falls back to an 
 administrator bearer credential.
 
 Existing bearer-based setup remains supported with `ZETARIS_AUTH_MODE=token`,
-`ZETARIS_API_KEY` containing the bearer token, and a matching `ZETARIS_ORG_ID`.
+`ZETARIS_API_KEY` containing a bearer token for the same dedicated non-admin
+identity, and a matching `ZETARIS_ORG_ID`. An old administrator token must not be
+used as an alternative runtime identity.
 Without an explicit mode, nonempty username/password settings select password mode;
 otherwise legacy token mode applies. This prevents new password configuration silently
 using an old token. Quote passwords containing `.env` special characters.

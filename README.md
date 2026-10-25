@@ -18,45 +18,117 @@ It combines five evidence categories:
 - job schedules
 - and dependencies.
 
-## Abstract Overview
+## Components - 1
 
 ```mermaid
-flowchart LR
-    User["Engineer"] -->|Find EC2 shutdown opportunities| Agent["CCI Agent"]
-    Agent -->|Recommendation with evidence| User
-    AWS["AWS"] -->|Read-only current evidence| Agent
-    Agent <-->|Opt-in history across runs| Zetaris[("Zetaris<br/>Recommendations, decisions,<br/>due reviews and reported outcomes")]
-    Agent <-->|Save and recall scoped lessons| Meterless[("Meterless H-MEM<br/>Job and dependency risks to check first")]
+flowchart TD
+    User["Engineer"] <-->|Request / Recommendations| CCI
+    CCI["CCI System"] <-->|Read-only data| AWS["AWS Cloud"]
+
+    subgraph CCI_System["CCI System"]
+        LLM["LLM Provider"]
+        Zetaris["Zetaris"]
+        Meterless["Meterless H-MEM"]
+    end
+
+    CCI --- CCI_System
+```
+
+### Components - 2
+
+```mermaid
+
+flowchart TD
+    User["Engineer<br/>(Human Decision-Maker)"]
+
+    subgraph CCI["CCI System"]
+        direction TB
+
+        Planner["Agent Planner"] --> Collector["Evidence Collector"]
+        Collector --> Evaluator["Deterministic Safety Evaluator"]
+        Evaluator -->|More checks needed| Planner
+        Evaluator -->|Conditional / Reject / Defer| Report["Evidence-Based Report"]
+
+        LLM["LLM Provider<br/>Proposes, never approves"] <--> Planner
+
+        HMem[("Meterless H-MEM<br/>Reusable Risk Lessons")] -->|Guide investigation| Planner
+
+        Zetaris[("Zetaris<br/>Decisions & Outcomes")] -->|Historical context| Planner
+        Report -.->|Record recommendations| Zetaris
+        Zetaris -.->|Validated outcome lessons| HMem
+    end
+
+    AWS["AWS Cloud"]
+
+    User -->|Request / Feedback| Planner
+    Collector <-->|Read-only evidence| AWS
+    Report -->|Recommendations only| User
+
 ```
 
 <details>
-
 <summary>
-Detailed Overview
+Agentic Overview — At a Glance
+
 </summary>
 
 ```mermaid
 flowchart TD
-    User["Engineer: EC2 account and region"] --> Entry["TypeScript / Node.js<br/>CLI or local web demo"]
-    Entry --> State["Bounded investigation state<br/>Candidates, windows, evidence, trace, budgets"]
-    State --> Planner["Planner: scripted or configured model<br/>Optional NVIDIA model calls"]
-    Planner -->|Allowlisted action| Executor["Executor<br/>Validate scope and enforce deadlines"]
-    Executor --> Tools["Read-only evidence tools<br/>Inventory, billing, utilization, jobs, dependencies"]
-    AWS["Live AWS: EC2, Cost Explorer, CloudWatch<br/>Live jobs/dependency sources not configured"] -->|CLI default| Tools
-    Mock["Synthetic evidence<br/>Explicit mock mode"] --> Tools
-    Tools -->|Validated observations and evidence IDs| State
-    Executor -->|Proposed shutdown window| State
-    State --> Evaluator["Deterministic safety evaluator<br/>Challenge peaks, jobs, dependencies and authority"]
-    Evaluator -->|More checks needed within budget| Planner
-    Evaluator -->|Conditional recommendation, rejection or deferral| Report["Report validator<br/>Citations, policy and deterministic savings"]
-    Report --> Output["CLI / web report<br/>Verdict, reasons, evidence, missing checks and trace<br/>Human review required; no infrastructure changes"]
-    HMem[("Meterless H-MEM<br/>Scoped job and dependency lessons")] -->|Scoped hints prioritize fresh checks| Planner
-    Report -->|Configured lesson persistence| HMem
-    Zetaris[("Zetaris<br/>Historical recommendations, decisions,<br/>due reviews and reported outcomes")] -->|Optional historical context only| State
-    Report -->|Explicitly enabled history append and readback| Zetaris
+    U["Engineer: find shutdown opportunities"] --> P
+    subgraph Agent["Adaptive investigation"]
+        P{"What should I check next?"} --> I["Investigate<br/>Read-only checks + shared evidence"]
+        I --> E{"Does the evidence support this window?"}
+        E -->|Need more evidence: revise within budget| P
+    end
+    E -->|Conditional / reject / defer| R["Validated answer + evidence trace<br/>CLI stdout / web report"]
+    subgraph Improvement["Long-term improvement"]
+        Z[("Zetaris: durable decision record<br/>Recommendations → decisions<br/>→ reviews + outcomes")] -.->|Validated outcome feedback| M[("Meterless H-MEM<br/>Lessons across investigations")]
+    end
+    Z -.->|Prior investigations for comparison| I
+    R -.->|Persist recommendation + verify readback| Z
+    M -.->|Prioritize fresh checks| P
+    R -.->|Learn from findings| M
+    classDef decision fill:#fff0c2,stroke:#805900,color:#332200,stroke-width:2px;
+    class P,E decision;
+    classDef primary fill:#dbeafe,stroke:#1d4ed8,color:#172554,stroke-width:3px;
+    class Z primary;
+    style Agent fill:#f5f3ff,stroke:#6d28d9,stroke-width:2px
+    style Improvement fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px
 ```
 
+**Zetaris anchors long-term improvement:** it connects recommendations to
+operator decisions, due reviews and reported outcomes. Validated outcome feedback
+teaches H-MEM which risks to investigate first on future runs.
+
+Diamonds mark decisions; the return arrow shows replanning. Dotted arrows show
+history and learning across runs. Failures preserve findings and defer unknowns;
+sample evidence requires explicit selection. The execution detail follows below.
+
 </details>
+
+<details>
+<summary>
+The Why
+</summary>
+
+Low average CPU can hide a weekly batch job or a service that needs continuous uptime. A cost-saving suggestion is useful only if an engineer can understand the operational reasons it could fail.
+
+CCI challenges each proposed shutdown window. In the main demo, apparently idle overnight capacity looks promising until a fresh check finds a critical batch job in that window. The agent rejects the schedule and cites the contradiction. When critical evidence is missing, it defers the decision.
+
+The goal is to help infrastructure engineers decide which opportunities deserve human review, which should be rejected, and which need more evidence.
+
+</details>
+
+<details>
+<summary>
+The How
+</summary>
+
+[Runtime details](docs/components.md) · [Trace capture](docs/CLI_GUIDE.md#capture-and-read-the-decision-trace). [How](docs/HOW.md)
+
+</details>
+
+### Setup
 
 <details>
 <summary>
@@ -88,14 +160,20 @@ cd cloud-cost-investigator
 npm ci
 ```
 
+For persistent history and follow-through, complete [Zetaris setup](docs/ZETARIS_SETUP.md):
+installation, storage provisioning and app connection.
+
 </details>
 
-<details>
-<summary>
-DEMO
-</summary>
+## DEMO
 
 ```sh
+git clone --depth 1 https://github.com/milaforge/cloud-cost-investigator
+
+cd cloud-cost-investigator
+
+npm ci
+
 npm run demo:web
 ```
 
@@ -109,27 +187,3 @@ npm run demo:web
 
 - real-service controls are opt-in.
 - Load existing JSON reports or inspect evidence in the UI.
-
-</details>
-
-<details>
-<summary>
-The Why
-</summary>
-
-Low average CPU can hide a weekly batch job or a service that needs continuous uptime. A cost-saving suggestion is useful only if an engineer can understand the operational reasons it could fail.
-
-CCI challenges each proposed shutdown window. In the main demo, apparently idle overnight capacity looks promising until a fresh check finds a critical batch job in that window. The agent rejects the schedule and cites the contradiction. When critical evidence is missing, it defers the decision.
-
-The goal is to help infrastructure engineers decide which opportunities deserve human review, which should be rejected, and which need more evidence.
-
-</details>
-
-<details>
-<summary>
-The How
-</summary>
-
-[How](docs/HOW.md)
-
-</details>

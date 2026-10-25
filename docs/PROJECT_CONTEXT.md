@@ -2,7 +2,7 @@
 
 > Source of truth for the agreed product, interfaces, data semantics, safety policy, and acceptance criteria. See [`RULES.md`](RULES.md) for recorded event notes, [`EXECUTION_PLAN.md`](EXECUTION_PLAN.md) for executable gates, and [`../AGENTS.md`](../AGENTS.md) for contributor instructions.
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
 Approved scope and contracts below are distinct from [current verification status](EXECUTION_PLAN.md).
 

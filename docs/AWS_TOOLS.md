@@ -1,6 +1,6 @@
 # AWS evidence tools
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
 Framework-independent, read-only EC2 tools for the agent. Shared `src/contracts.ts`
 defines the application boundary. `aws-agent.ts` returns its exact runtime-validated

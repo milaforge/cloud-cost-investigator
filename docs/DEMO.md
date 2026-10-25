@@ -1,6 +1,6 @@
 # Demo and deck preparation
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
 Use the [adopted quality bar](../the_bar.md) to show working behavior and useful decisions. This is a recording storyboard and slide outline; actual artifacts and completion evidence belong in the [release checklist](EXECUTION_PLAN.md).
 
@@ -30,7 +30,7 @@ Pre-run slower service-dependent demonstrations and retain their full reports; l
 
 | Slide | Content and source |
 | --- | --- |
-| 1. Problem and user | Infrastructure/platform engineer; unsafe off-hours advice; [Why](WHY.md). |
+| 1. Problem and user | Infrastructure/platform engineer; unsafe off-hours advice; |
 | 2. Solution | Scoped EC2 investigation; conditional/rejected/deferred decision and human approval boundary; [product context](PROJECT_CONTEXT.md#1-product-and-user-decision). |
 | 3. Agent workflow | Architecture with shared state, evaluator authority, feedback edge and bounds; [components](components.md). |
 | 4. Technical stack | Node.js/TypeScript CLI, AWS read-only adapters, optional Chat Completions model, local vendored H-MEM and remote Zetaris history. Name actual development tools and provide verified attribution. |

@@ -1,6 +1,6 @@
 # H-MEM reasoning memory
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
 ## Configuration
 

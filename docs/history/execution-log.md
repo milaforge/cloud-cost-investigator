@@ -1,6 +1,6 @@
 # Historical execution evidence
 
-[What](../../README.md) · [Why](../WHY.md) · [How](../HOW.md) · [Current plan](../EXECUTION_PLAN.md)
+[What](../../README.md) · [How](../HOW.md) · [Current plan](../EXECUTION_PLAN.md)
 
 Dated receipts below preserve the commands, results, integration modes and limitations recorded at execution time. Defaults, owners and blockers may have been superseded. They are evidence, not current setup instructions. The [execution plan](../EXECUTION_PLAN.md) owns current status and all new progress entries.
 

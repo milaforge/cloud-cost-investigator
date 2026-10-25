@@ -1,6 +1,6 @@
 # How
 
-[What](../README.md) · [Why](WHY.md) · **How**
+[What](../README.md) · **How**
 
 ## Run the demo
 
@@ -49,7 +49,7 @@ read-only even if server append permission is enabled. History is historical
 context and never replaces live evidence. The normal
 investigation CLI still defaults to live AWS.
 
-Follow-through requires [Zetaris setup](ZETARIS_HISTORY.md), server-side
+Follow-through requires [Zetaris setup](ZETARIS_SETUP.md), server-side
 `ZETARIS_HISTORY_ALLOW_APPEND=true`, and the browser write acknowledgment. It
 retains seven synthetic records under a unique account and never silently falls
 back to fixture storage. Restart after changing configuration. Real-service
@@ -95,7 +95,7 @@ Copy [.env.example](../.env.example) to `.env` **only if `.env` does not exist**
 | Live AWS evidence and permissions | [AWS authentication](AWS_TOOLS.md#authentication-and-live-smoke-check) |
 | A real model, including NVIDIA | [Model configuration](CLI_GUIDE.md#model-configuration) |
 | Persistent investigation lessons | [H-MEM configuration](MEMORY.md#configuration) |
-| Historical recommendations and decisions | [Zetaris provisioning](ZETARIS_HISTORY.md) |
+| Historical recommendations and decisions | [Zetaris setup](ZETARIS_SETUP.md) |
 
 Live, read-only AWS evidence is the default. Synthetic runs require `--evidence mock`; failures never switch to mocks. Replace the account placeholder and region with your intended AWS scope:
 

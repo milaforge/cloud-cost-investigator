@@ -1,5 +1,36 @@
 # Project Memory
 
+## Visitor-facing agent diagram (2026-10-25)
+
+- Keep overview diagrams in the README; `docs/components.md` links there and
+  retains the responsibility table, shared-state authority and technical details.
+  This avoids maintaining another copy of the same architecture overview.
+
+- Emphasize Zetaris as a primary long-term improvement component, visually and
+  in labels: its durable decision record connects recommendations, operator
+  decisions, due reviews and outcomes to validated H-MEM learning. This describes
+  its product role without changing offline execution or evidence authority.
+
+- Keep the requested higher-level diagram alongside the execution view: combine
+  execution and shared evidence into one investigation step while retaining
+  planner/evaluator decision diamonds, bounded replanning and the Zetaris-to-H-MEM
+  outcome-learning path. This reduces visitor effort without inventing new roles.
+
+- User correction: foreground dynamic planner choices with decision diamonds and
+  a visibly bounded agentic loop. Explain Zetaris through recommendation
+  follow-through and validated rollback-to-H-MEM learning, rather than reducing
+  its value to optional history. Raw historical rows still cannot order checks
+  or establish current safety. Dotted arrows distinguish cross-run learning and
+  persistence from the current investigation flow.
+
+- Show planner choice, deterministic verdict authority and runner-owned shared
+  state in the requested README overview. Use the actual bounded replan path;
+  illustrative multi-agent retries and automatic sample fallback are not runtime
+  features. Samples require explicit mock selection, and CLI traces are emitted
+  with the final report to stdout for optional redirection. Detailed architecture
+  and trace instructions retain their canonical homes in `docs/components.md`
+  and `docs/CLI_GUIDE.md`.
+
 ## Focused provider comparison (2026-10-25)
 
 - When conserving model quota, replay each distinct failed planner state once,
@@ -556,3 +587,28 @@
   Multi-investigation learning retains its separate
   20-minute worker limit. Deadlines bound waits, not a blocked Node event loop
   or remote provider execution after cancellation. No new dependencies or calls.
+
+## Dedicated Zetaris runtime identity (2026-10-25)
+
+- Administrator read/write success cannot establish least privilege. Provision a
+  separate general/non-admin account with table-only SELECT/INSERT on the history
+  records table, no Grant Option, and no broader inherited authority. Token auth
+  must identify the same restricted account; an old administrator token is not
+  an acceptable runtime alternative. Keep actual secrets local and unchanged by
+  documentation work.
+- SELECT/INSERT labels do not establish append-only storage because INSERT may
+  include overwrite. Require effective backend/server-policy evidence, separate
+  from the app's fixed INSERT INTO adapter and functional readback. Do not test
+  destructive statements against retained history. Canonical setup belongs in
+  docs/ZETARIS_HISTORY.md; verified status belongs in docs/EXECUTION_PLAN.md.
+
+## Zetaris installation guide ownership (2026-10-25)
+
+- Keep official installation links and server-side persistent directory/lakehouse
+  provisioning in docs/ZETARIS_SETUP.md, linked from README Setup and How. This
+  supersedes keeping the Docker procedure in docs/ZETARIS_HISTORY.md. The history
+  guide remains canonical for the table contract, restricted runtime account,
+  connection configuration and append/read verification; link rather than duplicate.
+- Local storage means the Zetaris server/container filesystem. A shared persistent
+  mount and a path allowed by the configured filesystem root are both required;
+  a directory in the app checkout cannot provision remote Zetaris storage.

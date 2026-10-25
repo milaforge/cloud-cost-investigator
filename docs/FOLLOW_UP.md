@@ -1,6 +1,6 @@
 # Decisions and follow-through
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
 H-MEM teaches scoped investigation checks. Zetaris retains the recommendation,
 what an operator decided, when to revisit it, and what was later reported or

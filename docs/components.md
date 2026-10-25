@@ -1,26 +1,11 @@
 # Architecture
 
-[What](../README.md) · [Why](WHY.md) · [How](HOW.md)
+[What](../README.md) · [How](HOW.md)
 
-One bounded planner → executor → evaluator loop drives the TypeScript/Node.js CLI. Fresh evidence controls the decision; history informs the investigation.
+See the [README diagrams](../README.md) for the system overview. This page
+documents component authority, runtime boundaries and integration details.
 
-```mermaid
-flowchart TD
-    U[Engineer: account and region] --> C[CLI: validate request and modes]
-    C --> S[Run state: scope, candidate, hypothesis, observations, trace, budgets]
-    S --> P[Planner: scripted or real model]
-    H[Meterless H-MEM: historical lessons] -->|Scoped check priority| P
-    P -->|Allowlisted action| X[Executor: bind and validate scope; enforce deadlines]
-    X --> T[Read-only direct tools: explicit AWS or mock mode]
-    T -->|Validated current observation| S
-    S --> E[Deterministic safety evaluator]
-    E -->|Missing checks: updated state| P
-    E -->|Contradiction: reject; adequate proof: conditional; unresolved: defer| V[Report validator: citations and policy]
-    V --> R[CLI stdout: readable report or JSON with trace]
-    Z[Zetaris: historical decision trail] -->|Historical comparison only| S
-    S -->|Configured summary persistence| H
-    S -->|Explicitly enabled history append and readback| Z
-```
+## Responsibilities and shared state
 
 | Role | Responsibility and authority | Feedback visible to judges |
 | --- | --- | --- |

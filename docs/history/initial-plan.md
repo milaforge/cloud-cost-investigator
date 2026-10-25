@@ -1,6 +1,6 @@
 # Original first-slice plan — historical
 
-[What](../../README.md) · [Why](../WHY.md) · [How](../HOW.md)
+[What](../../README.md) · [How](../HOW.md)
 
 This is the original planning record, not current instructions or status. It includes superseded ownership, mock defaults and incomplete milestones. Use the [current contracts](../PROJECT_CONTEXT.md) and [execution plan](../EXECUTION_PLAN.md).
 
