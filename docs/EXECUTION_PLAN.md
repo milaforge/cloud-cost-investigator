@@ -11,6 +11,23 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Concise captured trace example — 2026-10-25
+
+- **Gate/owner/mode:** submission trace clarity, Milad; documentation only.
+  Added [trace example](TRACE_EXAMPLE.md), linked from the CLI guide, using six
+  exact projected events from a retained live NVIDIA / synthetic-evidence B run.
+  Includes the contradiction citation, unresolved checks, separate failed-run
+  evidence and an offline stdout/`logs/` capture command; rationale in `memory.md`.
+- **Verification:** inline Node assertions with `validateReport` passed exact
+  excerpt/source equality, citation resolution, captured success/failure behavior
+  and a fresh offline report. `ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run
+  --silent investigate -- --evidence mock --planner scripted --account demo
+  --region us-east-1 --scenario B --json` exited **0**, `complete`,
+  `not_recommended`, histories disabled. Python local-link/anchor, fence and
+  whitespace checks passed; scoped `git diff --check` passed.
+- **Limits/next action:** no new live model, AWS, Zetaris or H-MEM calls; no
+  runtime changes. Use the example in the demo; existing release gates remain.
+
 ### Zetaris installation and storage guide — 2026-10-25
 
 - **Gate/owner/mode:** reproducible service setup documentation, Milad; documentation only.

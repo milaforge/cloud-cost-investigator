@@ -612,3 +612,11 @@
 - Local storage means the Zetaris server/container filesystem. A shared persistent
   mount and a path allowed by the configured filesystem root are both required;
   a directory in the app checkout cannot provision remote Zetaris storage.
+
+## Trace example provenance (2026-10-25)
+
+- Keep the concise captured-run example in `docs/TRACE_EXAMPLE.md`, linked from
+  the CLI trace reference. Project trace fields and actual evidence IDs make
+  the evaluator's rejection auditable; do not invent quality-bar metadata or
+  sponsor calls. Label live model execution separately from synthetic telemetry,
+  and distinguish offline reproduction from the captured model run.

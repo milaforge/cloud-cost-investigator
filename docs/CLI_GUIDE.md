@@ -38,6 +38,8 @@ Exit codes: **0** completed scoped recommendations/rejections/no eligible candid
 
 ## Capture and read the decision trace
 
+See the [strong trace example](TRACE_EXAMPLE.md) for an actual model-driven proposal, evaluator challenge and evidence-backed rejection.
+
 The CLI prints a final readable report, or one JSON report with `--json`, to stdout. It does not automatically create `logs/` files or stream JSONL. Capture a fresh, isolated B run with no model, AWS or historical-service calls:
 
 ```bash
