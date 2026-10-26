@@ -39,7 +39,9 @@ clarification does not expand the current MVP, tool permissions or safety policy
 Out of scope: original cost-increase explanation command; mandatory baseline or snapshot comparison; EC2 downsizing; multi-cloud; Kubernetes; automated remediation; enterprise onboarding/auth; forecasting; full dashboards; complex multi-agent frameworks; extra Meterless engines. A readable CLI is sufficient for the surface; demo/slides remain required.
 
 The local web UI has a top-center Mode select defaulting to **Demo**. All three
-tabs exist in both modes. Demo is preview-only: generated synthetic/scripted
+tabs exist in both modes. In Live, Learn and Follow through remain disabled
+until an investigation result or validated saved live report is selected.
+Demo is preview-only: generated synthetic/scripted
 investigation reports, an illustrative learning flow and illustrative fictional
 follow-through. It has no run, owner-input, model/service or remote-write controls.
 Live owns AWS investigation controls, live report loading and

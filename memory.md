@@ -1,5 +1,15 @@
 # Project Memory
 
+## Live workflow tab prerequisites (2026-10-26)
+
+- Keep Learn and Follow through visible but disabled in Live until a live
+  investigation report is selected. Their content depends on that report;
+  starting a job or failing without a report does not provide context.
+- A validated saved live report also supplies this context. Switching modes
+  clears selection and restores the gate; Demo previews keep all tabs enabled.
+  Guard navigation handlers as well as native button state. Decision-saving
+  eligibility remains governed by the existing completed-recommendation checks.
+
 ## Remove browser owner-statement capture (2026-10-26)
 
 - User requested removal of the optional owner-evidence form to simplify the UI.

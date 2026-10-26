@@ -287,6 +287,12 @@ function timeline(candidate, report) {
 }
 function render(focusCandidate = false) {
   syncDecisionForm();
+  for (const button of document.querySelectorAll('[data-view]')) {
+    button.disabled = !canShowView(button.dataset.view);
+    button.title = button.disabled
+      ? 'Run an investigation or load a live report first.'
+      : '';
+  }
   const r = reports[active];
   $('live-learning-result').replaceChildren(
     !isDemo() && r
@@ -871,7 +877,15 @@ async function selectScenario(scenario) {
 $('scenario').addEventListener('change', () =>
   selectScenario($('scenario').value),
 );
+function canShowView(view) {
+  return (
+    view === 'investigate' ||
+    isDemo() ||
+    reports[active]?.integration_mode === 'live'
+  );
+}
 function showView(view) {
+  if (!canShowView(view)) return;
   dismissToast();
   for (const name of ['investigate', 'learn', 'followup'])
     $(`view-${name}`).hidden = name !== view;

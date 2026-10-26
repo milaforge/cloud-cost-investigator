@@ -295,7 +295,35 @@ test('Live tabs expose operations and report context while excluding every demo 
   p.mode('live');
   for (const id of ['run-investigate', 'live-services', 'load'])
     assert.equal(p.get(id).visible, true, id);
+  const tabs = p.elements.filter((el) => el.dataset.view);
+  for (const view of ['learn', 'followup']) {
+    assert.equal(tabs.find((el) => el.dataset.view === view)?.disabled, true);
+    p.tab(view);
+    p.run(`showView('${view}')`);
+    assert.equal(p.get(`view-${view}`).visible, false);
+    assert.equal(p.get('view-investigate').visible, true);
+  }
+  for (const status of ['running', 'failed']) {
+    p.run(
+      `paintJob({request_id:'gate',kind:'investigate',source_mode:'live',status:'${status}',events:[]})`,
+    );
+    assert.equal(
+      tabs.find((el) => el.dataset.view === 'learn')?.disabled,
+      true,
+    );
+    assert.equal(
+      tabs.find((el) => el.dataset.view === 'followup')?.disabled,
+      true,
+    );
+  }
+  // Synthetic fixture relabeled only to exercise browser state, not live proof.
+  const demos = await generateDemoReports();
+  p.context.liveReport = { ...demos.A, integration_mode: 'live' };
+  p.run(
+    "paintJob({request_id:'result',kind:'investigate',source_mode:'live',status:'complete',events:[],result:liveReport})",
+  );
   for (const view of ['investigate', 'learn', 'followup']) {
+    assert.equal(tabs.find((el) => el.dataset.view === view)?.disabled, false);
     p.tab(view);
     assert.equal(p.get(`view-${view}`).visible, true);
     for (const el of p.elements.filter((el) => el.matches('[data-demo-only]')))
@@ -337,6 +365,21 @@ test('Live tabs expose operations and report context while excluding every demo 
   assert.equal(p.run('active'), null);
   assert.equal(p.get('scenario').value, '');
   assert.equal(p.get('live-services').visible, false);
+  assert.ok(
+    tabs.every((el) => !el.disabled),
+    'Demo tabs remain enabled',
+  );
+  p.mode('live');
+  assert.equal(tabs.find((el) => el.dataset.view === 'learn')?.disabled, true);
+  p.context.fetch = async () => ({
+    ok: true,
+    json: async () => p.context.liveReport,
+  });
+  await p.run("loadReport({size:2,text:async ()=>'{}'})");
+  assert.ok(
+    tabs.every((el) => !el.disabled),
+    'loading a live report unlocks tabs',
+  );
 });
 
 test('resumed jobs and completed results stay out of Demo; Live progress uses actual source mode', () => {

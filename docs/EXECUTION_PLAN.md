@@ -11,6 +11,21 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Live workflow tab prerequisites — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. Learn and Follow through stay
+  visible but disabled until a live report is selected from a run or validated
+  upload. Navigation handlers enforce the same condition; Demo tabs stay enabled.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/demo-web-ui.test.ts` passed **6/6**, covering initial/pending/failed
+  states, result selection, mode reset and live-report import. `npm run
+  typecheck`, `npm run lint`, `node --check src/web/app.js` and
+  `git diff --check` passed. Lint retains one pre-existing historical probe info.
+- **Mode/limits/next:** local DOM-handler and synthetic fixture verification,
+  without cloud/model/history calls or rendered-browser layout proof. No blocker
+  for this slice; restart the viewer to reload cached assets. Combined live and
+  release gates remain open.
+
 ### Remove optional owner-evidence input — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web usability, Milad. Removed the optional owner
