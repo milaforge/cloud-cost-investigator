@@ -29,7 +29,7 @@
   configured; missing history is labeled unavailable, never synthetic fallback.
 - Reuse `AWS_EXPECTED_ACCOUNT_ID` for the account guard and `AWS_REGION` for
   scope; `CCI_MAX_CANDIDATES` is 1–3 and defaults to 1. Keep CLI flags unchanged.
-  Server `.env` loading preserves shell precedence. Never migrate the former
+  Server `.env` loading preserves shell precedence except for `AWS_PROFILE` and `AWS_REGION` at `npm start` (see the superseding decision below). Never migrate the former
   hardcoded browser account into configuration without knowing the intended scope.
 - Bind and validate these settings at the HTTP boundary. Browser overrides fail,
   invalid scope starts no worker, and configuration responses expose only validated
@@ -1117,3 +1117,8 @@
 
 - The user requested pre-run lookback control. Reuse CLI `--lookback-days` through the validated worker request: 1–14 complete UTC days, web default 7. Scope, model and history remain server-controlled. Complete UTC-day alignment preserves billing compatibility; this is not a rolling 48-hour query.
 - Report measured CPU averages/peaks with partial coverage explicitly, without equating low CPU to no jobs or dependencies. The seven-day recommendation threshold remains separate from observed activity. SSM maintenance and ELBv2 registrations remain scoped evidence, not workload-wide absence proofs. No planner gate or clearance authority is relaxed.
+
+## Project AWS selection at web startup (2026-10-26)
+
+- User explicitly requested plain `npm start` use project `.env` AWS profile and region even when the launching shell exports different values. This supersedes blanket shell precedence for these two keys at web startup only. Other commands and settings retain shell precedence; omitted file keys preserve inherited values.
+- Apply the override once before starting the server. Workers inherit that selection; ordinary adapter reloads preserve it. Use native Node parsing, sanitized file errors and no configuration-value logging. The expected-account guard and separate decision-write acknowledgment remain mandatory.

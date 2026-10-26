@@ -1,9 +1,17 @@
-import { loadEnvFile } from 'node:process';
+import { readFileSync } from 'node:fs';
+import { parseEnv } from 'node:util';
 
-/** Native Node parsing; shell variables take precedence. Never print file contents. */
-export function loadProjectEnv(path = '.env'): boolean {
+/** Native Node parsing; only explicitly selected keys override the shell. */
+export function loadProjectEnv(
+  path = '.env',
+  overrideKeys: readonly string[] = [],
+): boolean {
   try {
-    loadEnvFile(path);
+    const values = parseEnv(readFileSync(path, 'utf8'));
+    for (const [key, value] of Object.entries(values)) {
+      if (process.env[key] === undefined || overrideKeys.includes(key))
+        process.env[key] = value;
+    }
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;

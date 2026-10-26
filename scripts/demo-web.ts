@@ -289,7 +289,7 @@ if (
     process.exitCode = 1;
   } else {
     try {
-      if (!loadProjectEnv())
+      if (!loadProjectEnv('.env', ['AWS_PROFILE', 'AWS_REGION']))
         console.warn(
           'No .env file found. Copy or rename .env.example to .env, fill in the required values for the services you use, then restart npm start. Demo mode remains available.',
         );

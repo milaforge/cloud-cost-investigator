@@ -60,6 +60,12 @@
 - **Blockers/next:** full live coverage/authority, effective Zetaris permission
   evidence and final release checks remain open. Finish the reviewed video,
   artifact/privacy review and portal reconciliation; no release gate advanced.
+### Project AWS profile/region at web startup — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web setup usability, Milad. User requested plain `npm start` prefer `.env` values for `AWS_PROFILE` and `AWS_REGION` over conflicting inherited exports. Startup explicitly selects these two overrides through the shared native parser; workers inherit them. Missing file keys and other settings preserve shell precedence. Updated setup, agent guidance and rationale; no secrets changed or logged.
+- **Executed proof:** `node --import tsx --test --test-isolation=none tests/config.test.ts` passed **10/10**, including file overrides, default precedence, worker-style reload, missing keys/files and sanitized unreadable-file errors. `npm run typecheck`, scoped Biome lint/format on `src/config.ts`, `scripts/demo-web.ts`, `tests/config.test.ts`, and `git diff --check` passed.
+- **Limits/blocker/next:** Combined config/web/job tests with loopback access passed **21/22**; H-MEM `learned.passed` assertion at `tests/demo-web-jobs.test.ts:174` failed in the combined run but passed when rerun alone. Initial sandbox run also blocked local listeners with `EPERM`. The combined learning failure remains unresolved; no live AWS/model/Zetaris proof was attempted. Restart plain `npm start` to apply profile/region selection. Broader release gates remain open.
+
 
 ### Automatic inventory before model planning — 2026-10-26
 

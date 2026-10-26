@@ -46,6 +46,46 @@ test('native env loader reads a file, preserves shell values and tolerates missi
   assert.throws(() => loadProjectEnv(dir), { message: 'env_file_unreadable' });
 });
 
+test('web AWS overrides use file values while other shell settings and absent keys survive', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'investigator-web-env-'));
+  const keys = ['AWS_PROFILE', 'AWS_REGION', 'AWS_ENABLE_COST_EXPLORER'];
+  const previous = keys.map((key) => process.env[key]);
+  t.after(() => {
+    keys.forEach((key, i) => {
+      if (previous[i] === undefined) delete process.env[key];
+      else process.env[key] = previous[i];
+    });
+    rmSync(dir, { recursive: true, force: true });
+  });
+  Object.assign(process.env, {
+    AWS_PROFILE: 'shell-profile',
+    AWS_REGION: 'us-east-1',
+    AWS_ENABLE_COST_EXPLORER: 'false',
+  });
+  const file = join(dir, '.env');
+  writeFileSync(
+    file,
+    'AWS_PROFILE=cci\nAWS_REGION=eu-west-3\nAWS_ENABLE_COST_EXPLORER=true\n',
+  );
+  const overrides = ['AWS_PROFILE', 'AWS_REGION'];
+  assert.equal(loadProjectEnv(file, overrides), true);
+  assert.equal(process.env.AWS_PROFILE, 'cci');
+  assert.equal(process.env.AWS_REGION, 'eu-west-3');
+  assert.equal(process.env.AWS_ENABLE_COST_EXPLORER, 'false');
+  // Worker/adapters reload with default precedence and retain startup selection.
+  loadProjectEnv(file);
+  assert.equal(process.env.AWS_PROFILE, 'cci');
+  assert.equal(process.env.AWS_REGION, 'eu-west-3');
+  writeFileSync(file, 'AWS_ENABLE_COST_EXPLORER=true\n');
+  loadProjectEnv(file, overrides);
+  assert.equal(process.env.AWS_PROFILE, 'cci');
+  assert.equal(process.env.AWS_REGION, 'eu-west-3');
+  assert.equal(loadProjectEnv(join(dir, 'missing'), overrides), false);
+  assert.throws(() => loadProjectEnv(dir, overrides), {
+    message: 'env_file_unreadable',
+  });
+});
+
 test('generic settings never inherit NVIDIA credentials or provider options', () => {
   const config = modelConfigFromEnv({
     LLM_BASE_URL: 'http://127.0.0.1:11434/v1/',

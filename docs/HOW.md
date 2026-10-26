@@ -199,7 +199,9 @@ while a run is active. A page reopened in Demo can enter Live to manage an
 already active run. Prior completed results require **View last result** in Live;
 synthetic jobs and results are excluded from live operations.
 
-The server loads the project `.env`, preserving shell precedence, but does not
+The server loads the project `.env`. Its `AWS_PROFILE` and `AWS_REGION` values
+override inherited shell values so plain `npm start` uses the project AWS scope.
+Other settings retain shell precedence. The server does not
 contact services on startup. If `.env` is missing, startup suggests copying or
 renaming `.env.example` to `.env`, filling in the required service values and
 restarting; Demo mode remains available. Set `AWS_EXPECTED_ACCOUNT_ID` (12 digits),
@@ -272,7 +274,7 @@ These use 14 complete UTC days; the policy still enforces a seven-day minimum.
 
 ## Configure your investigation
 
-Copy [.env.example](../.env.example) to `.env` **only if `.env` does not exist**; otherwise merge the needed keys. Keep it untracked. Commands load it from the working directory; existing shell variables take precedence.
+Copy [.env.example](../.env.example) to `.env` **only if `.env` does not exist**; otherwise merge the needed keys. Keep it untracked. Commands load it from the working directory; existing shell variables take precedence except that `npm start` prefers `.env` values for `AWS_PROFILE` and `AWS_REGION` when present.
 
 | Choose | Continue here |
 | --- | --- |
