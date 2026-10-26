@@ -11,6 +11,22 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Missing `.env` startup guidance — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web setup usability, Milad. `npm start` uses the
+  existing environment loader's result to suggest copying or renaming
+  `.env.example`, filling required service values and restarting when `.env`
+  is absent. The notice does not block Demo or create configuration files.
+- **Executed proof:** `npm run typecheck` and `git diff --check` passed. A
+  Python subprocess check launched `node --import <installed tsx loader>
+  scripts/demo-web.ts --no-open` from two temporary working directories, with
+  an absent or empty `.env`. Both served HTTP 200; only the absent case printed
+  setup guidance; neither modified configuration. Used installed Node's actual
+  binary to avoid the version-manager shim's temporary-directory restriction;
+  loopback permission was required for the server check.
+- **Mode/limits:** local startup only; no cloud/model/history calls. Existing
+  edits preserved. No blocker for this slice; broader release gates remain open.
+
 ### Live workflow tab prerequisites — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web usability, Milad. Learn and Follow through stay

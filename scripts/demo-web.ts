@@ -274,7 +274,10 @@ if (
     process.exitCode = 1;
   } else {
     try {
-      loadProjectEnv();
+      if (!loadProjectEnv())
+        console.warn(
+          'No .env file found. Copy or rename .env.example to .env, fill in the required values for the services you use, then restart npm start. Demo mode remains available.',
+        );
       console.log('Starting web UI…');
       const { server, url } = await startDemoServer();
       console.log(

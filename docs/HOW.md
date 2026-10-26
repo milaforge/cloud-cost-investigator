@@ -200,7 +200,9 @@ already active run. Prior completed results require **View last result** in Live
 synthetic jobs and results are excluded from live operations.
 
 The server loads the project `.env`, preserving shell precedence, but does not
-contact services on startup. Live configuration labels indicate presence, **not
+contact services on startup. If `.env` is missing, startup suggests copying or
+renaming `.env.example` to `.env`, filling in the required service values and
+restarting; Demo mode remains available. Live configuration labels indicate presence, **not
 verified connectivity**. In Live, select the configured planner and explicitly
 enable real services before running. [Model setup](CLI_GUIDE.md#model-configuration)
 stays server-side; model calls may incur usage. The [AWS setup](AWS_SETUP.md) and

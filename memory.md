@@ -1,5 +1,12 @@
 # Project Memory
 
+## Missing web configuration notice (2026-10-26)
+
+- Reuse the environment loader's missing-file result to show setup guidance at
+  `npm start`. Suggest copying or renaming `.env.example` and filling required
+  service values, without creating a file, printing configuration or blocking
+  Demo mode and deployments configured through shell variables.
+
 ## Live workflow tab prerequisites (2026-10-26)
 
 - Keep Learn and Follow through visible but disabled in Live until a live
