@@ -780,9 +780,135 @@ const schedule = (value: Schedule | null) =>
     ? `${String(value.start_hour_utc).padStart(2, '0')}:00–${String(value.end_hour_utc).padStart(2, '0')}:00 UTC daily`
     : 'none established';
 
-/** Detailed readable equivalent of the validated JSON report. */
-export function renderReport(value: InvestigationReport): string {
+/** Wrap prose without truncating evidence gaps or human-approval conditions. */
+function summaryLine(lines: string[], label: string, value: string) {
+  let line = `${label}:`;
+  for (const word of value.split(/\s+/)) {
+    if (line.length + word.length + 1 > 96) {
+      lines.push(line);
+      line = `  ${word}`;
+    } else line += ` ${word}`;
+  }
+  lines.push(line);
+}
+
+function renderSummary(r: InvestigationReport): string {
+  const lines = [`Cloud Cost Investigator — ${r.completion_status}`];
+  const verdicts = {
+    conditional_recommendation: 'CONDITIONAL RECOMMENDATION',
+    not_recommended: 'NOT RECOMMENDED',
+    needs_verification: 'NEEDS VERIFICATION',
+  };
+  for (const c of r.candidates) {
+    lines.push('', `${verdicts[c.verdict]} — ${c.instance_id}`);
+    summaryLine(lines, 'Window', schedule(c.proposed_window));
+    summaryLine(lines, 'Why', c.explanation);
+    const decisiveIds =
+      c.verdict === 'not_recommended'
+        ? c.contradicting_evidence_ids
+        : c.supporting_evidence_ids;
+    const observations = r.evidence.filter((e) =>
+      c.verdict === 'needs_verification'
+        ? e.scope.instance_id === c.instance_id ||
+          (!e.scope.instance_id && e.status === 'partial')
+        : decisiveIds.includes(e.evidence_id),
+    );
+    if (observations.length)
+      summaryLine(
+        lines,
+        'Evidence',
+        observations.map((e) => `${e.tool} (${e.status})`).join('; '),
+      );
+    const metrics = r.evidence.find(
+      (e) =>
+        e.tool === 'get_ec2_metrics' && e.scope.instance_id === c.instance_id,
+    );
+    if (metrics?.metric_coverage?.length)
+      summaryLine(
+        lines,
+        'Metric samples',
+        metrics.metric_coverage
+          .map(
+            (m) =>
+              `${m.field} ${m.returned_points}/${m.expected_points} at ${m.period_seconds}s`,
+          )
+          .join('; '),
+      );
+    if (c.next_human_actions.length)
+      summaryLine(lines, 'Next', c.next_human_actions[0]);
+    if (c.missing_checks.length || c.next_human_actions.length > 1)
+      summaryLine(
+        lines,
+        'Remaining',
+        `${c.missing_checks.length} checks; use --verbose for the full checklist and actions.`,
+      );
+    summaryLine(
+      lines,
+      'Savings',
+      c.savings_calculation && c.estimated_monthly_savings !== null
+        ? `${c.estimated_monthly_savings.toFixed(2)} ${c.savings_calculation.currency} for ${c.savings_calculation.period.from.slice(0, 10)} → ${c.savings_calculation.period.to.slice(0, 10)} (conditional${r.integration_mode === 'mock' ? '; synthetic estimate' : ''})`
+        : 'unknown',
+    );
+  }
+  if (!r.candidates.length) {
+    lines.push(
+      '',
+      r.completion_status === 'failed'
+        ? 'INVESTIGATION FAILED — no candidate verdict'
+        : r.completion_status === 'partial'
+          ? 'INVESTIGATION INCOMPLETE — no candidate verdict'
+          : 'NO ELIGIBLE CANDIDATES',
+    );
+    for (const gap of r.discovery.gaps.slice(0, 2))
+      summaryLine(lines, 'Discovery gap', gap);
+    const failure = r.trace.filter((t) => t.failure_code).at(-1);
+    if (failure)
+      summaryLine(
+        lines,
+        'Failure',
+        `${failure.phase}: ${failure.failure_code}`,
+      );
+  }
+  lines.push('');
+  summaryLine(
+    lines,
+    'Mode',
+    `${r.integration_mode.toUpperCase()}${r.integration_mode === 'mock' ? ' (synthetic data; no AWS calls)' : ''}; planner: ${r.planner.mode}${r.planner.model ? ` (${r.planner.model})` : ''}`,
+  );
+  summaryLine(
+    lines,
+    'Scope',
+    `account=${r.request.account_id} region=${r.request.region}`,
+  );
+  summaryLine(
+    lines,
+    'Observed',
+    `${r.request.window.from} → ${r.request.window.to}`,
+  );
+  summaryLine(lines, 'Stopped', r.stop_reason);
+  if (
+    r.historical_context.zetaris !== 'not_configured' ||
+    r.historical_context.hmem !== 'not_configured'
+  )
+    summaryLine(
+      lines,
+      'Historical context',
+      `Zetaris ${r.historical_context.zetaris}; H-MEM ${r.historical_context.hmem} (not current evidence)`,
+    );
+  lines.push(
+    'Read-only. Any infrastructure change requires human review and approval.',
+    'Use --verbose for full evidence and trace, or --json for report data.',
+  );
+  return `${lines.join('\n')}\n`;
+}
+
+/** Existing programmatic callers retain the full report; the CLI selects its mode. */
+export function renderReport(
+  value: InvestigationReport,
+  { verbose = true }: { verbose?: boolean } = {},
+): string {
   const r = validateReport(value);
+  if (!verbose) return renderSummary(r);
   const lines = [
     `Cloud Cost Investigator — ${r.completion_status}`,
     `Investigation: ${r.investigation_id}`,

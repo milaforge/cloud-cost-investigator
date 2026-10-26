@@ -27,7 +27,7 @@ clarification does not expand the current MVP, tool permissions or safety policy
 | First optimization  | Agreed                           | EC2 **off-hours stopping schedules only**; no downsizing                                                                                                                          |
 | Safety evaluation   | Agreed                           | Mandatory targeted attempt to disprove each proposed schedule                                                                                                                     |
 | Uncertainty         | Agreed                           | Query additional relevant sources within bounds; then defer; no interactive CLI clarification required                                                                            |
-| Presentation        | Agreed                           | Detailed CLI/JSON reports and a local guided demo UI with investigation, learning, follow-through and validated report loading                                                                                           |
+| Presentation        | Agreed                           | Concise verdict-first CLI by default, comprehensive `--verbose`/JSON reports, and a local guided demo UI with investigation, learning, follow-through and validated report loading |
 | Memory              | Agreed                           | Timestamped investigation summaries guiding fresh queries, not live telemetry                                                                                                     |
 | Failure             | Agreed                           | Status-specific bounded degradation and explicit uncertainty                                                                                                                      |
 | Source architecture | Agreed                           | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory         |
@@ -151,7 +151,7 @@ See [the scenario reproduction and demo runbook](SCENARIOS.md).
 
 ## 8. Detailed report and trace contract
 
-Output both readable CLI content and a runtime-validated JSON report (file export optional). Each report includes:
+Output both readable CLI content and a runtime-validated JSON report (file export optional). The CLI defaults to a concise verdict-first summary; `--verbose` exposes the comprehensive report below. Output modes do not change policy, evidence or exit codes. Each report includes:
 
 - Investigation ID, question/goal, account/region, UTC observed window, integration mode, source coverage and **overall completion status** (`complete` / `partial` / `failed`).
 - Candidate discovery count/limit, selection rationale, and any discovery gaps.

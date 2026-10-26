@@ -1,5 +1,19 @@
 # Project Memory
 
+## Concise CLI and explicit detail (2026-10-26)
+
+- The CLI's default presentation is a short verdict-first projection of the
+  validated report, keeping source mode, evaluated window, reason, next action,
+  unknown savings, sample gaps and human approval visible. Put raw observation
+  JSON, full checklists, citations, histories and trace behind `--verbose`.
+- Extend the existing renderer with a presentation option. Its programmatic
+  default stays comprehensive for existing consumers; the CLI explicitly selects
+  concise or verbose output. JSON/JSONL schemas and all investigation behavior
+  stay independent of text presentation.
+- Reject conflicting or duplicate output flags before retrieval. Use npm's
+  `--silent` in CLI examples to suppress its script banner, without changing
+  stdout capture or report semantics. Keep detailed CLI usage in the CLI guide.
+
 ## Five-minute investigations and short-lived AWS account (2026-10-26)
 
 - The user confirms the live instance has only two days of history. Use the

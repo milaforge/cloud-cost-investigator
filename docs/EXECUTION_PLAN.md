@@ -11,6 +11,42 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Concise CLI and integrated result verification — 2026-10-26
+
+- **Gate/owner:** Days 3–4 CLI explainability, Milad. Default text now leads
+  with scoped verdicts, reasons, decisive source statuses, next actions and
+  savings/unknown. It retains observation scope, sample gaps, stop reason,
+  source mode and human approval. `--verbose` preserves full evidence,
+  citations, checklists, history, trace and budgets. JSON/JSONL schemas,
+  programmatic rendering defaults, safety policy and exit codes are unchanged.
+  [CLI reference](CLI_GUIDE.md#run) owns commands and output-mode details.
+- **CLI proof:** actual `npm run --silent investigate` mock/scripted B runs
+  produced **16 lines / 739 characters** by default and **89 lines / 10,598
+  characters** with `--verbose`. No npm banner or stderr; mock provenance and
+  scoped rejection remain explicit. The focused CLI tests also exercise A/C,
+  missing sources, all three mixed verdicts, empty inventory, failed discovery
+  and conflicting/duplicate flags before retrieval.
+- **Fresh live proof:** in-process `cli.ts` invocation with `AWS_PROFILE=cci`,
+  `AWS_REGION=eu-west-3`, `AWS_ENABLE_COST_EXPLORER=true`, TLS verification,
+  authenticated STS account, `--evidence aws --planner scripted
+  --lookback-days 7 --json`, and histories disabled. Rendered both text views
+  from that same validated report: **20 default lines / 90 verbose lines**.
+  Inventory `ok`; billing/metrics `partial`; **367/2016** points per series at
+  **300 seconds**. Verdict `needs_verification`, savings `null`, stop
+  `metrics_evidence_incomplete`, exit **2**. SSM/ELBv2 remain unreached by this
+  integrated run. Sandbox STS failed `EAI_AGAIN`; authorized network execution
+  passed. No model/history calls, infrastructure writes or retained raw report.
+- **Verification:** `node --import tsx --test --test-isolation=none
+  tests/report.test.ts tests/trace-jsonl.test.ts tests/aws-cli.test.ts
+  tests/evidence-diagnostics.test.ts tests/provider-error.test.ts` passed
+  **27/27**. `npm run typecheck`, `npm run typecheck:aws`, `npm run lint`, scoped
+  Biome format and `git diff --check` passed. Lint retains the existing CSS
+  specificity warning and historical-probe style info. No full-suite run.
+- **Limits/next:** presentation acceptance is verified; combined live safety and
+  numeric savings gates stay open. Collect sufficient real telemetry and the
+  verified operational/pricing authority described below; use explicit labeled
+  mocks for complete conditional-recommendation demonstrations.
+
 ### Five-minute AWS investigations and account setup — 2026-10-26
 
 - **Gate/owner:** Days 3–4 live evidence, Milad; operational source ownership

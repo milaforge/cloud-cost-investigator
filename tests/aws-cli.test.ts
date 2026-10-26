@@ -7,7 +7,7 @@ import {
   METRICS,
   type AwsTransport,
 } from '../src/tools/aws.ts';
-import { validateReport } from '../src/investigation/report.ts';
+import { renderReport, validateReport } from '../src/investigation/report.ts';
 import {
   CloudWatchClient,
   type GetMetricDataCommand,
@@ -277,9 +277,12 @@ test('AWS CLI routes through collector and evaluator: empty, denied, missing bil
       assert.ok(inventoryCalls > 0);
       assert.ok(!stdout.includes('private-provider-message'));
       const report = validateReport(JSON.parse(stdout));
+      const concise = renderReport(report, { verbose: false });
       assert.equal(report.integration_mode, 'live'); // Mocked transport, not live AWS proof.
       assert.ok(report.evidence.every((e) => e.integration_mode === 'live'));
       if (scenario === 'empty') {
+        assert.match(concise, /NO ELIGIBLE CANDIDATES/);
+        assert.doesNotMatch(concise, /INVESTIGATION FAILED/);
         assert.equal(code, 0);
         assert.equal(costCalls, 0);
         assert.equal(report.budget.planner_calls, 1);
@@ -298,6 +301,8 @@ test('AWS CLI routes through collector and evaluator: empty, denied, missing bil
               'unavailable',
             );
         } else {
+          assert.match(concise, /INVESTIGATION FAILED — no candidate verdict/);
+          assert.match(concise, /Stopped: required_tool_failed:/);
           assert.equal(code, 1);
           assert.equal(report.completion_status, 'failed');
           assert.equal(metricCalls, 0);

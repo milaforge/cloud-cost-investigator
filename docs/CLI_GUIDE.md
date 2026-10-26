@@ -15,12 +15,22 @@ unverified report context and do not change the verdict.
 Install dependencies using [How](HOW.md#run-the-demo) first.
 
 ```bash
-npm run investigate -- --evidence mock --account demo --region us-east-1
-npm run investigate -- --evidence mock --account demo --region us-east-1 --scenario missing
-npm run investigate -- --evidence mock --account demo --region us-east-1 --scenario mixed --max-candidates 3
+npm run --silent investigate -- --evidence mock --account demo --region us-east-1
+npm run --silent investigate -- --evidence mock --account demo --region us-east-1 --verbose
+npm run --silent investigate -- --evidence mock --account demo --region us-east-1 --scenario missing
+npm run --silent investigate -- --evidence mock --account demo --region us-east-1 --scenario mixed --max-candidates 3
 ```
 
-The first command shows the detailed report and trace. The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. Scenario A supplies explicit owner/calendar/recovery clearance and compute pricing for a conditional recommendation; C supplies a continuous-operation dependency. `mixed` investigates A/B/C in ranked order from four synthetic instances. Supported flags:
+The default text leads with each candidate's verdict, proposed UTC window, reason,
+decisive source statuses, next human action and savings (or unknown). It labels
+mock evidence and conditional estimates, shows sample counts when available,
+and retains run status and the stop reason. Rejection applies to the evaluated
+window; human approval is still required for any change. `--verbose` prints the
+comprehensive report: full evidence, citations, checks, assumptions, actions,
+owner context, trace, history and budgets. `--silent` suppresses npm's own script
+banner; direct Node invocation also emits only the application's output.
+
+The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. Scenario A supplies explicit owner/calendar/recovery clearance and compute pricing for a conditional recommendation; C supplies a continuous-operation dependency. `mixed` investigates A/B/C in ranked order from four synthetic instances. Supported flags:
 
 ```text
 --account ID          required; AWS mode requires the actual 12-digit account
@@ -30,7 +40,9 @@ The first command shows the detailed report and trace. The missing-source variat
 --evidence mock|aws   default aws; mock requires explicit selection
 --scenario A|B|C|mixed|clear|missing   mock evidence only
 --planner scripted|model|nvidia
+--verbose             comprehensive human-readable report
 --json
+--trace-jsonl
 ```
 
 For machine-readable stdout without npm's script banner:
@@ -48,10 +60,16 @@ Exit codes: **0** completed scoped recommendations/rejections/no eligible candid
 
 See the [strong trace example](TRACE_EXAMPLE.md) for an actual model-driven proposal, evaluator challenge and evidence-backed rejection.
 
-The CLI prints a final readable report, one JSON report with `--json`, or readable decision events with `--trace-jsonl` to stdout. JSONL is emitted after report finalization; it does not stream events or automatically create files. `--json` and `--trace-jsonl` are mutually exclusive. Capture a fresh, isolated B run with no model, AWS or historical-service calls:
+The CLI prints a concise final summary by default, the full readable report with
+`--verbose`, one JSON report with `--json`, or readable decision events with
+`--trace-jsonl` to stdout. The three flags are mutually exclusive; invalid or
+duplicate output flags fail before any service call. JSON and JSONL retain their
+complete existing schemas. JSONL is emitted after report finalization; it does
+not stream events or automatically create files. Capture a fresh, isolated B run
+with no model, AWS or historical-service calls:
 
 ```bash
-ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run --silent investigate -- --evidence mock --planner scripted --account demo --region us-east-1 --scenario B > /tmp/cci-B.txt
+ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run --silent investigate -- --evidence mock --planner scripted --account demo --region us-east-1 --scenario B --verbose > /tmp/cci-B.txt
 ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run --silent investigate -- --evidence mock --planner scripted --account demo --region us-east-1 --scenario B --json > /tmp/cci-B.json
 ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run --silent investigate -- --evidence mock --planner scripted --account demo --region us-east-1 --scenario B --trace-jsonl > /tmp/cci-B.jsonl
 ```

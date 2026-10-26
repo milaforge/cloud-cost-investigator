@@ -13,7 +13,7 @@ import { createAwsEvidenceProvider } from './src/tools/aws-agent.ts';
 
 export const HELP = `Cloud Cost Investigator
 
-Usage: npm run investigate -- --account YOUR_12_DIGIT_ACCOUNT_ID --region us-east-1 [options]
+Usage: npm run --silent investigate -- --account YOUR_12_DIGIT_ACCOUNT_ID --region us-east-1 [options]
 
 Options:
   --account ID          Required investigation account scope
@@ -23,9 +23,13 @@ Options:
   --planner MODE        scripted (default), model, or nvidia (legacy alias)
   --evidence MODE       aws (default, read-only AWS APIs) or mock
   --scenario MODE       A, B (default), C, mixed, clear, or missing
+  --verbose             Show all evidence, checks, history and decision trace
   --json                Write only the validated report JSON to stdout
   --trace-jsonl          Write readable decision events as JSONL (excludes --json)
   --help                Show this help
+
+Default output is a concise verdict summary. --verbose, --json and --trace-jsonl
+are mutually exclusive output modes.
 
 AWS mode ends at the last complete UTC day and requires a 12-digit account ID.
 --scenario is available only with mock evidence. AWS billing queries require
@@ -44,6 +48,7 @@ export interface CliOptions {
   evidence: 'mock' | 'aws';
   json: boolean;
   trace_jsonl?: boolean;
+  verbose?: boolean;
 }
 
 export function parseArgs(
@@ -58,6 +63,7 @@ export function parseArgs(
   const values = new Map<string, string>();
   let json = false;
   let traceJsonl = false;
+  let verbose = false;
   const allowed = [
     '--account',
     '--region',
@@ -69,6 +75,11 @@ export function parseArgs(
   ];
   for (let i = 1; i < argv.length; i++) {
     const flag = argv[i];
+    if (flag === '--verbose') {
+      if (verbose) throw new Error('Duplicate flag');
+      verbose = true;
+      continue;
+    }
     if (flag === '--trace-jsonl') {
       if (traceJsonl) throw new Error('Duplicate flag');
       traceJsonl = true;
@@ -87,7 +98,8 @@ export function parseArgs(
     values.set(flag, value);
   }
   const evidence = values.get('--evidence') ?? 'aws';
-  if (json && traceJsonl) throw new Error('Choose JSON or JSONL output');
+  if (Number(json) + Number(traceJsonl) + Number(verbose) > 1)
+    throw new Error('Choose one output mode');
   if (evidence !== 'mock' && evidence !== 'aws')
     throw new Error('Invalid evidence provider');
   if (
@@ -128,6 +140,7 @@ export function parseArgs(
     evidence,
     json,
     trace_jsonl: traceJsonl,
+    verbose,
   };
 }
 
@@ -188,7 +201,7 @@ export async function main(
         ? renderTraceJsonl(report)
         : options.json
           ? `${JSON.stringify(report, null, 2)}\n`
-          : renderReport(report),
+          : renderReport(report, { verbose: options.verbose }),
     );
     return report.completion_status === 'complete'
       ? 0

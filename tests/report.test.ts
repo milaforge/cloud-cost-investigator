@@ -86,7 +86,7 @@ test('CLI discovers a candidate and emits validated mock/scripted JSON only', as
 });
 
 test('readable report explains rejection, provenance, trace, uncertainty and history modes', async () => {
-  const result = await cli(...args);
+  const result = await cli(...args, '--verbose');
   assert.equal(result.status, 0, result.stderr);
   for (const text of [
     'MOCK',
@@ -106,6 +106,71 @@ test('readable report explains rejection, provenance, trace, uncertainty and his
   }
 });
 
+test('default CLI output leads with a scoped verdict and omits full evidence and trace', async () => {
+  for (const [scenario, verdict, status] of [
+    ['A', 'CONDITIONAL RECOMMENDATION', 0],
+    ['B', 'NOT RECOMMENDED', 0],
+    ['C', 'NOT RECOMMENDED', 0],
+    ['missing', 'NEEDS VERIFICATION', 2],
+  ] as const) {
+    const result = await cli(...args, '--scenario', scenario);
+    assert.equal(result.status, status, result.stderr);
+    assert.equal(result.stderr, '');
+    assert.match(
+      result.stdout,
+      new RegExp(
+        `^Cloud Cost Investigator[^\\n]*\\n\\n${verdict} — i-mock-primary\\n`,
+      ),
+    );
+    for (const label of [
+      'Window:',
+      'Why:',
+      'Evidence:',
+      'Next:',
+      'Savings:',
+      'Mode: MOCK',
+      'planner: scripted',
+      'Stopped:',
+      'human review and approval',
+      '--verbose',
+    ])
+      assert.ok(result.stdout.includes(label), `${scenario}: ${label}`);
+    assert.doesNotMatch(
+      result.stdout,
+      /Decision trace:|Retrieved current evidence:|Validated action:|mock-ec2-evidence-/,
+    );
+    assert.ok(result.stdout.split('\n').length < 32);
+    assert.ok(result.stdout.split('\n').every((line) => line.length <= 96));
+    if (scenario === 'A') {
+      assert.match(result.stdout, /synthetic estimate/);
+      assert.match(result.stdout, /conditional/);
+    } else assert.match(result.stdout, /Savings: unknown/);
+  }
+});
+
+test('mixed default output keeps all three scoped verdicts and concise per-instance advice', async () => {
+  const result = await cli(
+    ...args,
+    '--scenario',
+    'mixed',
+    '--max-candidates',
+    '3',
+  );
+  assert.equal(result.status, 0, result.stderr);
+  for (const label of [
+    'CONDITIONAL RECOMMENDATION — i-mock-primary',
+    'NOT RECOMMENDED — i-mock-secondary',
+    'NOT RECOMMENDED — i-mock-third',
+  ])
+    assert.ok(result.stdout.includes(label));
+  assert.equal((result.stdout.match(/^Why:/gm) ?? []).length, 3);
+  assert.equal((result.stdout.match(/^Next:/gm) ?? []).length, 3);
+  assert.doesNotMatch(
+    result.stdout,
+    /Decision trace:|Retrieved current evidence:/,
+  );
+});
+
 test('missing evidence produces partial report and status 2', async () => {
   const result = await cli(...args, '--scenario', 'missing', '--json');
   assert.equal(result.status, 2, result.stderr);
@@ -120,6 +185,11 @@ test('CLI rejects unknown, duplicate, missing, and out-of-range arguments', asyn
     ['--unknown'],
     ['--account', 'other'],
     ['--json', '--json'],
+    ['--verbose', '--verbose'],
+    ['--verbose', '--json'],
+    ['--json', '--verbose'],
+    ['--verbose', '--trace-jsonl'],
+    ['--trace-jsonl', '--verbose'],
     ['--region'],
     ['--lookback-days', '0'],
     ['--lookback-days', '91'],
