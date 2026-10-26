@@ -700,6 +700,19 @@ input[type="checkbox"] {
   padding: 4px 0;
   color: #526859;
 }
+.model-message > summary {
+  cursor: pointer;
+}
+.model-message-text {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 10px;
+  border: 1px solid #d4e0d4;
+  border-radius: 6px;
+  font-size: 0.72rem;
+}
 .event-step {
   display: inline-block;
   min-width: 28px;

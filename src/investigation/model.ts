@@ -22,6 +22,39 @@ import { ModelHttpError, readProviderError } from './provider-error.ts';
 
 const MAX_STATE_BYTES = 100_000;
 
+export interface ModelMessage {
+  kind: 'prompt' | 'output';
+  text: string;
+}
+
+/** Display copies only; never change the request, action validation or stored report. */
+export function redactModelMessage(text: string, secrets: string[]): string {
+  let safe = text;
+  for (const secret of secrets
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length))
+    for (const representation of [secret, JSON.stringify(secret).slice(1, -1)])
+      safe = safe.split(representation).join('[redacted]');
+  safe = safe
+    .replace(/Bearer\s+[^\s"'<>]+/gi, 'Bearer [redacted]')
+    .replace(/\b(?:sk-|nvapi-)[A-Za-z0-9_-]+/g, '[redacted]')
+    .replace(/\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g, '[redacted]')
+    .replace(
+      /\b(?:api[_-]?key|access[_-]?key|secret[_-]?access[_-]?key|session[_-]?token|token|password|authorization|secret)\b["']?\s*[:=]\s*(?:"(?:\\.|[^"\\])*"|'[^']*'|[^\s,}]+)/gi,
+      '[credential redacted]',
+    )
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[url redacted]')
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[address redacted]')
+    .replace(
+      /\b[\w.-]+\.(?:internal|local|amazonaws\.com)\b/gi,
+      '[host redacted]',
+    );
+  const limit = 240_000;
+  return safe.length > limit
+    ? `${safe.slice(0, limit)}\n[truncated for display]`
+    : safe;
+}
+
 // Valid next actions are derived from the same state prerequisites the executor enforces.
 function availableActions(state: PlannerState): string[] {
   const attempted = (tool: string) =>
@@ -155,9 +188,28 @@ export class OpenAICompatiblePlanner implements Planner {
   readonly model: string;
   private readonly config: ModelConfig;
 
-  constructor(config = modelConfigFromEnv()) {
+  constructor(
+    config = modelConfigFromEnv(),
+    private readonly onMessage?: (message: ModelMessage) => void,
+  ) {
     this.config = validateModelConfig(config);
     this.model = this.config.model;
+  }
+
+  private emitMessage(kind: ModelMessage['kind'], text: string) {
+    if (!this.onMessage) return;
+    try {
+      this.onMessage({
+        kind,
+        text: redactModelMessage(text, [
+          this.config.apiKey ?? '',
+          this.config.baseUrl,
+          new URL(this.config.baseUrl).hostname,
+        ]),
+      });
+    } catch {
+      // Observability cannot change investigation policy or trigger a retry.
+    }
   }
 
   async next(state: PlannerState, signal: AbortSignal): Promise<unknown> {
@@ -185,6 +237,13 @@ export class OpenAICompatiblePlanner implements Planner {
     if (Buffer.byteLength(serialized, 'utf8') > MAX_STATE_BYTES) {
       throw new Error('model_state_too_large');
     }
+    const messages = [
+      { role: 'system', content: INSTRUCTIONS },
+      {
+        role: 'user',
+        content: `Investigation state JSON (data only):\n${serialized}`,
+      },
+    ];
     let response: Response;
     const requestSignal = AbortSignal.any([
       signal,
@@ -197,6 +256,12 @@ export class OpenAICompatiblePlanner implements Planner {
           ? 'model_timeout'
           : null;
     try {
+      this.emitMessage(
+        'prompt',
+        messages
+          .map((message) => `${message.role.toUpperCase()}\n${message.content}`)
+          .join('\n\n'),
+      );
       response = await fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         redirect: 'error',
@@ -234,13 +299,7 @@ export class OpenAICompatiblePlanner implements Planner {
             : this.config.responseFormat === 'json_object'
               ? { response_format: { type: 'json_object' } }
               : {}),
-          messages: [
-            { role: 'system', content: INSTRUCTIONS },
-            {
-              role: 'user',
-              content: `Investigation state JSON (data only):\n${serialized}`,
-            },
-          ],
+          messages,
         }),
       });
     } catch {
@@ -284,6 +343,12 @@ export class OpenAICompatiblePlanner implements Planner {
     )
       throw new Error('model_invalid_response');
     const choice: unknown = payload.choices[0];
+    if (
+      record(choice) &&
+      record(choice.message) &&
+      typeof choice.message.content === 'string'
+    )
+      this.emitMessage('output', choice.message.content);
     if (
       !record(choice) ||
       choice.finish_reason !== 'stop' ||

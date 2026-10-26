@@ -11,6 +11,35 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Inspectable model prompts and outputs — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web investigation transparency, Milad. Execution
+  events now show expandable prompt/output display copies per planner attempt.
+  Captured at the model adapter, redacted before IPC, bounded and rendered as
+  literal text; disclosures stay open during polling. Includes invalid assistant
+  content before parsing, with no fabricated response on transport failure.
+  Metadata-only progress, persisted reports, planning policy and verdicts remain
+  unchanged. Rationale: `memory.md`; contract: `components.md` local viewer.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/model-messages.test.ts tests/planner-diagnostics.test.ts
+  tests/config.test.ts tests/demo-web-ui.test.ts tests/demo-web-jobs.test.ts
+  tests/demo-web.test.ts` passed **48/48** with localhost access. Covers actual
+  worker IPC from a local HTTP model fixture, literal text/XSS handling,
+  disclosure state, redaction, malformed output, no-output transport failure,
+  observer failure isolation and existing retry behavior. After adding the
+  redaction disclosure note, `tests/demo-web-ui.test.ts` passed **8/8** again.
+  `npm run typecheck`, targeted Biome lint/format, `node --check src/web/app.js`
+  and `git diff --check` passed. Initial sandbox HTTP tests hit `listen EPERM`;
+  rerun with localhost access passed. Test authoring errors were corrected before
+  the passing run.
+- **Mode/limits/next:** local fixtures and DOM handler tests, no live AWS,
+  paid-model or remote Zetaris calls; no browser visual-layout proof. Messages
+  are current-job display data, absent from old saved reports and scripted
+  previews. No blocker for this slice. Restart `npm start` and run a new Live
+  investigation to see messages; broader release gates remain open.
+
+
+
 ### Dynamic UI entrance motion and CTA loading — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web usability, Milad. `src/web/app.js` and

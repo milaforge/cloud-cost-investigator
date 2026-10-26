@@ -1076,3 +1076,17 @@
   job, including recovery after refresh. Disabled unrelated actions are not busy.
   Validation failure must not imply a job started; stop remains available only
   after running is confirmed. Motion timing never represents evidence timing.
+
+## Inspectable planner messages (2026-10-26)
+
+- User requested the prompt and output in web Execution events. Capture them at
+  the model adapter, where actual messages and assistant content exist, rather
+  than reconstructing them from the executor action or exposing provider bodies.
+- The first model turn selects inventory or finish without observations. Later
+  turns select checks or a hypothesis using retrieved evidence; deterministic
+  code retains scope binding and verdict authority. This task changes visibility,
+  not planning policy.
+- Keep display callbacks separate from metadata-only progress and persisted
+  reports/history. Redact credentials/endpoints before worker IPC, bound text,
+  use literal text disclosures and isolate observer failures from planner retries.
+  Scripted previews have no model exchange to display.

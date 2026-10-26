@@ -86,7 +86,9 @@ process.once('message', async (value) => {
         await runInvestigation(options.request, {
           planner:
             run.planner === 'model'
-              ? new OpenAICompatiblePlanner()
+              ? new OpenAICompatiblePlanner(undefined, (event) =>
+                  process.send?.({ type: 'model_message', ...event }),
+                )
               : new ScriptedPlanner(),
           provider: createEvidenceProvider(options),
           owner_evidence: run.owner_evidence,

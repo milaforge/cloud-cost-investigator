@@ -589,3 +589,51 @@ test('motion enters changed status and new events without replaying prior events
     assert.equal(p.get('run-events').closest('.event-panel')?.visible, true);
   }
 });
+
+test('planner exchanges use literal text disclosures and retain open state across polling', () => {
+  const p = page();
+  p.mode('live');
+  const prompt =
+    'Model prompt: {"content":"<img src=x onerror=alert(1)>"}\nChoose the next read-only evidence check.';
+  const output =
+    'Model output: {"action":"discover_instances","reason":"Inventory first"}';
+  p.context.exchangeEvents = ['Planner call 1 started', prompt, output];
+  p.run(
+    "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:exchangeEvents})",
+  );
+  const messages = () => p.get('run-events').querySelectorAll('.model-message');
+  assert.equal(messages().length, 2);
+  assert.ok(messages()[0].closest('.event-branch'));
+  assert.equal(messages()[0].tag, 'details');
+  assert.equal(messages()[0].open, false);
+  assert.equal(
+    messages()[0].querySelectorAll('summary')[0].textContent,
+    'Model prompt',
+  );
+  assert.equal(
+    messages()[1].querySelectorAll('summary')[0].textContent,
+    'Model output',
+  );
+  assert.equal(
+    messages()[0].querySelectorAll('pre')[0].textContent,
+    prompt.slice('Model prompt: '.length),
+  );
+  assert.equal(
+    messages()[1].querySelectorAll('pre')[0].textContent,
+    output.slice('Model output: '.length),
+  );
+  assert.equal(messages()[0].querySelectorAll('img').length, 0);
+  messages()[0].open = true;
+  p.run('paintJob(currentJob)');
+  assert.equal(messages()[0].open, true);
+  assert.equal(messages()[1].open, false);
+  p.run(
+    "paintJob({...currentJob,events:[...currentJob.events,'1. Discover instances · ok']})",
+  );
+  assert.equal(messages()[0].open, true);
+  messages()[0].open = false;
+  p.run('paintJob(currentJob)');
+  assert.equal(messages()[0].open, false);
+  p.run('paintJob(null)');
+  assert.equal(messages().length, 0);
+});

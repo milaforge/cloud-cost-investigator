@@ -315,11 +315,23 @@ export class DemoJobs {
         return;
       const m = message as {
         type?: string;
+        kind?: unknown;
         text?: unknown;
         result?: unknown;
         code?: unknown;
       };
       if (
+        m.type === 'model_message' &&
+        (m.kind === 'prompt' || m.kind === 'output') &&
+        typeof m.text === 'string'
+      ) {
+        const text =
+          m.text.length > 240_000
+            ? `${m.text.slice(0, 240_000)}\n[Truncated: display limit reached]`
+            : m.text;
+        job.events.push(`Model ${m.kind}: ${text}`);
+        if (job.events.length > 160) job.events.shift();
+      } else if (
         (m.type === 'progress' || m.type === 'activity') &&
         typeof m.text === 'string'
       ) {

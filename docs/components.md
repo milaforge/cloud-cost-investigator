@@ -24,6 +24,16 @@ report validation. Native negative scans never supply positive safety proof.
 
 ## Local report viewer
 
+Live investigation Execution events include expandable model prompt and output
+messages for each planner attempt. The adapter emits display copies of the actual
+system/user messages before the request and assistant content before action parsing,
+so malformed output remains inspectable. Credentials and private endpoints are
+redacted before worker IPC; headers, provider envelopes and hidden reasoning are
+excluded. Display text is bounded and rendered literally. These events stay in the
+current local job, outside persisted reports/history and the metadata-only progress
+contract. Failed calls retain their prompt and existing failure event without
+inventing an assistant response. Scripted previews do not fabricate model messages.
+
 `scripts/demo-web.ts` owns the dependency-free local HTTP surface and cached, on-demand
 synthetic A/B/C/missing/mixed previews. Startup only serves the UI. Explicit
 selection generates a preview; concurrent requests share its pending result,

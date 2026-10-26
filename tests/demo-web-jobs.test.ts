@@ -394,6 +394,74 @@ test('explicit model control preserves a provider failure without scripted fallb
   }
 });
 
+test('model exchanges reach web execution events through worker IPC using a local fixture', async () => {
+  let sentMessages: { role: string; content: string }[] = [];
+  const output = JSON.stringify({
+    action: 'finish',
+    reason: 'Fixture stops before evidence collection.',
+  });
+  const fixture = createServer(async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    sentMessages = JSON.parse(body).messages;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        choices: [{ finish_reason: 'stop', message: { content: output } }],
+      }),
+    );
+  });
+  await new Promise<void>((resolve) => fixture.listen(0, '127.0.0.1', resolve));
+  const settings = {
+    LLM_BASE_URL: `http://127.0.0.1:${(fixture.address() as AddressInfo).port}/v1`,
+    LLM_MODEL: 'fixture-model',
+    LLM_API_KEY: 'fixture-model-key',
+    LLM_EXTRA_BODY: '{}',
+    LLM_RESPONSE_FORMAT: 'text',
+  };
+  const previous = Object.fromEntries(
+    Object.keys(settings).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, settings);
+  const jobs = new DemoJobs();
+  try {
+    jobs.start({
+      ...input,
+      request_id: 'model-exchange',
+      planner: 'model',
+      real_services: true,
+    });
+    await finish(jobs);
+    const events = jobs.current?.events ?? [];
+    const promptIndex = events.findIndex((event) =>
+      event.startsWith('Model prompt: '),
+    );
+    assert.ok(promptIndex > events.indexOf('Planner call 1 started'));
+    assert.equal(
+      events[promptIndex],
+      `Model prompt: ${sentMessages.map((message) => `${message.role.toUpperCase()}\n${message.content}`).join('\n\n')}`,
+    );
+    assert.equal(events[promptIndex + 1], `Model output: ${output}`);
+    assert.equal(
+      JSON.stringify(jobs.current).includes(settings.LLM_API_KEY),
+      false,
+    );
+    assert.equal(
+      JSON.stringify(jobs.current).includes(settings.LLM_BASE_URL),
+      false,
+    );
+    assert.equal(jobs.current?.activity?.startsWith('Model '), false);
+  } finally {
+    jobs.close();
+    fixture.closeAllConnections();
+    await new Promise<void>((resolve) => fixture.close(() => resolve()));
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test('stopping during planner backoff prevents another provider request', async () => {
   let attempts = 0;
   const fixture = createServer((_req, res) => {

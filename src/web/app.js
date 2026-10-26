@@ -1110,6 +1110,11 @@ $('decision-form').addEventListener('submit', async (event) => {
 function renderEvents(events) {
   const root = $('run-events');
   const previous = JSON.parse(root.dataset.events || '[]');
+  const openMessages = new Set(
+    [...root.querySelectorAll('.model-message')]
+      .filter((element) => element.open)
+      .map((element) => Number(element.dataset.eventIndex)),
+  );
   let eventIndex = 0;
   const enterNewEvent = (element) => {
     if (previous[eventIndex] !== events[eventIndex]) enter(element);
@@ -1158,6 +1163,24 @@ function renderEvents(events) {
     heading.append(node('span', group.title, 'event-title'));
     const children = node('div', undefined, 'event-children');
     for (const entry of group.events) {
+      const modelMessage = /^Model (prompt|output): ([\s\S]*)$/.exec(entry);
+      if (modelMessage) {
+        const details = node('details', undefined, 'event-leaf model-message');
+        details.dataset.eventIndex = String(eventIndex);
+        details.open =
+          previous[eventIndex] === entry && openMessages.has(eventIndex);
+        details.append(
+          node(
+            'summary',
+            modelMessage[1] === 'prompt' ? 'Model prompt' : 'Model output',
+          ),
+          node('p', 'Credentials and private endpoints are redacted.', 'muted'),
+          node('pre', modelMessage[2], 'model-message-text'),
+        );
+        children.append(details);
+        enterNewEvent(details);
+        continue;
+      }
       const step = /^(\d+)\. (.*)$/.exec(entry);
       const line = node('div', undefined, 'event-leaf');
       if (step) line.append(node('span', `${step[1]}. `, 'event-step'));
