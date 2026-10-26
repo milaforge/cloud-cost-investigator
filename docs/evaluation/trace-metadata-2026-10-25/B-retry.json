@@ -1,0 +1,598 @@
+{
+  "investigation_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+  "goal": "evaluate_ec2_off_hours_scheduling",
+  "request": {
+    "account_id": "trace-synthetic",
+    "region": "us-east-1",
+    "window": {
+      "from": "2026-09-01T00:00:00Z",
+      "to": "2026-09-29T00:00:00Z"
+    },
+    "max_candidates": 1
+  },
+  "started_at": "2026-10-25T17:22:36.411Z",
+  "finished_at": "2026-10-25T17:22:51.806Z",
+  "completion_status": "complete",
+  "integration_mode": "mock",
+  "planner": {
+    "mode": "scripted",
+    "model": null
+  },
+  "discovery": {
+    "discovered_count": 2,
+    "candidate_limit": 1,
+    "gaps": []
+  },
+  "candidates": [
+    {
+      "instance_id": "i-mock-primary",
+      "selection_reason": "Selected in descending observed compute cost among discovered running instances with positive matching billing; ties by instance ID.",
+      "selection_evidence_ids": [
+        "mock-ec2-evidence-937751bd-0ec9-4ed5-acb3-2dd6fa9fbf47",
+        "mock-ec2-evidence-20d9b929-6d98-4a61-becb-29ace35aea40"
+      ],
+      "proposed_window": {
+        "start_hour_utc": 0,
+        "end_hour_utc": 6
+      },
+      "verdict": "not_recommended",
+      "explanation": "A retrieved critical job overlaps the proposed shutdown window; reject this window.",
+      "supporting_evidence_ids": [
+        "mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"
+      ],
+      "contradicting_evidence_ids": [
+        "mock-ec2-evidence-5a66dee4-7a1c-4c7d-b91d-f7f18374f414"
+      ],
+      "hypotheses": [
+        {
+          "window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          },
+          "state": "proposed",
+          "evidence_ids": [
+            "mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"
+          ],
+          "reason": "Low observed average and peak CPU suggest a question; operational safety is unverified."
+        },
+        {
+          "window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          },
+          "state": "contradicted",
+          "evidence_ids": [
+            "mock-ec2-evidence-5a66dee4-7a1c-4c7d-b91d-f7f18374f414"
+          ],
+          "reason": "A retrieved critical job overlaps the proposed shutdown window; reject this window."
+        }
+      ],
+      "risks": [
+        "Stopping requires an authorized human decision."
+      ],
+      "missing_checks": [
+        "Other shutdown windows have not been evaluated.",
+        "get_ec2_dependencies: not queried; requires fresh verification"
+      ],
+      "assumptions": [
+        "UTC daily same-day schedule only; exceptions are not inferred.",
+        "Savings eligibility, commitments and retained charges have not been established."
+      ],
+      "next_human_actions": [
+        "Keep the proposed window rejected; review the cited conflict with the resource owner."
+      ],
+      "estimated_monthly_savings": null,
+      "savings_calculation": null
+    }
+  ],
+  "evidence": [
+    {
+      "tool": "list_ec2_instances",
+      "status": "ok",
+      "source": "mock-ec2-instances",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "trace-synthetic",
+        "region": "us-east-1"
+      },
+      "observed_window": {
+        "from": "2026-09-01T00:00:00Z",
+        "to": "2026-09-29T00:00:00Z"
+      },
+      "collected_at": "2026-10-25T17:22:36.412Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "instances",
+      "evidence_id": "mock-ec2-evidence-937751bd-0ec9-4ed5-acb3-2dd6fa9fbf47",
+      "data": {
+        "instances": [
+          {
+            "instance_id": "i-mock-primary",
+            "state": "running"
+          },
+          {
+            "instance_id": "i-mock-secondary",
+            "state": "running"
+          }
+        ]
+      }
+    },
+    {
+      "tool": "get_ec2_billing",
+      "status": "ok",
+      "source": "mock-ec2-billing",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "trace-synthetic",
+        "region": "us-east-1"
+      },
+      "observed_window": {
+        "from": "2026-09-01T00:00:00Z",
+        "to": "2026-09-29T00:00:00Z"
+      },
+      "collected_at": "2026-10-25T17:22:36.412Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "currency",
+      "evidence_id": "mock-ec2-evidence-20d9b929-6d98-4a61-becb-29ace35aea40",
+      "data": {
+        "costs": [
+          {
+            "instance_id": "i-mock-primary",
+            "compute_cost": 480
+          },
+          {
+            "instance_id": "i-mock-secondary",
+            "compute_cost": 80
+          }
+        ],
+        "currency": "USD",
+        "commitment_coverage_known": false
+      }
+    },
+    {
+      "tool": "get_ec2_metrics",
+      "status": "ok",
+      "source": "mock-ec2-metrics",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "trace-synthetic",
+        "region": "us-east-1",
+        "instance_id": "i-mock-primary"
+      },
+      "observed_window": {
+        "from": "2026-09-01T00:00:00Z",
+        "to": "2026-09-29T00:00:00Z"
+      },
+      "collected_at": "2026-10-25T17:22:36.413Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "percent",
+      "evidence_id": "mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa",
+      "data": {
+        "average_cpu_percent": 2,
+        "peak_cpu_percent": 8,
+        "suggested_window": {
+          "start_hour_utc": 0,
+          "end_hour_utc": 6
+        },
+        "aggregation_minutes": 5
+      }
+    },
+    {
+      "tool": "get_ec2_operations",
+      "status": "ok",
+      "source": "mock-ec2-operations",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "trace-synthetic",
+        "region": "us-east-1",
+        "instance_id": "i-mock-primary"
+      },
+      "observed_window": {
+        "from": "2026-09-01T00:00:00Z",
+        "to": "2026-09-29T00:00:00Z"
+      },
+      "collected_at": "2026-10-25T17:22:51.804Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "UTC-hours",
+      "evidence_id": "mock-ec2-evidence-5a66dee4-7a1c-4c7d-b91d-f7f18374f414",
+      "data": {
+        "jobs": [
+          {
+            "job_id": "mock-critical-daily-batch",
+            "critical": true,
+            "window": {
+              "start_hour_utc": 2,
+              "end_hour_utc": 3
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "trace": [
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 1,
+      "phase": "planner",
+      "reason": "Discover scoped EC2 inventory; no instance ID or prior run required.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          }
+        },
+        "reason": "Discover scoped EC2 inventory; no instance ID or prior run required."
+      }
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 2,
+      "phase": "tool",
+      "reason": "list_ec2_instances: ok; coverage complete, authoritative.",
+      "evidence_ids": [
+        "mock-ec2-evidence-937751bd-0ec9-4ed5-acb3-2dd6fa9fbf47"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          }
+        },
+        "reason": "Discover scoped EC2 inventory; no instance ID or prior run required."
+      },
+      "status": "ok"
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 3,
+      "phase": "planner",
+      "reason": "Rank discovered instances using current compute cost.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_billing",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          }
+        },
+        "reason": "Rank discovered instances using current compute cost."
+      }
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 4,
+      "phase": "tool",
+      "reason": "get_ec2_billing: ok; coverage complete, authoritative.",
+      "evidence_ids": [
+        "mock-ec2-evidence-20d9b929-6d98-4a61-becb-29ace35aea40"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_billing",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          }
+        },
+        "reason": "Rank discovered instances using current compute cost."
+      },
+      "status": "ok"
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 5,
+      "phase": "evaluator",
+      "reason": "Selected in descending observed compute cost among discovered running instances with positive matching billing; ties by instance ID.",
+      "evidence_ids": [
+        "mock-ec2-evidence-937751bd-0ec9-4ed5-acb3-2dd6fa9fbf47",
+        "mock-ec2-evidence-20d9b929-6d98-4a61-becb-29ace35aea40"
+      ]
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 6,
+      "phase": "planner",
+      "reason": "Inspect selected-instance average, peaks, coverage and possible inactive hours.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_metrics",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Inspect selected-instance average, peaks, coverage and possible inactive hours."
+      }
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 7,
+      "phase": "tool",
+      "reason": "get_ec2_metrics: ok; coverage complete, authoritative.",
+      "evidence_ids": [
+        "mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_metrics",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Inspect selected-instance average, peaks, coverage and possible inactive hours."
+      },
+      "status": "ok"
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 8,
+      "phase": "planner",
+      "reason": "Observed low average and peak CPU suggest this window; challenge it before any decision.",
+      "evidence_ids": [
+        "mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"
+      ],
+      "action": {
+        "type": "propose",
+        "window": {
+          "start_hour_utc": 0,
+          "end_hour_utc": 6
+        },
+        "evidence_ids": [
+          "mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"
+        ],
+        "reason": "Observed low average and peak CPU suggest this window; challenge it before any decision."
+      }
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 9,
+      "phase": "evaluator",
+      "reason": "Plausible window proposed. Require a fresh targeted operations challenge; low CPU is not scheduling authority.",
+      "evidence_ids": [
+        "mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"
+      ]
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 10,
+      "phase": "planner",
+      "reason": "Try to falsify the proposed window with overlapping critical jobs.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_operations",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          },
+          "instance_id": "i-mock-primary",
+          "proposed_window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          }
+        },
+        "reason": "Try to falsify the proposed window with overlapping critical jobs."
+      }
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "insufficient",
+      "retry_count": 0,
+      "step": 11,
+      "phase": "tool",
+      "reason": "Tool failed or timed out; retrying the same read-only action after backoff. No payload retained.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_operations",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          },
+          "instance_id": "i-mock-primary",
+          "proposed_window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          }
+        },
+        "reason": "Try to falsify the proposed window with overlapping critical jobs."
+      },
+      "status": "error"
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "insufficient",
+      "retry_count": 1,
+      "step": 12,
+      "phase": "tool",
+      "reason": "Tool failed or timed out; retrying the same read-only action after backoff. No payload retained.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_operations",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          },
+          "instance_id": "i-mock-primary",
+          "proposed_window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          }
+        },
+        "reason": "Try to falsify the proposed window with overlapping critical jobs."
+      },
+      "status": "error"
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "insufficient",
+      "retry_count": 2,
+      "step": 13,
+      "phase": "tool",
+      "reason": "Tool failed or timed out; retrying the same read-only action after backoff. No payload retained.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_operations",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          },
+          "instance_id": "i-mock-primary",
+          "proposed_window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          }
+        },
+        "reason": "Try to falsify the proposed window with overlapping critical jobs."
+      },
+      "status": "error"
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 3,
+      "step": 14,
+      "phase": "tool",
+      "reason": "get_ec2_operations: ok; coverage complete, authoritative.",
+      "evidence_ids": [
+        "mock-ec2-evidence-5a66dee4-7a1c-4c7d-b91d-f7f18374f414"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_operations",
+        "args": {
+          "account_id": "trace-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-01T00:00:00Z",
+            "to": "2026-09-29T00:00:00Z"
+          },
+          "instance_id": "i-mock-primary",
+          "proposed_window": {
+            "start_hour_utc": 0,
+            "end_hour_utc": 6
+          }
+        },
+        "reason": "Try to falsify the proposed window with overlapping critical jobs."
+      },
+      "status": "ok"
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 15,
+      "phase": "evaluator",
+      "reason": "A retrieved critical job overlaps the proposed shutdown window; reject this window.",
+      "evidence_ids": [
+        "mock-ec2-evidence-5a66dee4-7a1c-4c7d-b91d-f7f18374f414"
+      ]
+    },
+    {
+      "trace_id": "e3080d21-0229-471b-839a-d4b29fa43a72",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 16,
+      "phase": "finish",
+      "reason": "hypothesis_contradicted",
+      "evidence_ids": []
+    }
+  ],
+  "historical_context": {
+    "zetaris": "not_configured",
+    "hmem": "not_configured",
+    "comparisons": [],
+    "context_ids": [],
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts."
+    ]
+  },
+  "budget": {
+    "discovery_attempts": 2,
+    "candidate_attempts": 5,
+    "planner_calls": 5,
+    "elapsed_ms": 15395
+  },
+  "limitations": [
+    "Conditional scheduling requires human approval. Savings are estimates for the UTC calendar month following the observation window, not all-in invoice reductions.",
+    "Scripted planner exercises deterministic behavior; no model call was made."
+  ],
+  "stop_reason": "hypothesis_contradicted"
+}

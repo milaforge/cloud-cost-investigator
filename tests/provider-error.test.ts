@@ -98,6 +98,10 @@ test('HTTP diagnostic survives runner and rendering; cannot attach to a non-HTTP
       { status: 500 },
     ),
   );
+  t.mock.timers.enable({
+    apis: ['Date', 'setTimeout', 'setInterval'],
+    now: Date.now(),
+  });
   const report = await runInvestigation(
     {
       account_id: 'demo',
@@ -107,6 +111,10 @@ test('HTTP diagnostic survives runner and rendering; cannot attach to a non-HTTP
     },
     {
       provider: new MockProvider(),
+      onProgress(event) {
+        if (event.event === 'planner_retry')
+          queueMicrotask(() => t.mock.timers.tick(event.delay_ms));
+      },
       planner: new OpenAICompatiblePlanner({
         baseUrl: 'https://model.example/v1',
         model: 'test',
@@ -120,7 +128,7 @@ test('HTTP diagnostic survives runner and rendering; cannot attach to a non-HTTP
   );
   assert.match(renderReport(report), /CUDA allocation failed/);
   assert.equal(report.trace[0].failure_code, 'model_http_500');
-  assert.equal(report.budget.planner_calls, 1);
+  assert.equal(report.budget.planner_calls, 3);
   const forged = structuredClone(report);
   forged.trace[0].failure_code = 'planner_timeout';
   assert.throws(() => validateReport(forged));

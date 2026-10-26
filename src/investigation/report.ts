@@ -21,6 +21,7 @@ import {
   type Schedule,
   type ToolAction,
   type TraceEntry,
+  traceConfidence,
   textValue,
   utc,
   validateAction,
@@ -107,8 +108,11 @@ function candidate(value: unknown): CandidateReport {
   };
 }
 
-function traceEntry(value: unknown): TraceEntry {
+function traceEntry(value: unknown, investigation_id: string): TraceEntry {
   const t = exact(value, [
+    'trace_id',
+    'confidence',
+    'retry_count',
     'step',
     'phase',
     'reason',
@@ -118,7 +122,17 @@ function traceEntry(value: unknown): TraceEntry {
     'failure_code',
     'provider_error',
   ]);
+  const metadata = [t.trace_id, t.confidence, t.retry_count];
+  const legacy = metadata.every((v) => v === undefined);
+  if (!legacy && metadata.some((v) => v === undefined))
+    throw new Error('Incomplete trace metadata');
   const entry: TraceEntry = {
+    trace_id: legacy ? investigation_id : identifier(t.trace_id),
+    confidence: legacy
+      ? 'unassessed'
+      : member(t.confidence, ['unassessed', 'insufficient', 'supported']),
+    retry_count:
+      legacy || t.retry_count === null ? null : integer(t.retry_count, 0, 3),
     step: integer(t.step, 0, 1000),
     phase: member(t.phase, ['planner', 'tool', 'evaluator', 'finish']),
     reason: textValue(t.reason),
@@ -176,6 +190,7 @@ export function validateReport(value: unknown): InvestigationReport {
     'stop_reason',
     'owner_evidence',
   ]);
+  const investigation_id = identifier(r.investigation_id);
   const request = validateRequest(r.request);
   const started_at = utc(r.started_at);
   const finished_at = utc(r.finished_at);
@@ -405,7 +420,9 @@ export function validateReport(value: unknown): InvestigationReport {
         throw new Error('Cross-candidate citation');
     }
   };
-  const trace = array(r.trace, 1000).map(traceEntry);
+  const trace = array(r.trace, 1000).map((t) =>
+    traceEntry(t, investigation_id),
+  );
   const retrieved = new Set<string>();
   const retrievalSteps = new Map<string, number>();
   const retrievalStep = (id: string): number => {
@@ -417,8 +434,46 @@ export function validateReport(value: unknown): InvestigationReport {
     action: Extract<Action, { type: 'propose' }>;
     step: number;
   }[] = [];
+  const toolRetries = new Map<string, TraceEntry>();
+  let plannerRetries = 0;
   for (let i = 0; i < trace.length; i++) {
     const t = trace[i];
+    if (t.trace_id !== investigation_id) throw new Error('Trace ID mismatch');
+    if (t.retry_count !== null) {
+      const expectedConfidence = traceConfidence(
+        t.failure_code ? 'error' : t.status,
+        t.evidence_ids.map(evidenceById),
+      );
+      if (t.confidence !== expectedConfidence)
+        throw new Error('Unsupported trace confidence');
+      if (t.phase === 'planner') {
+        if (t.retry_count !== plannerRetries)
+          throw new Error('Planner retry count mismatch');
+        plannerRetries = t.failure_code ? plannerRetries + 1 : 0;
+      } else if (t.phase === 'tool' && t.action?.type === 'tool') {
+        const signature = JSON.stringify([t.action.tool, t.action.args]);
+        const previous = toolRetries.get(signature);
+        const expectedRetry = previous ? (previous.retry_count ?? 0) + 1 : 0;
+        if (
+          t.retry_count !== expectedRetry ||
+          (previous &&
+            previous.status !== 'error' &&
+            previous.status !== 'unavailable')
+        )
+          throw new Error('Tool retry count mismatch');
+        toolRetries.set(signature, t);
+      } else if (t.retry_count !== 0) throw new Error('Unexpected retry count');
+      if (
+        t.phase === 'evaluator' &&
+        t.evidence_ids.length === 2 &&
+        t.evidence_ids.some(
+          (id) => evidenceById(id).tool === 'list_ec2_instances',
+        ) &&
+        t.evidence_ids.some((id) => evidenceById(id).tool === 'get_ec2_billing')
+      )
+        plannerRetries = 0;
+    } else if (t.confidence !== 'unassessed')
+      throw new Error('Unknown legacy confidence');
     if (i > 0 && t.step <= trace[i - 1].step)
       throw new Error('Unordered trace');
     cited(t.evidence_ids);
@@ -623,11 +678,11 @@ export function validateReport(value: unknown): InvestigationReport {
     'elapsed_ms',
   ]);
   const budget = {
-    discovery_attempts: integer(b.discovery_attempts, 0, 2),
+    discovery_attempts: integer(b.discovery_attempts, 0, 8),
     candidate_attempts: integer(
       b.candidate_attempts,
       0,
-      6 * request.max_candidates,
+      12 * request.max_candidates,
     ),
     planner_calls: integer(b.planner_calls, 0, 2 + 7 * request.max_candidates),
     elapsed_ms: integer(b.elapsed_ms, 0, Number.MAX_SAFE_INTEGER),
@@ -645,7 +700,7 @@ export function validateReport(value: unknown): InvestigationReport {
         (t) =>
           t.action?.type === 'tool' &&
           t.action.args.instance_id === c.instance_id,
-      ).length > 6
+      ).length > 12
     )
       throw new Error('Candidate tool budget exceeded');
   const discoveryAttempts = toolAttempts.filter(
@@ -661,7 +716,9 @@ export function validateReport(value: unknown): InvestigationReport {
     throw new Error('Tool attempt count mismatch');
   if (
     budget.planner_calls < trace.filter((t) => t.phase === 'planner').length ||
-    budget.planner_calls < toolAttempts.length
+    budget.planner_calls <
+      toolAttempts.filter((t) => t.retry_count === null || t.retry_count === 0)
+        .length
   )
     throw new Error('Planner call count mismatch');
   const completion_status = member(r.completion_status, [
@@ -675,7 +732,7 @@ export function validateReport(value: unknown): InvestigationReport {
   )
     throw new Error('Unresolved complete report');
   return {
-    investigation_id: identifier(r.investigation_id),
+    investigation_id,
     goal: member(r.goal, ['evaluate_ec2_off_hours_scheduling']),
     request,
     started_at,
@@ -783,6 +840,9 @@ export function renderReport(value: InvestigationReport): string {
   for (const t of r.trace) {
     lines.push(
       `${t.step}. ${t.phase}${t.status ? ` (${t.status})` : ''}${t.failure_code ? ` [${t.failure_code}]` : ''}: ${t.reason} ${citations(t.evidence_ids)}${t.provider_error ? ` Provider: ${t.provider_error.body}${t.provider_error.truncated ? ' [truncated]' : ''}` : ''}`,
+    );
+    lines.push(
+      `  trace_id=${t.trace_id}; confidence=${t.confidence}; retry_count=${t.retry_count ?? 'unknown'}`,
     );
     if (t.action) lines.push(`  Validated action: ${JSON.stringify(t.action)}`);
   }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SCENARIO_WINDOW, scenarioProof } from './helpers/scenario-proof.ts';
+import { toolRetryClock } from './helpers/tool-retries.ts';
 import { runInvestigation, type RunOptions } from '../src/investigation/run.ts';
 import {
   MockProvider,
@@ -134,8 +135,11 @@ test('metrics window controls the targeted query, rather than hard-coded overnig
   assert.equal(r.candidates[0].verdict, 'needs_verification'); // 02:00 batch does not overlap
 });
 
-test('unavailable operational data is distinct from no_match and never becomes safety', async () => {
-  const r = await run({ provider: new MockProvider('missing') });
+test('unavailable operational data is distinct from no_match and never becomes safety', async (t) => {
+  const r = await run({
+    onProgress: toolRetryClock(t),
+    provider: new MockProvider('missing'),
+  });
   assert.equal(r.completion_status, 'partial');
   assert.equal(r.candidates[0].verdict, 'needs_verification');
   assert.equal(
@@ -271,10 +275,11 @@ for (const tool of ['list_ec2_instances', 'get_ec2_billing'] as const) {
     'malformed',
     'throw',
   ] as const) {
-    test(`${tool} ${failure} stops discovery without another planner or tool call`, async () => {
+    test(`${tool} ${failure} stops discovery after bounded retries without another planner or different tool`, async (t) => {
       const calls: string[] = [];
       const base = new MockProvider();
       const r = await run({
+        onProgress: toolRetryClock(t),
         provider: {
           mode: 'mock',
           async call(action, signal) {
@@ -293,9 +298,17 @@ for (const tool of ['list_ec2_instances', 'get_ec2_billing'] as const) {
         },
       });
       const expected =
-        tool === 'list_ec2_instances' ? [tool] : ['list_ec2_instances', tool];
+        tool === 'list_ec2_instances'
+          ? Array(failure === 'malformed' ? 1 : 4).fill(tool)
+          : [
+              'list_ec2_instances',
+              ...Array(failure === 'malformed' ? 1 : 4).fill(tool),
+            ];
       assert.deepEqual(calls, expected);
-      assert.equal(r.budget.planner_calls, expected.length);
+      assert.equal(
+        r.budget.planner_calls,
+        tool === 'list_ec2_instances' ? 1 : 2,
+      );
       assert.equal(r.completion_status, 'failed');
       assert.equal(r.stop_reason, `required_tool_failed:${tool}`);
       assert.deepEqual(r.candidates, []);
@@ -529,10 +542,10 @@ test('tool timeout cancels signal and terminates a noncooperative provider in bo
   assert.ok(Date.now() - start < 1000);
   assert.equal(r.budget.discovery_attempts, 1);
   assert.equal(r.budget.planner_calls, 1);
-  assert.equal(r.stop_reason, 'required_tool_failed:list_ec2_instances');
+  assert.equal(r.stop_reason, 'total_runtime_exhausted');
 });
 
-test('planner timeout stops without tools or late results', async () => {
+test('planner timeout without enough retry time stops without tools or late results', async () => {
   const r = await run({
     planner: {
       mode: 'live',
@@ -543,7 +556,7 @@ test('planner timeout stops without tools or late results', async () => {
     },
     limits: { planner_timeout_ms: 10, total_timeout_ms: 100 },
   });
-  assert.equal(r.stop_reason, 'planner_unavailable_or_invalid');
+  assert.equal(r.stop_reason, 'total_runtime_exhausted');
   assert.equal(r.budget.planner_calls, 1);
   assert.equal(
     r.trace.find((t) => t.failure_code)?.failure_code,
@@ -602,8 +615,9 @@ test('planner mutation cannot alter caller scope or proposed window', async () =
   });
 });
 
-test('provider error status is retained independently of unavailable or partial', async () => {
+test('provider error status is retained independently of unavailable or partial', async (t) => {
   const r = await run({
+    onProgress: toolRetryClock(t),
     provider: modify((o) => {
       if (o.tool === 'get_ec2_operations') {
         o.status = 'error';

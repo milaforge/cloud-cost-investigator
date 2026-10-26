@@ -12,8 +12,10 @@ import {
   type InvestigationRequest,
   type MetricsData,
   type Observation,
+  type PlannerFailureCode,
   type ToolAction,
   type TraceEntry,
+  traceConfidence,
   validateAction,
   validateObservation,
   validateRequest,
@@ -72,7 +74,29 @@ export type InvestigationProgress =
   | { event: 'planner_start'; call: number; timeout_ms: number }
   | { event: 'planner_pause'; delay_ms: number }
   | {
+      event: 'planner_retry';
+      call: number;
+      attempt: number;
+      delay_ms: number;
+      failure_code: PlannerFailureCode;
+    }
+  | {
+      event: 'tool_retry';
+      tool: ToolAction['tool'];
+      retry_count: number;
+      delay_ms: number;
+    }
+  | {
+      event: 'activity';
+      message: string;
+      elapsed_ms: number;
+      remaining_ms: number;
+    }
+  | {
       event: 'trace';
+      trace_id: string;
+      confidence: TraceEntry['confidence'];
+      retry_count: number | null;
       step: number;
       phase: TraceEntry['phase'];
       action?: Action['type'];
@@ -88,22 +112,47 @@ class BoundedTimeout extends Error {}
 async function bounded<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   milliseconds: number,
+  onWait?: (elapsed: number, remaining: number) => void,
 ): Promise<T> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await Promise.race([
-      Promise.resolve().then(() => fn(controller.signal)),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          controller.abort();
-          reject(new BoundedTimeout('deadline'));
-        }, milliseconds);
-      }),
-    ]);
+    return await observeWait(
+      () =>
+        Promise.race([
+          Promise.resolve().then(() => fn(controller.signal)),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+              controller.abort();
+              reject(new BoundedTimeout('deadline'));
+            }, milliseconds);
+          }),
+        ]),
+      milliseconds,
+      onWait,
+    );
   } finally {
     if (timer) clearTimeout(timer);
     controller.abort();
+  }
+}
+async function observeWait<T>(
+  fn: () => Promise<T>,
+  milliseconds: number,
+  onWait?: (elapsed: number, remaining: number) => void,
+): Promise<T> {
+  const started = Date.now();
+  const update = () =>
+    onWait?.(
+      Date.now() - started,
+      Math.max(0, milliseconds - (Date.now() - started)),
+    );
+  update();
+  const heartbeat = onWait ? setInterval(update, 2000) : undefined;
+  try {
+    return await fn();
+  } finally {
+    if (heartbeat) clearInterval(heartbeat);
   }
 }
 function limit(
@@ -127,6 +176,7 @@ export async function runInvestigation(
   options: RunOptions,
 ): Promise<InvestigationReport> {
   const request = validateRequest(input);
+  const investigation_id = randomUUID();
   const start = Date.now();
   const started_at = new Date(start).toISOString();
   const ownerEvidence =
@@ -148,7 +198,7 @@ export async function runInvestigation(
     plannerInterval > 60_000
   )
     throw new Error('Invalid planner interval');
-  const maxCandidate = limit(options.limits?.candidate_attempts, 6, 6);
+  const maxCandidate = limit(options.limits?.candidate_attempts, 12, 12);
   const maxPlanner = limit(
     options.limits?.planner_calls,
     2 + 7 * request.max_candidates,
@@ -181,25 +231,37 @@ export async function runInvestigation(
   let candidateAttempts = 0;
   let plannerCalls = 0;
   let candidatePlannerCalls = 0;
+  let plannerFailures = 0;
   let stopReason = 'planner_budget_exhausted';
   let degraded = false;
   let discoveryFailed = false;
   let runtimeExhausted = false;
+  let toolCancelled = false;
   const add = (
     phase: TraceEntry['phase'],
     reason: string,
     ids: string[] = [],
     extra: Partial<TraceEntry> = {},
   ) => {
-    trace.push({
+    const entry: TraceEntry = {
+      trace_id: investigation_id,
+      confidence: traceConfidence(
+        extra.failure_code ? 'error' : extra.status,
+        evidence.filter((o) => ids.includes(o.evidence_id)),
+      ),
+      retry_count: 0,
       step: trace.length + 1,
       phase,
       reason,
       evidence_ids: ids,
       ...extra,
-    });
+    };
+    trace.push(entry);
     options.onProgress?.({
       event: 'trace',
+      trace_id: entry.trace_id,
+      confidence: entry.confidence,
+      retry_count: entry.retry_count,
       step: trace.length,
       phase,
       action: extra.action?.type,
@@ -225,6 +287,27 @@ export async function runInvestigation(
     );
   const remaining = (timeout: number) =>
     Math.max(1, Math.min(timeout, workDeadline - Date.now()));
+  const activity = (message: string) =>
+    options.onProgress
+      ? (elapsed_ms: number, remaining_ms: number) =>
+          options.onProgress?.({
+            event: 'activity',
+            message,
+            elapsed_ms,
+            remaining_ms,
+          })
+      : undefined;
+  const working = <T>(
+    message: string,
+    fn: (signal: AbortSignal) => Promise<T>,
+    timeout: number,
+  ) => bounded(fn, timeout, activity(message));
+  const pause = (message: string, delay: number) =>
+    observeWait(
+      () => new Promise<void>((resolve) => setTimeout(resolve, delay)),
+      delay,
+      activity(message),
+    );
   const select = async (instance: string) => {
     const inventory = find('list_ec2_instances');
     const billing = find('get_ec2_billing');
@@ -232,11 +315,13 @@ export async function runInvestigation(
     historicalHints = [];
     if (
       !runtimeExhausted &&
+      !toolCancelled &&
       Date.now() < workDeadline &&
       plannerCalls < maxPlanner
     ) {
       try {
-        historicalHints = await bounded(
+        historicalHints = await working(
+          'Reading historical context; current evidence remains authoritative',
           (signal) =>
             history.recall(instance, started_at, signal, options.provider.mode),
           remaining(total),
@@ -289,8 +374,10 @@ export async function runInvestigation(
   };
   for (;;) {
     while (plannerCalls < maxPlanner) {
-      if (runtimeExhausted || Date.now() >= workDeadline) {
-        stopReason = 'total_runtime_exhausted';
+      if (runtimeExhausted || toolCancelled || Date.now() >= workDeadline) {
+        stopReason = toolCancelled
+          ? 'tool_cancelled'
+          : 'total_runtime_exhausted';
         break;
       }
       if (candidate && candidatePlannerCalls >= 7) {
@@ -300,7 +387,7 @@ export async function runInvestigation(
       if (plannerInterval) {
         const delay = remaining(plannerInterval);
         options.onProgress?.({ event: 'planner_pause', delay_ms: delay });
-        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+        await pause('Waiting for planner pacing', delay);
         if (Date.now() >= workDeadline) {
           runtimeExhausted = true;
           stopReason = 'total_runtime_exhausted';
@@ -318,9 +405,11 @@ export async function runInvestigation(
         call: plannerCalls,
         timeout_ms: plannerDeadline,
       });
+      const plannerRetryCount = plannerFailures;
       let validatingAction = false;
       try {
-        const value = await bounded(
+        const value = await working(
+          `Waiting for planner call ${plannerCalls}`,
           (signal) =>
             options.planner.next(
               {
@@ -352,35 +441,91 @@ export async function runInvestigation(
         );
         validatingAction = true;
         action = validateAction(value);
+        if (plannerFailures)
+          add(
+            'evaluator',
+            'Planner recovered after a transient failure; continuing with the retained evidence.',
+          );
+        plannerFailures = 0;
       } catch (error) {
         runtimeExhausted =
-          error instanceof BoundedTimeout && plannerUsesRuntimeDeadline;
+          Date.now() >= workDeadline ||
+          (error instanceof BoundedTimeout && plannerUsesRuntimeDeadline);
         stopReason = runtimeExhausted
           ? 'total_runtime_exhausted'
           : 'planner_unavailable_or_invalid';
+        const failureCode =
+          error instanceof BoundedTimeout
+            ? runtimeExhausted
+              ? 'investigation_deadline_exceeded'
+              : 'planner_timeout'
+            : validatingAction
+              ? 'planner_invalid_action'
+              : sanitizedPlannerFailure(error);
         add(
           'planner',
           'Planner failed, timed out, or returned an invalid action.',
           [],
           {
-            failure_code:
-              error instanceof BoundedTimeout
-                ? runtimeExhausted
-                  ? 'investigation_deadline_exceeded'
-                  : 'planner_timeout'
-                : validatingAction
-                  ? 'planner_invalid_action'
-                  : sanitizedPlannerFailure(error),
+            retry_count: plannerRetryCount,
+            failure_code: failureCode,
             ...(error instanceof ModelHttpError
               ? { provider_error: error.provider_error }
               : {}),
           },
         );
+        plannerFailures++;
+        const transient =
+          /^(model_http_(408|429|5\d\d)|model_transport_unavailable|model_timeout|planner_timeout)$/.test(
+            failureCode,
+          );
+        if (
+          options.planner.mode === 'live' &&
+          transient &&
+          !runtimeExhausted &&
+          plannerFailures < 3 &&
+          plannerCalls < maxPlanner &&
+          (!candidate || candidatePlannerCalls < 7)
+        ) {
+          const backoff = 2000 * 2 ** (plannerFailures - 1);
+          const delay = Math.max(
+            Math.round(backoff * (1 + Math.random() * 0.25)),
+            error instanceof ModelHttpError ? (error.retry_after_ms ?? 0) : 0,
+          );
+          if (delay >= workDeadline - Date.now()) {
+            runtimeExhausted = true;
+            stopReason = 'total_runtime_exhausted';
+            add(
+              'evaluator',
+              'Insufficient investigation time for the required planner retry delay; unresolved work deferred.',
+            );
+            break;
+          }
+          options.onProgress?.({
+            event: 'planner_retry',
+            call: plannerCalls,
+            attempt: plannerFailures + 1,
+            delay_ms: delay,
+            failure_code: failureCode,
+          });
+          await pause(
+            `Planner retry ${plannerFailures + 1}/3 after ${failureCode}; waiting before next call`,
+            delay,
+          );
+          continue;
+        }
+        add(
+          'evaluator',
+          `Planner stopped: ${runtimeExhausted ? 'investigation deadline exhausted' : transient ? 'retry or call budget exhausted' : 'failure is not retryable'}. Retaining completed evidence; unresolved safety remains unknown.`,
+        );
         break;
       }
       // Planner text is explanatory, never a verdict or authority to execute a write.
       if (action.type === 'finish') {
-        add('planner', action.reason, [], { action });
+        add('planner', action.reason, [], {
+          action,
+          retry_count: plannerRetryCount,
+        });
         const metrics = find('get_ec2_metrics');
         const metricsBlocked =
           candidate &&
@@ -422,7 +567,10 @@ export async function runInvestigation(
           stopReason = 'unsupported_hypothesis';
           break;
         }
-        add('planner', action.reason, action.evidence_ids, { action });
+        add('planner', action.reason, action.evidence_ids, {
+          action,
+          retry_count: plannerRetryCount,
+        });
         candidate.proposed_window = action.window;
         candidate.hypotheses.push({
           window: action.window,
@@ -499,57 +647,125 @@ export async function runInvestigation(
         break;
       }
       if (
-        discovery ? discoveryAttempts >= 2 : candidateAttempts >= maxCandidate
+        discovery ? discoveryAttempts >= 8 : candidateAttempts >= maxCandidate
       ) {
         stopReason = 'tool_budget_exhausted';
         break;
       }
-      add('planner', action.reason, [], { action });
+      add('planner', action.reason, [], {
+        action,
+        retry_count: plannerRetryCount,
+      });
       actions.add(signature);
-      if (discovery) discoveryAttempts++;
-      else {
-        candidateAttempts++;
-        totalCandidateAttempts++;
-      }
-      let observation: Observation;
-      const toolUsesRuntimeDeadline = workDeadline - Date.now() <= toolTimeout;
-      const toolDeadline = remaining(toolTimeout);
-      try {
-        const raw = await bounded(
-          (signal) =>
-            options.provider.call(
-              structuredClone(action) as ToolAction,
-              signal,
-            ),
-          toolDeadline,
+      let observation: Observation | undefined;
+      let toolRetryCount = 0;
+      for (;;) {
+        if (discovery) discoveryAttempts++;
+        else {
+          candidateAttempts++;
+          totalCandidateAttempts++;
+        }
+        const toolUsesRuntimeDeadline =
+          workDeadline - Date.now() <= toolTimeout;
+        let validatingObservation = false;
+        let retryable = true;
+        try {
+          const raw = await working(
+            `Collecting current evidence: ${action.tool} (retry ${toolRetryCount}/3)`,
+            (signal) =>
+              options.provider.call(
+                structuredClone(action) as ToolAction,
+                signal,
+              ),
+            remaining(toolTimeout),
+          );
+          validatingObservation = true;
+          observation = validateObservation(raw, action, {
+            started_at,
+            now: new Date().toISOString(),
+            mode: options.provider.mode,
+          });
+          if (evidence.some((o) => o.evidence_id === observation?.evidence_id))
+            throw new Error('Duplicate evidence id');
+          if (
+            observation.status !== 'error' &&
+            observation.status !== 'unavailable'
+          )
+            break;
+        } catch (error) {
+          observation = undefined;
+          // Invalid payloads and cancellation are trust/cancellation boundaries,
+          // not temporary source outages. Raw exception details stay private.
+          toolCancelled = error instanceof Error && error.name === 'AbortError';
+          retryable = !validatingObservation && !toolCancelled;
+          if (
+            Date.now() >= workDeadline ||
+            (error instanceof BoundedTimeout && toolUsesRuntimeDeadline)
+          )
+            runtimeExhausted = true;
+        }
+        const canRetry =
+          retryable &&
+          !runtimeExhausted &&
+          toolRetryCount < 3 &&
+          (discovery
+            ? discoveryAttempts < 8
+            : candidateAttempts < maxCandidate);
+        const delay = Math.round(
+          2000 * 2 ** toolRetryCount * (1 + Math.random() * 0.25),
         );
-        observation = validateObservation(raw, action, {
-          started_at,
-          now: new Date().toISOString(),
-          mode: options.provider.mode,
+        const fitsDeadline = delay < workDeadline - Date.now();
+        // Only the final response enters the evidence registry. Earlier failed
+        // attempts remain in the trace; they cannot shadow a recovered response.
+        if (!canRetry || !fitsDeadline) {
+          if (canRetry && !fitsDeadline) runtimeExhausted = true;
+          if (!observation) {
+            add(
+              'tool',
+              'Tool failed, timed out, or returned invalid scoped evidence; no payload retained.',
+              [],
+              { action, status: 'error', retry_count: toolRetryCount },
+            );
+          }
+          break;
+        }
+        add(
+          'tool',
+          observation
+            ? `${action.tool}: ${observation.status}; retrying the same read-only action after backoff.`
+            : 'Tool failed or timed out; retrying the same read-only action after backoff. No payload retained.',
+          [],
+          {
+            action,
+            status: observation?.status ?? 'error',
+            retry_count: toolRetryCount,
+          },
+        );
+        observation = undefined;
+        toolRetryCount++;
+        options.onProgress?.({
+          event: 'tool_retry',
+          tool: action.tool,
+          retry_count: toolRetryCount,
+          delay_ms: delay,
         });
-        if (evidence.some((o) => o.evidence_id === observation.evidence_id))
-          throw new Error('Duplicate evidence id');
-      } catch (error) {
+        await pause(
+          `Tool ${action.tool} retry ${toolRetryCount}/3; waiting before next call`,
+          delay,
+        );
+        if (Date.now() >= workDeadline) {
+          runtimeExhausted = true;
+          break;
+        }
+      }
+      if (!observation) {
         degraded = true;
         gaps.push(
           `${action.tool}: timed out, failed, or returned invalid scoped evidence`,
         );
-        add(
-          'tool',
-          'Tool failed, timed out, or returned invalid scoped evidence; no payload retained.',
-          [],
-          { action, status: 'error' },
-        );
-        if (error instanceof BoundedTimeout && toolUsesRuntimeDeadline) {
-          runtimeExhausted = true;
-          stopReason = 'total_runtime_exhausted';
-          break;
-        }
-        if (discovery) {
-          failDiscovery(action.tool);
-          break;
-        }
+        if (discovery) failDiscovery(action.tool);
+        if (toolCancelled) stopReason = 'tool_cancelled';
+        if (runtimeExhausted || discovery || toolCancelled) break;
         continue;
       }
       evidence.push(observation);
@@ -564,6 +780,7 @@ export async function runInvestigation(
       add('tool', observationReason, [observation.evidence_id], {
         action,
         status: observation.status,
+        retry_count: toolRetryCount,
       });
       for (const hint of historicalHints) {
         if (
@@ -729,6 +946,7 @@ export async function runInvestigation(
     if (!next) break;
     candidateAttempts = 0;
     candidatePlannerCalls = 0;
+    plannerFailures = 0;
     candidate = null;
     stopReason = 'planner_budget_exhausted';
     candidate = await select(next);
@@ -739,7 +957,7 @@ export async function runInvestigation(
   }
   add('finish', stopReason);
   const report: InvestigationReport = {
-    investigation_id: randomUUID(),
+    investigation_id,
     goal: 'evaluate_ec2_off_hours_scheduling',
     request,
     ...(ownerEvidence === undefined ? {} : { owner_evidence: ownerEvidence }),
@@ -795,14 +1013,19 @@ export async function runInvestigation(
       discoveryFailed || !evidence.length ? 'failed' : 'partial';
     trace[trace.length - 1].reason = report.stop_reason;
   };
-  if (runtimeExhausted || Date.now() >= workDeadline) {
+  if (toolCancelled) {
+    report.historical_context.limitations.push(
+      'History persistence skipped: investigation cancelled.',
+    );
+  } else if (runtimeExhausted || Date.now() >= workDeadline) {
     markDeadlineExhausted();
     report.historical_context.limitations.push(
       'History persistence skipped: aggregate investigation deadline exhausted.',
     );
   } else {
     try {
-      await bounded(
+      await working(
+        'Finalizing report and historical records',
         (signal) => history.persist(report, signal),
         remaining(total),
       );

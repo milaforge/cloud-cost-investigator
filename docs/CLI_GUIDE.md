@@ -70,7 +70,9 @@ An abridged B run has this decision sequence (evidence IDs omitted here; inspect
 
 The proposed daily **00:00–06:00 UTC** window conflicts with the synthetic critical job at **02:00–03:00 UTC**. Locate `candidates[0].hypotheses` for `proposed` then `contradicted`; match `contradicting_evidence_ids` to the retrieved operations observation in `evidence`. The result is `not_recommended`, with unsupported savings `null`. This is the critique moment: the evaluator blocks the initially attractive schedule using a newly retrieved fact. Default scripted planning proves the policy and state transitions; use the [configured model](#model-configuration) and retain its actual trace to demonstrate model decisions.
 
-JSON `investigation_id` correlates the report and its ordered `trace[]`. Each trace entry has `step`, `phase`, `reason`, `evidence_ids`, and optional validated `action`, `status` or failure diagnostics. Report timestamps, evidence collection times, source modes and aggregate `budget` supply provenance and bounds. Per-step timestamps, numerical confidence, retry counters and target-agent fields from the quality-bar example are not emitted. Do not manufacture them.
+Every new `trace[]` entry carries `trace_id` (equal to `investigation_id`), ordered `step`, `confidence`, and `retry_count`, alongside the existing reason, citations, action/status and sanitized diagnostics. `(trace_id, step)` identifies a step. CLI text, live progress and the full web trace expose this metadata.
+
+`confidence` describes evidence support for that step: `supported` requires cited, complete, authoritative observations without missing fields; `insufficient` identifies failed attempts or cited evidence gaps; `unassessed` means no current evidence is cited. It is not a numerical probability or shutdown authorization. A supported low-CPU observation still cannot establish scheduling safety. `retry_count` is retries already made for the same action: initial call **0**, then **1**, **2**, **3** for evidence retries. Evaluator/finish steps use 0. Legacy reports without metadata get a correlated ID, `unassessed` confidence and `null` (unknown) counters when loaded; no historical receipt is rewritten. Report/evidence timestamps remain the recorded time sources.
 
 For three reproducible input/output cases, run the same JSON command with `--scenario A`, `B` and `C`: expect respectively `conditional_recommendation`, `not_recommended` and `not_recommended`. A has explicit synthetic clearance and qualified pricing; C cites continuous-operation requirements. With `--scenario missing`, expect `needs_verification`, `partial`, and exit **2**; retain the JSON even though the exit is nonzero. These scenarios compute reports from fixture observations; they do not return stored final answers. [Evaluation](evaluation/README.md) owns comparative measurements and D's memory proof.
 
@@ -87,10 +89,10 @@ human approval before an infrastructure change.
 | Trigger | Actual response |
 | --- | --- |
 | Invalid flags/request or invalid planner configuration | Exit 1 with a bounded message; no silent planner/evidence fallback. |
-| Required inventory/billing discovery unavailable, error, timeout or invalid observation | Stop immediately with `required_tool_failed:<tool>`, a named diagnostic and exit 1. No further planner/tool calls. Inventory must precede billing; usable partial metadata is retained. Authenticated empty inventory finishes without billing. |
-| Operational tool error, timeout or invalid observation | Record the failed attempt without accepting its payload; use remaining bounded checks, then defer unresolved safety. |
+| Required inventory/billing discovery unavailable, error, timeout or invalid observation | Retry the same read-only call up to three times after the initial attempt, within budgets; on exhaustion stop with `required_tool_failed:<tool>`, a named diagnostic and exit 1. No advance to another planner/tool. Invalid scoped observations are terminal. Inventory must precede billing; usable partial metadata is retained. Authenticated empty inventory finishes without billing. |
+| Operational tool error, timeout or invalid observation | Retry the same read-only call up to three times after the initial attempt, within budgets. Retain every failed attempt; exhausted or invalid results leave safety unknown. |
 | `no_match`, partial or unavailable operational source | Preserve its distinct status; absence cannot establish authority or eliminate dependencies. |
-| Model transport/HTTP/schema failure | Record a sanitized failure and stop planning. Earlier evidence can yield a partial report (exit 2); no usable evidence yields failure (exit 1). |
+| Model transport/HTTP/schema failure | Retry transient failures within the existing budgets; permanent errors or invalid output stop planning. Exhaustion retains earlier evidence as a partial report (exit 2); no usable evidence yields failure (exit 1). |
 | Repeated action or exhausted tool/model/runtime budget | Stop rather than loop; preserve finished candidates and explicitly defer unresolved candidates. |
 | Historical-store read/write failure | Disclose it separately; current verdicts still require fresh evidence. No automatic retry after an uncertain append. |
 | Missing pricing, commitment or retained-resource assumptions | Savings stay `null`; current spend is not automatically avoidable cost. |
@@ -102,6 +104,12 @@ returns partial results; unresolved candidates remain `needs_verification`.
 A timed-out history write may have completed remotely; inspect history before retrying.
 
 Deadlines and attempt limits are defined in [runtime bounds](components.md#runtime-ownership-and-bounds). Recovery means a bounded next check or explicit uncertainty; no automatic mock fallback or speculative retries are implied.
+
+### Evidence-tool retries
+
+The executor owns three retries after the initial evidence call (**four attempts total**), without another planner decision or changed arguments. Backoff is 2s, 4s, then 8s with 0–25% positive jitter. Every call consumes the physical attempt budget: eight discovery calls maximum (two logical discovery actions), twelve calls per candidate. The shared deadline and finalization reserve may stop retries sooner. A retry never resets the deadline or an attempt cap. Budgets count logical provider invocations; an AWS collector may perform multiple bounded SDK requests internally.
+
+Thrown source failures, per-call timeouts and validated `error`/`unavailable` responses retry. Malformed/scoped-invalid output and explicit cancellation stop immediately. `partial` and `no_match` are successful responses with distinct evidence semantics and are not retried. Failed attempts remain in the trace with status and counter; only the final response enters the evidence registry, so a recovered call is not shadowed by an earlier outage. Recovery may complete the investigation, but does not erase attempts or their cost. Uncertain Zetaris/H-MEM writes are never automatically replayed.
 
 ## Model configuration
 
@@ -167,9 +175,32 @@ is copied into the diagnostic field. Relevant codes include:
   `planner_unknown_failure`: an exception has no recognized public code.
 
 TLS refusal and oversized input retain `model_tls_verification_required` and
-`model_state_too_large`. No retries or scripted fallback were added. These codes
+`model_state_too_large`. No scripted fallback is used. These codes
 describe new runs; exact causes cannot be reconstructed from older generic
 `planner_unavailable_or_invalid` results.
+
+### Planner recovery and live progress
+
+The runner retries HTTP 408/429/5xx, transport failures and per-call timeouts
+at most twice for the same next decision (three attempts total). Backoff starts
+at 2s then 4s, each with 0–25% positive jitter; a valid numeric or HTTP-date
+`Retry-After` can extend that wait. Attempts and waits consume the existing
+planner-call and aggregate runtime budgets, including the finalization reserve.
+If the required wait cannot fit, defer immediately. Authentication, validation,
+TLS/configuration errors, explicit cancellation and unknown failures are terminal.
+
+Each failure remains in the report trace, including failures recovered by a later
+attempt. Evaluation still counts those failures; recovery never erases them or
+turns an earlier failed measurement into a pass. Retrying generation may incur
+provider usage, and aborting our wait cannot guarantee remote generation stopped.
+Tools and historical writes are never replayed by planner recovery.
+
+The web status displays the active planner call, evidence tool, history operation
+or retry wait, with elapsed and remaining wait time refreshed every two seconds.
+These are waiting limits, not predicted completion times. Heartbeats update the
+current status without filling the execution tree; retry notices remain in the
+tree. Stop run terminates the worker, including a pending backoff. Verbose
+evaluation also shows these progress messages.
 
 ### Request-phase timing
 

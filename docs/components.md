@@ -76,7 +76,7 @@ These sponsor proofs use **synthetic operational evidence**. Real persistence an
 - `src/investigation/mock.ts` owns synthetic direct evidence and A/B/C/mixed/clear/missing scenarios. Metrics summarize the suggested daily UTC window across the observed lookback. These are application contracts, not claims about available AWS endpoints.
 - `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → supported/contradicted/unresolved transition; it renders the detailed CLI trace.
 
-Hard bounds: two discovery tool attempts; six tool attempts per candidate; two
+Hard bounds: two logical discovery actions, up to four attempts each (eight total); twelve tool attempts per candidate; two
 discovery plus seven planner calls per candidate (23 maximum); 5s per mock tool, 25s per AWS tool (around the collector’s 20s deadline).
 Scripted planning defaults to 15s per call and 120s overall. Live planning allows
 60s per call and 15 minutes overall; explicit total limits above 15 minutes are
@@ -89,8 +89,16 @@ On exhaustion, preserve completed verdicts and evidence, defer unresolved candid
 and return a partial report (failed if no evidence). Persistence timeout discloses
 uncertain writes without retrying. Elapsed time records actual duration, including
 scheduler delays; report validation also accepts truthful older measurements.
+The runner alone owns transient planner retries: at most three attempts for one
+decision, 2s/4s exponential waits with 0–25% jitter, honoring longer valid
+`Retry-After` values. Attempts share the existing planner-call limits (including
+seven per candidate); waits share the runtime deadline. No retry layer exists in
+the model transport. Permanent errors and invalid output remain terminal; exhausted
+retries preserve findings and defer unresolved work. See [recovery and live
+progress](CLI_GUIDE.md#planner-recovery-and-live-progress).
+
 Model responses are capped at 32 KiB. Every attempted call counts, including
-failures. Identical repeated tool actions defer the active candidate. A later
+failures. The executor retries failed read-only evidence calls up to three times after the initial attempt, with 2s/4s/8s backoff and positive jitter. Every retry consumes the existing twelve-attempt per-candidate cap and aggregate deadline; discovery has eight physical attempts for its two logical actions. Invalid/scoped output and cancellation remain terminal; partial/no-match are not failures. A planner repeating an already attempted action still defers the active candidate. Only the final response enters the evidence registry; all attempts remain in the trace. Every new step carries the run-correlating trace ID, evidence-support confidence and actual retry counter; see the [trace contract](CLI_GUIDE.md#capture-and-read-the-decision-trace). A later
 failure preserves completed candidates; exhausted aggregate budgets explicitly
 defer the remainder. Missing evidence never becomes zero or proof of safety.
 Only daily same-day UTC windows are supported; overnight windows must be split

@@ -18,6 +18,7 @@ import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
+import { progressText } from '../src/investigation/progress.ts';
 
 const operationalChecks = (report: InvestigationReport) =>
   report.evidence
@@ -30,7 +31,7 @@ const operationalChecks = (report: InvestigationReport) =>
 /** Real disk-backed H-MEM, isolated from configured Zetaris and existing memory. */
 export async function demonstrateWarmLearning(
   plannerMode: 'scripted' | 'model',
-  log: (message: string) => void = console.error,
+  log: (message: string, activity?: boolean) => void = console.error,
 ) {
   const directory = await mkdtemp(join(tmpdir(), 'cci-learned-check-'));
   const request: InvestigationRequest = {
@@ -60,6 +61,11 @@ export async function demonstrateWarmLearning(
           history: { hmem_directory: directory },
           limits: { planner_interval_ms: plannerMode === 'model' ? 5000 : 0 },
           onProgress(event) {
+            if (event.event === 'activity' || event.event === 'planner_retry')
+              log(
+                `[warm-demo] ${phase}: ${progressText(event)}`,
+                event.event === 'activity',
+              );
             if (event.event === 'planner_start')
               log(
                 `[warm-demo] ${phase}: planner call ${event.call} (timeout ${event.timeout_ms}ms)`,

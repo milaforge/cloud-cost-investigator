@@ -313,7 +313,9 @@ test('owner evidence rejects scope, future, invalid, oversized and authority-bea
     max_candidates: 1,
     owner_evidence: [statement],
   };
-  assert.deepEqual(validateDemoRun(run).owner_evidence, [statement]);
+  const validatedRun = validateDemoRun(run);
+  assert.equal(validatedRun.kind, 'investigate');
+  assert.deepEqual(validatedRun.owner_evidence, [statement]);
   assert.throws(() => validateDemoRun({ ...run, kind: 'learn' }));
 });
 

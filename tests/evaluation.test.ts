@@ -101,7 +101,10 @@ test('real-model failure remains in every denominator without scripted fallback 
     assert.equal(url, 'https://model.example/v1/chat/completions');
     calls++;
     // Progress must be visible while the provider call is still pending.
-    assert.match(progress.at(-1) ?? '', /planner call 1 waiting/);
+    assert.match(
+      progress.at(-1) ?? '',
+      /Waiting for planner call 1.*0s elapsed/,
+    );
     return Response.json(
       {
         error: {

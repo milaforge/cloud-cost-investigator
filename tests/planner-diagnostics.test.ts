@@ -39,7 +39,11 @@ test('live planner gets sixty seconds per call', async (t) => {
   assert.ok(!report.trace.some((entry) => entry.failure_code));
 });
 
-test('pacing waits before calls and cannot exceed the aggregate deadline', async () => {
+test('pacing waits before calls and cannot exceed the aggregate deadline', async (t) => {
+  t.mock.timers.enable({
+    apis: ['Date', 'setTimeout', 'setInterval'],
+    now: Date.now(),
+  });
   for (const total of [1000, 1]) {
     const started = Date.now();
     let calls = 0;
@@ -55,6 +59,10 @@ test('pacing waits before calls and cannot exceed the aggregate deadline', async
         },
       },
       limits: { planner_interval_ms: 5, total_timeout_ms: total },
+      onProgress(event) {
+        if (event.event === 'planner_pause')
+          queueMicrotask(() => t.mock.timers.tick(event.delay_ms));
+      },
     });
     assert.equal(calls, total === 1 ? 0 : 1);
     assert.equal(
@@ -102,6 +110,10 @@ const cases: { code: PlannerFailureCode; response: () => Response | never }[] =
 
 for (const fixture of cases) {
   test(`full investigation exposes only sanitized ${fixture.code}`, async (t) => {
+    t.mock.timers.enable({
+      apis: ['Date', 'setTimeout', 'setInterval'],
+      now: Date.now(),
+    });
     const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
     t.after(() => {
@@ -119,6 +131,10 @@ for (const fixture of cases) {
         apiKey: 'PRIVATE-key',
       }),
       provider: new MockProvider(),
+      onProgress(event) {
+        if (event.event === 'planner_retry')
+          queueMicrotask(() => t.mock.timers.tick(event.delay_ms));
+      },
     });
     assert.equal(
       report.trace.find((t) => t.failure_code)?.failure_code,
@@ -126,7 +142,12 @@ for (const fixture of cases) {
     );
     assert.equal(report.stop_reason, 'planner_unavailable_or_invalid');
     assert.equal(report.budget.discovery_attempts, 0);
-    assert.equal(mocked.mock.callCount(), 1);
+    assert.equal(
+      mocked.mock.callCount(),
+      /model_http_(429|500|503)|model_transport_unavailable/.test(fixture.code)
+        ? 3
+        : 1,
+    );
     assert.equal(validateReport(report).trace[0].failure_code, fixture.code);
     assert.ok(renderReport(report).includes(`[${fixture.code}]`));
     assert.ok(!JSON.stringify(report).includes('PRIVATE'));
@@ -183,5 +204,11 @@ test('report validator rejects arbitrary codes and failure codes attached to suc
   // Historical reports without the new optional field still validate.
   delete report.trace[0].failure_code;
   delete report.trace[0].provider_error;
-  assert.doesNotThrow(() => validateReport(report));
+  const legacy = JSON.parse(JSON.stringify(report));
+  for (const step of legacy.trace) {
+    delete step.trace_id;
+    delete step.confidence;
+    delete step.retry_count;
+  }
+  assert.doesNotThrow(() => validateReport(legacy));
 });

@@ -4,6 +4,7 @@ export class ModelHttpError extends Error {
   constructor(
     status: number,
     readonly provider_error: NonNullable<TraceEntry['provider_error']>,
+    readonly retry_after_ms?: number,
   ) {
     super(`model_http_${status}`);
   }

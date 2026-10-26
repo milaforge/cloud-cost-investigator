@@ -3,6 +3,7 @@ import { loadProjectEnv } from '../src/config.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
+import { progressText } from '../src/investigation/progress.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { demonstrateWarmLearning } from './demo-warm.ts';
 import { demonstrateFollowUps } from './demo-follow-up.ts';
@@ -67,14 +68,7 @@ process.once('message', async (value) => {
             ? { limits: { tool_timeout_ms: 25000 } }
             : {}),
           onProgress(event) {
-            if (event.event === 'planner_start')
-              progress(`Planner call ${event.call} started`);
-            else if (event.event === 'planner_pause')
-              progress(`Planner pacing: ${event.delay_ms} ms`);
-            else
-              progress(
-                `${event.step}. ${event.phase}${event.tool ? ` · ${event.tool}` : ''}${event.status ? ` · ${event.status}` : ''}${event.failure_code ? ` · ${event.failure_code}` : ''}`,
-              );
+            if (event.event !== 'activity') progress(progressText(event));
           },
         }),
       );

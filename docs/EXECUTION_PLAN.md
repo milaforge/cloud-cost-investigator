@@ -61,6 +61,85 @@
   Task 2 branch for review; upstream request-timing Windows portability remains
   a separate follow-up. Both Task 2 safety stashes remain retained locally.
 
+### Per-step trace metadata and bounded evidence recovery — 2026-10-25
+
+- **Gate/owner:** Days 3–4 agent reliability and trace transparency, Milad. Every
+  new trace entry now carries the run-correlating `trace_id`, evidence-support
+  `confidence` and actual zero-based `retry_count`. The ID is allocated at run
+  start and flows into progress, JSON, CLI text and the web trace. Confidence is
+  categorical evidence support, not invented numerical certainty or authority.
+- **Recovery:** the executor repeats a failed read-only evidence action up to
+  three times after its initial call, with 2s/4s/8s positive-jitter backoff. Every
+  attempt is traced and counted: eight discovery calls maximum, twelve per
+  candidate. Shared deadlines/reserve and shorter custom limits still apply.
+  Malformed/scoped-invalid output and cancellation stay terminal; partial and
+  no-match are not retried. Recovery does not replay planner decisions or
+  historical writes. Failed attempts stay visible; only the final observation
+  enters the evidence registry. This supersedes the earlier no-tool-retry rule.
+- **Captured proof:** [trace example](TRACE_EXAMPLE.md) projects exact steps from
+  [a new captured B report](evaluation/trace-metadata-2026-10-25/B-retry.json):
+  three injected tool exceptions, fourth-call recovery, then a cited contradiction;
+  five planner calls, seven evidence attempts, 15,395ms with real backoff waits.
+  Its source mode and planner are synthetic/scripted. Older NVIDIA receipts are
+  unchanged; legacy counters remain unknown when loaded.
+- **Verification:** `node --import tsx --test --test-isolation=none
+  tests/trace-retry.test.ts tests/planner-retry.test.ts
+  tests/planner-diagnostics.test.ts tests/warm-learning.test.ts` passed **55/55**
+  on the final files. `npm run typecheck`, `npm run typecheck:aws`, scoped Biome
+  lint/format, JS syntax and whitespace checks passed.
+  `node --import tsx /tmp/cci-trace-doc-check.mjs` verified the exact JSONL
+  projection and unchanged legacy report loading. The initial full suite was
+  **320/323**: a reporter/stdout capture race and two fixtures whose trace
+  confidence no longer matched their mutated evidence. The full rerun was
+  **324/325**, having loaded the warm-memory fixture before its correction.
+  That corrected fixture passes in the final **55/55** focused run; AWS CLI
+  capture also passed **2/2** separately. No subsequent full-suite run is claimed.
+- **Browser:** `node --import tsx /tmp/cci-trace-browser.mjs` passed actual report
+  upload → validation API → full-trace rendering, then browser → HTTP → scripted
+  worker → report/progress. Metadata tooltips passed keyboard focus, click and
+  Escape checks. Inspected the 390px screenshot; no horizontal overflow or page
+  errors. Heartbeats remain separate from execution history.
+- **Limits/next:** local fixtures/synthetic services only; no paid inference,
+  live AWS or remote history requests. No dependency added, no infrastructure
+  writes, commit or push. Combined sponsor/live-evidence/release gates stay open.
+
+### Planner retry recovery and responsive progress — 2026-10-25
+
+- **Gate/owner:** Days 3–4 model reliability and demo usability, Milad. User
+  requested recovery after `model_http_500` rather than immediate termination.
+  The runner now permits two transient retries with 2s/4s exponential backoff,
+  positive jitter and longer valid `Retry-After` waits. Every attempt consumes
+  the existing call caps; all waits share the deadline/finalization reserve.
+  Permanent errors, invalid output and cancellation remain terminal. Failures
+  remain in the trace even after recovery; evaluation gates are not weakened.
+- **UI:** trusted active-stage text and elapsed/remaining wait time update every
+  two seconds during planner, tool, history, pacing and backoff waits. The worker
+  sends heartbeats as current activity separately from execution events. Polling
+  preserves unchanged event DOM and avoids repeated identical live announcements.
+  No tool or historical-write retry is introduced.
+- **Verification:** `npm test` passed **311/311**; `npm run typecheck`,
+  `node --check src/web/app.js`, scoped Biome lint/format and
+  `git diff --check` passed. Failure tests cover recovery after metrics without
+  tool replay, exponential timing/jitter, permanent errors, timeout aborts,
+  `Retry-After` seconds/date parsing, budgets and heartbeat cleanup. Local worker
+  tests verify three attempts on persistent 500 and no new request after Stop
+  during backoff. Initial full runs exposed an outdated progress assertion and
+  native 5ms timer flakiness; both tests were corrected before the passing run.
+- **Browser/mode:** `node --import tsx /tmp/cci-planner-retry-browser.mjs`
+  exercised the real page → HTTP job → worker → fake model server → report:
+  stalled planner progress, visible retry wait, recovery to the B rejection,
+  retained retry event, heartbeat exclusion from history and no page errors.
+  Desktop and 390px mobile screenshots inspected; mobile had no horizontal
+  overflow. Keyboard focus and an open status tooltip survived polling during
+  the slow call. The first mobile harness missed a brief exact elapsed-time
+  window; a longer synthetic stall and elapsed-range assertion passed.
+  These are synthetic/local integration checks;
+  no paid inference, live AWS or remote history calls were made.
+- **Limits/next:** retrying generation can incur usage; aborting our wait does
+  not guarantee remote generation stopped. No production dependency added.
+  No blocker for this slice; restart the demo server and refresh the page.
+  Combined live-evidence and release gates remain open.
+
 ### Compact execution-status tooltips — 2026-10-25
 
 - **Gate/owner:** Days 3–4 demo usability, Milad. Per user correction,

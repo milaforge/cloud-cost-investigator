@@ -814,3 +814,30 @@
   claimed; no planner input, operational clearance, history write or memory lesson
   comes from this prose. Keep existing scheduling gates and permanent-retirement
   scope unchanged. Optional fields preserve older report compatibility.
+
+
+## Bounded planner recovery and responsive progress (2026-10-25)
+
+- User explicitly requested retry/backoff after transient planner unavailability.
+  The runner owns at most two retries for one next decision; count every attempt
+  in existing aggregate/per-candidate call caps. Wait 2s then 4s with positive
+  jitter and honor longer Retry-After, sharing the aggregate deadline/reserve.
+  This supersedes earlier no-model-retry decisions for runtime behavior, without
+  erasing failed measurements or relaxing the evaluation gate.
+- Preserve evidence and original sanitized failure traces across recovery; never
+  replay tools or history writes. Invalid output, auth/configuration failures,
+  unknown errors and explicit cancellation remain terminal. Retrying generation
+  can consume provider usage even if our earlier wait was aborted.
+- Emit trusted active-stage timing every two seconds. Store heartbeat text as the
+  latest job activity, separately from bounded execution events, so a slow call
+  remains understandable without evicting actual history. Reuse the runner's
+  progress callback; the browser polls the existing job. Avoid rebuilding an
+  unchanged event tree so keyboard focus and tooltip state survive polling.
+
+## Trace metadata and evidence retries (2026-10-25)
+
+- User correction: trace metadata is required, not optional quality-bar decoration. The old omission was intentional to avoid invented certainty/counters; it is superseded for newly captured runs. Create the investigation ID at run start, attach it as `trace_id` on every trace entry, and identify entries by `(trace_id, step)`.
+- Confidence is deterministic categorical evidence support, never a fabricated probability: complete authoritative cited evidence without gaps is `supported`, failed attempts or cited gaps are `insufficient`, and no cited evidence is `unassessed`. It cannot change verdict policy or become model-authored authority. Existing report receipts stay unchanged; their unknown counters load as null.
+- The executor owns up to three retries after an initial failed read-only provider call, with identical validated arguments and 2s/4s/8s backoff plus positive jitter. Retain every failed trace; only the final response enters the registry so outages cannot shadow recovered evidence. Returned error/unavailable and thrown failures/timeouts retry; malformed/out-of-scope data and cancellation remain terminal. Partial/no-match remain meaningful successful responses.
+- Count every physical provider call, including retries. Allow up to eight discovery attempts for its two logical tools; allow twelve physical attempts for the three candidate tools, preserving existing planner/runtime caps. Budgets and finalization reserve may stop retries sooner. Planner retries remain separately bounded and never cause tool replay. Uncertain historical writes are not retry-safe and remain excluded.
+- This supersedes the earlier immediate-discovery-stop and no-tool-retry decisions only for bounded same-tool recovery. Exhausted discovery still stops before another model decision or different evidence tool. No new production dependency or AWS write permission is needed.

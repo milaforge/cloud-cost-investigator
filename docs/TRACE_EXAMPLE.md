@@ -1,55 +1,75 @@
-# Trace example — an attractive shutdown rejected
+# Trace example — retry, recover, reject a shutdown window
 
 [What](../README.md) · [How](HOW.md) · [Trace reference](CLI_GUIDE.md#capture-and-read-the-decision-trace)
 
-**Decision:** keep `i-mock-primary` running during the proposed **00:00–06:00 UTC** window. A newly retrieved critical daily batch runs **02:00–03:00 UTC**, contradicting the low-CPU shutdown hypothesis.
+**Decision:** reject the proposed **00:00–06:00 UTC** shutdown for `i-mock-primary`. After three failed operations calls, the fourth retrieves a critical **02:00–03:00 UTC** batch that contradicts the hypothesis. No infrastructure changes occur; other windows remain unevaluated.
 
-**Captured execution, not an invented storyboard.** This [complete report](evaluation/model-network-2026-10-25/gate-rerun/round-1-B.json) used a real NVIDIA model call sequence with **synthetic EC2 evidence**. Zetaris and H-MEM were not configured for this run.
+**Captured execution:** this [complete report](evaluation/trace-metadata-2026-10-25/B-retry.json) uses synthetic EC2 evidence, a scripted planner and three deliberately injected tool exceptions. It exercises the actual runner, retry/backoff and evaluator. It makes no model, AWS, Zetaris or H-MEM calls. Timings include real backoff waits.
 
 ```text
-investigation_id: a0e37e60-771e-4a3c-8f3d-18b8f5137ec9
-planner: live / nvidia/nemotron-3.5-super-vl-120b-a12b
-scope: reliability-synthetic / us-east-1 / i-mock-primary
-run: 2026-10-25T06:52:51.043Z → 2026-10-25T06:52:56.820Z
-budget: 5 planner calls, 4 evidence-tool calls, 5777 ms
+trace_id / investigation_id: e3080d21-0229-471b-839a-d4b29fa43a72
+planner: scripted (no model call)
+scope: trace-synthetic / us-east-1 / i-mock-primary
+run: 2026-10-25T17:22:36.411Z → 2026-10-25T17:22:51.806Z
+budget: 5 planner calls, 7 evidence-tool attempts, 15395 ms
 ```
 
 ## The turning point
 
-Steps 1–7 discover inventory, rank by compute spend and retrieve utilization. Average CPU is **2%**, peak **8%**: enough to propose a question, insufficient to authorize shutdown.
-
-Below is a JSONL projection of actual steps 8–13; `action` objects are omitted for readability. Every line belongs to the investigation above. The full report retains validated tool arguments and source provenance.
+Steps 1–7 discover inventory, rank compute spend and retrieve utilization: average CPU **2%**, peak **8%**. This justifies investigating a window, not authorizing shutdown. Below are actual steps 8–16 as JSONL; only validated `action` objects are omitted for readability.
 
 ```jsonl
-{"step":8,"phase":"planner","reason":"Low average (2%) and peak (8%) CPU suggest inactive hours; metrics suggest window 0-6 UTC, so form hypothesis before falsification checks.","evidence_ids":["mock-ec2-evidence-85dba6d5-5bfb-442e-8532-dc59d9276d40"]}
-{"step":9,"phase":"evaluator","reason":"Plausible window proposed. Require a fresh targeted operations challenge; low CPU is not scheduling authority.","evidence_ids":["mock-ec2-evidence-85dba6d5-5bfb-442e-8532-dc59d9276d40"]}
-{"step":10,"phase":"planner","reason":"Check for critical jobs overlapping the proposed 00-06 UTC shutdown window before falsifying shutdown safety.","evidence_ids":[]}
-{"step":11,"phase":"tool","reason":"Validated current-investigation observation registered.","evidence_ids":["mock-ec2-evidence-b3719509-527b-4419-b82a-c3e0ffd4a2f9"],"status":"ok"}
-{"step":12,"phase":"evaluator","reason":"A retrieved critical job overlaps the proposed shutdown window; reject this window.","evidence_ids":["mock-ec2-evidence-b3719509-527b-4419-b82a-c3e0ffd4a2f9"]}
-{"step":13,"phase":"finish","reason":"hypothesis_contradicted","evidence_ids":[]}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"supported","retry_count":0,"step":8,"phase":"planner","reason":"Observed low average and peak CPU suggest this window; challenge it before any decision.","evidence_ids":["mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"]}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"supported","retry_count":0,"step":9,"phase":"evaluator","reason":"Plausible window proposed. Require a fresh targeted operations challenge; low CPU is not scheduling authority.","evidence_ids":["mock-ec2-evidence-6a68e696-8f18-47b7-9e13-30cfa51ea4fa"]}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"unassessed","retry_count":0,"step":10,"phase":"planner","reason":"Try to falsify the proposed window with overlapping critical jobs.","evidence_ids":[]}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"insufficient","retry_count":0,"step":11,"phase":"tool","reason":"Tool failed or timed out; retrying the same read-only action after backoff. No payload retained.","evidence_ids":[],"status":"error"}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"insufficient","retry_count":1,"step":12,"phase":"tool","reason":"Tool failed or timed out; retrying the same read-only action after backoff. No payload retained.","evidence_ids":[],"status":"error"}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"insufficient","retry_count":2,"step":13,"phase":"tool","reason":"Tool failed or timed out; retrying the same read-only action after backoff. No payload retained.","evidence_ids":[],"status":"error"}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"supported","retry_count":3,"step":14,"phase":"tool","reason":"get_ec2_operations: ok; coverage complete, authoritative.","evidence_ids":["mock-ec2-evidence-5a66dee4-7a1c-4c7d-b91d-f7f18374f414"],"status":"ok"}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"supported","retry_count":0,"step":15,"phase":"evaluator","reason":"A retrieved critical job overlaps the proposed shutdown window; reject this window.","evidence_ids":["mock-ec2-evidence-5a66dee4-7a1c-4c7d-b91d-f7f18374f414"]}
+{"trace_id":"e3080d21-0229-471b-839a-d4b29fa43a72","confidence":"unassessed","retry_count":0,"step":16,"phase":"finish","reason":"hypothesis_contradicted","evidence_ids":[]}
 ```
 
-Step 10 selects `get_ec2_operations` with the proposed window; step 11 registers its evidence. The contradiction ID resolves to `mock-critical-daily-batch`, marked critical, at **02:00–03:00 UTC**, collected at **2026-10-25T06:52:56.818Z**. These are fixture facts retrieved during this investigation, not live AWS telemetry.
+All steps share one `trace_id`; `(trace_id, step)` identifies an entry. `retry_count` counts retries already made for that action: **0** for the initial call, then **1**, **2**, **3**. The executor repeats the same validated operations action without another planner decision. After four failed attempts it would give up; here attempt four succeeds. Backoff is 2s/4s/8s with positive jitter, bounded by call caps and the run deadline.
 
-**Final result:** `not_recommended`; hypothesis `proposed → contradicted`; stop reason `hypothesis_contradicted`; estimated monthly savings `null`. Dependencies and alternative windows remain untested. The operator should review the cited conflict with the resource owner; no infrastructure is changed.
+`confidence` is evidence support for this step: `supported` for complete authoritative cited observations without gaps, `insufficient` for failures or cited gaps, `unassessed` for steps without current citations. It is not a fabricated numerical probability or permission to stop EC2. Thus a supported low-CPU observation can lead to a hypothesis that fresh evidence later disproves.
 
-## What just happened
+**Final result:** `not_recommended`; hypothesis `proposed → contradicted`; stop reason `hypothesis_contradicted`; monthly savings `null`. The final operations observation supplies the contradiction citation. Failed attempts remain visible with no accepted payload. Dependencies and alternative windows remain untested; review the cited conflict with the resource owner.
 
-- The evaluator requires a targeted challenge, and the planner responds with a relevant query.
-- Newly retrieved evidence changes the decision and blocks the proposed shutdown.
-- The verdict is auditable through exact evidence IDs, scope, source mode and collection time.
-- The run stops once this window is disproved, preserving unresolved checks and unsupported savings.
+The [earlier real NVIDIA run](evaluation/model-network-2026-10-25/gate-rerun/round-1-B.json) demonstrates real model selection with synthetic telemetry. Its original trace predates these fields and remains unchanged. Loading legacy reports labels retry counts unknown; it does not invent historical confidence or retry measurements.
 
-This run demonstrates a successful contradiction path. A [separate failed run](evaluation/model-network-2026-10-25/gate-rerun/round-3-B.json) records `model_http_500` and finishes `failed` without a recommendation. Neither example implies retries, automatic fallback or sustained provider reliability. Per-step timestamps, confidence scores and retry counters are not emitted by this trace contract.
+## Reproduce
 
-## Capture a fresh offline example
-
-After [setup](HOW.md#run-the-demo), save the report and its trace while also printing it to stdout:
+After [setup](HOW.md#run-the-demo), capture an ordinary offline B investigation:
 
 ```bash
 mkdir -p logs
 set -o pipefail
-ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run --silent investigate -- --evidence mock --planner scripted --account demo --region us-east-1 --scenario B --json | tee "logs/trace-B-$(date -u +%Y%m%dT%H%M%SZ).json"
+ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= npm run --silent investigate -- --evidence mock --planner scripted --account demo --region us-east-1 --scenario B --json | tee logs/trace-B.json
 ```
 
-This reproduction uses synthetic evidence and a scripted planner, with historical services disabled. It generates new run/evidence IDs; it does not reproduce the NVIDIA calls above. `logs/` is ignored by Git. For model configuration and trace fields, use the [CLI reference](CLI_GUIDE.md).
+To reproduce the injected-outage path above, run from the repository root:
+
+```bash
+node --import tsx --input-type=module <<'JS'
+import { MockProvider } from './src/investigation/mock.ts';
+import { ScriptedPlanner } from './src/investigation/planner.ts';
+import { runInvestigation } from './src/investigation/run.ts';
+const base = new MockProvider('B');
+let failures = 0;
+const report = await runInvestigation({
+  account_id: 'trace-synthetic', region: 'us-east-1', max_candidates: 1,
+  window: { from: '2026-09-01T00:00:00Z', to: '2026-09-29T00:00:00Z' },
+}, {
+  planner: new ScriptedPlanner(),
+  provider: { mode: 'mock', async call(action, signal) {
+    if (action.tool === 'get_ec2_operations' && failures++ < 3)
+      throw new Error('synthetic outage');
+    return base.call(action, signal);
+  } },
+});
+console.log(JSON.stringify(report, null, 2));
+JS
+```
+
+This creates fresh IDs and timestamps, with no configured history or external services. `logs/` is ignored by Git. Regression proof, including persistent failure and deadline exhaustion: `node --import tsx --test --test-isolation=none tests/trace-retry.test.ts`.

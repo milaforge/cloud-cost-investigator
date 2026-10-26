@@ -25,6 +25,7 @@ import {
 import { rankCandidates } from '../src/investigation/policy.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
+import { progressText } from '../src/investigation/progress.ts';
 
 type Verdict = CandidateReport['verdict'];
 export const evaluationCases: {
@@ -273,6 +274,12 @@ export async function evaluate(
                 progress(
                   `${label}: planner call ${event.call} waiting (timeout ${event.timeout_ms}ms)`,
                 );
+              } else if (
+                event.event === 'activity' ||
+                event.event === 'planner_retry' ||
+                event.event === 'tool_retry'
+              ) {
+                progress(`${label}: ${progressText(event)}`);
               } else {
                 progress(
                   `${label}: step ${event.step} ${event.phase}${event.action && event.action !== 'tool' ? ` ${event.action}` : ''}${event.tool ? ` ${event.tool}` : ''}${event.status ? ` ${event.status}` : ''}${event.failure_code ? ` [${event.failure_code}]` : ''}`,

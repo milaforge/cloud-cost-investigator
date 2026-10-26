@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { toolRetryClock } from './helpers/tool-retries.ts';
 import assert from 'node:assert/strict';
 import {
   validateObservation,
@@ -205,7 +206,7 @@ test('empty authenticated discovery is a valid no_match observation', async () =
   assert.deepEqual(o.data, { instances: [] });
 });
 
-test('denied inventory explains the blocked investigation without assessing shutdown safety or leaking provider details', async () => {
+test('denied inventory explains the blocked investigation without assessing shutdown safety or leaking provider details', async (t) => {
   const unused = async (): Promise<never> => {
     throw new Error('unexpected API');
   };
@@ -224,6 +225,7 @@ test('denied inventory explains the blocked investigation without assessing shut
   const report = await runInvestigation(
     { ...args, max_candidates: 1 },
     {
+      onProgress: toolRetryClock(t),
       planner: new ScriptedPlanner(),
       provider: createAwsEvidenceProvider({
         tools: createToolsWithTransport({}, transport, true),
@@ -234,7 +236,7 @@ test('denied inventory explains the blocked investigation without assessing shut
   assert.equal(report.completion_status, 'failed');
   assert.equal(report.stop_reason, 'required_tool_failed:list_ec2_instances');
   assert.equal(report.budget.planner_calls, 1);
-  assert.equal(report.budget.discovery_attempts, 1);
+  assert.equal(report.budget.discovery_attempts, 4);
   assert.equal(report.evidence.length, 1);
   assert.deepEqual(report.candidates, []);
   assert.equal(report.budget.candidate_attempts, 0);
@@ -243,12 +245,14 @@ test('denied inventory explains the blocked investigation without assessing shut
   );
   assert.equal(inventory?.status, 'unavailable');
   assert.deepEqual(inventory?.missing_fields, ['ACCESS_DENIED']);
-  const attempt = report.trace.find(
-    (t) =>
-      t.phase === 'tool' &&
-      t.action?.type === 'tool' &&
-      t.action.tool === 'list_ec2_instances',
-  );
+  const attempt = [...report.trace]
+    .reverse()
+    .find(
+      (t) =>
+        t.phase === 'tool' &&
+        t.action?.type === 'tool' &&
+        t.action.tool === 'list_ec2_instances',
+    );
   assert.match(
     attempt?.reason ?? '',
     /list_ec2_instances.*unavailable.*ACCESS_DENIED/,
@@ -388,10 +392,11 @@ test('collector cancellation reaches the active AWS transport', async () => {
   assert.equal(aborted, true);
 });
 
-test('real investigation engine consumes fixture-backed AWS summaries and defers unknown safety', async () => {
+test('real investigation engine consumes fixture-backed AWS summaries and defers unknown safety', async (t) => {
   const report = await runInvestigation(
     { ...args, max_candidates: 1 },
     {
+      onProgress: toolRetryClock(t),
       planner: new ScriptedPlanner(),
       provider: createAwsEvidenceProvider({
         mode: 'fixture',

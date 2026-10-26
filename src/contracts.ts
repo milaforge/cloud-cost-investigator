@@ -252,6 +252,12 @@ export interface Hypothesis {
   reason: string;
 }
 export interface TraceEntry {
+  /** Correlation ID shared by every step in this investigation. */
+  trace_id: string;
+  /** Evidence support for this step, never a probability of shutdown safety. */
+  confidence: 'unassessed' | 'insufficient' | 'supported';
+  /** Retries already made for this action; null for legacy traces without counters. */
+  retry_count: number | null;
   step: number;
   phase: 'planner' | 'tool' | 'evaluator' | 'finish';
   reason: string;
@@ -260,6 +266,23 @@ export interface TraceEntry {
   evidence_ids: string[];
   failure_code?: PlannerFailureCode;
   provider_error?: { body: string; truncated: boolean };
+}
+/** Deterministic evidence support, without model-authored certainty scores. */
+export function traceConfidence(
+  status: SourceStatus | undefined,
+  observations: Observation[],
+): TraceEntry['confidence'] {
+  if (status === 'error' || status === 'unavailable') return 'insufficient';
+  if (!observations.length) return 'unassessed';
+  return observations.every(
+    (o) =>
+      (o.status === 'ok' || o.status === 'no_match') &&
+      o.coverage.complete &&
+      o.coverage.authoritative &&
+      !o.missing_fields.length,
+  )
+    ? 'supported'
+    : 'insufficient';
 }
 export interface CandidateReport {
   instance_id: string;

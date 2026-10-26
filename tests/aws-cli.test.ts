@@ -54,6 +54,8 @@ test('AWS CLI defaults to live evidence, uses complete UTC days and rejects inco
 });
 
 test('AWS CLI routes through collector and evaluator: empty, denied, missing billing and unknown safety', async () => {
+  // Let the preceding test's reporter write finish before intercepting CLI stdout.
+  await new Promise<void>((resolve) => setImmediate(resolve));
   const keys = ['HMEM_PERSIST_DIR', 'ZETARIS_HISTORY_TABLE'];
   const saved = keys.map((key) => process.env[key]);
   const out = process.stdout.write,

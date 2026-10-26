@@ -254,7 +254,18 @@ export class OpenAICompatiblePlanner implements Planner {
         state.request.account_id,
         state.candidate_id ?? '',
       ]);
-      throw new ModelHttpError(response.status, details);
+      const retryAfter = response.headers.get('retry-after');
+      const delay =
+        retryAfter === null
+          ? NaN
+          : /^\d+(?:\.\d+)?$/.test(retryAfter.trim())
+            ? Number(retryAfter) * 1000
+            : Date.parse(retryAfter) - Date.now();
+      throw new ModelHttpError(
+        response.status,
+        details,
+        Number.isFinite(delay) && delay >= 0 ? Math.ceil(delay) : undefined,
+      );
     }
     let payload: unknown;
     try {

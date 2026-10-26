@@ -76,6 +76,9 @@ test('lessons require cited authoritative contradictions; older summaries still 
   );
   assert.ok(dependency);
   dependency.coverage.authoritative = false;
+  for (const step of report.trace)
+    if (step.evidence_ids.includes(dependency.evidence_id))
+      step.confidence = 'insufficient';
   // A conservative rejection may still stand, but incomplete evidence must not teach a reusable lesson.
   assert.equal(reasoningSummaryFromReport(report).lesson, undefined);
 });
