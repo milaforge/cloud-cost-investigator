@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    init: true
+    network_mode: host
+    environment:
+      CCI_WEB_CONTAINER: "1"
+    env_file:
+      - path: .env
+        required: false

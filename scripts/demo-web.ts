@@ -55,7 +55,7 @@ export async function generateDemoReports() {
   return reports;
 }
 
-export async function startDemoServer(port = 0) {
+export async function startDemoServer(port = 0, bindAddress = '127.0.0.1') {
   const previews = new Map<
     DemoScenario,
     ReturnType<typeof generateDemoReport>
@@ -255,7 +255,7 @@ export async function startDemoServer(port = 0) {
   server.headersTimeout = 10_000;
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, '127.0.0.1', () => {
+    server.listen(port, bindAddress, () => {
       server.off('error', reject);
       resolve();
     });
@@ -300,12 +300,17 @@ if (
     process.exitCode = 1;
   } else {
     try {
-      if (!loadProjectEnv('.env', ['AWS_PROFILE', 'AWS_REGION']))
+      if (
+        !loadProjectEnv('.env', ['AWS_PROFILE', 'AWS_REGION']) &&
+        !process.env.CCI_WEB_CONTAINER
+      )
         console.warn(
           'No .env file found. Copy or rename .env.example to .env, fill in the required values for the services you use, then restart npm start. Demo mode remains available.',
         );
       console.log('Starting web UI…');
-      const { server, url } = await startDemoServer();
+      const { server, url } = process.env.CCI_WEB_CONTAINER
+        ? await startDemoServer(36335)
+        : await startDemoServer();
       console.log(
         `Web UI: ${url}\nOffline demos by default. Real services require explicit browser controls. Ctrl+C to stop.`,
       );

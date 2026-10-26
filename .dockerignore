@@ -1,0 +1,16 @@
+*
+!package.json
+!package-lock.json
+!cli.ts
+!scripts/
+!scripts/**
+!src/
+!src/**
+!docs/
+!docs/ec2-scenarios.jsonl
+!vendor/
+!vendor/hmem/
+!vendor/hmem/src/
+!vendor/hmem/src/**
+!vendor/hmem/package.json
+**/node_modules/

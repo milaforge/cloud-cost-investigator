@@ -1189,3 +1189,7 @@
 ## Zetaris save confirmation presentation (2026-10-26)
 
 - A verified readback is the point at which Follow through can claim a save. Reset the input and storage acknowledgment then, while keeping the scoped result selected so the engineer can still inspect its receipt. The success toast is green and the visible/downloadable receipt contains only record IDs and investigation ID; decision prose and the full historical records stay out of the success surface.
+
+## Docker web boundary — 2026-10-26
+
+Compose fixes the previously incidental `npm start` port at 36335. Per the user's network choice, it uses host networking without a published-port mapping; the Node server binds host loopback and retains its strict Host and Origin checks. The Docker image must include root `cli.ts` because the forked web investigation worker imports it before any result or progress is produced; serving static UI assets alone is not a sufficient smoke test. Optional `.env` values enter the web process through Compose `env_file` and are inherited by workers, so the host file need not be mounted into the image. Host AWS profile files are separate from `.env` and require the explicit read-only `compose.aws.yaml` overlay with the host UID/GID; keeping that overlay optional lets a clean checkout start Demo with one command and no AWS directory.

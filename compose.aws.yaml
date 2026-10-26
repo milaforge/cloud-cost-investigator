@@ -1,0 +1,12 @@
+services:
+  web:
+    user: "${CCI_HOST_UID:?Set CCI_HOST_UID to your user ID}:${CCI_HOST_GID:?Set CCI_HOST_GID to your group ID}"
+    environment:
+      HOME: /home/node
+    volumes:
+      - type: bind
+        source: ${HOME}/.aws
+        target: /home/node/.aws
+        read_only: true
+        bind:
+          create_host_path: false

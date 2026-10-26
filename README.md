@@ -3,7 +3,7 @@
 > Built to participate in **Open Agent Hackathon 2026**.<br>
 > **Track:** 02 — The Agent That Can Explain Why<br>
 > **Sponsor technology:** Zetaris, Meterless H-MEM, NVIDIA Nemotron<br>
-> **Run:** `npm ci`, then `npm start` for the local web UI (Demo and Live).
+> **Run:** `docker compose up -d`, then open http://127.0.0.1:36335 (Demo and Live).
 
 ## 1. Problem
 
@@ -122,7 +122,23 @@ Real model calls, H-MEM persistence and remote Zetaris append/readback have [rec
 
 ## 5. Setup
 
-Requires **Git, Node.js 24+**. The offline investigation demo needs no GPU, credentials, `.env` or external services. H-MEM is already vendored; do not run `npm run setup`, which refreshes it from upstream.
+For the web UI, install **Docker with Compose**, then run from the project directory:
+
+```bash
+docker compose up -d
+```
+
+Open **http://127.0.0.1:36335**, choose Demo, and select a scenario. No GPU, credentials, `.env`, or external services are needed for Demo. Compose uses the host network and the server binds to `127.0.0.1` only; port 36335 must be free on the host. Use `docker compose logs -f web` for startup output and `docker compose down` to stop it. The image installs the locked Node dependencies and includes the vendored H-MEM source; do not run `npm run setup`, which refreshes H-MEM from upstream.
+
+For Live in Docker, create `.env` from `.env.example` **only if absent**, then supply the AWS scope, model configuration, and any other services you intend to use. Compose's optional `env_file` injects `.env` values into both the web process and its worker; recreate the service after changing them, using the same Compose files as the initial start. If `AWS_PROFILE` refers to your host's `~/.aws` files, mount them read-only and run the container as the file owner:
+
+```bash
+CCI_HOST_UID=$(id -u) CCI_HOST_GID=$(id -g) docker compose -f compose.yaml -f compose.aws.yaml up -d
+```
+
+The optional AWS file requires an existing `~/.aws` directory. Alternatively, use a container-accessible workload identity or supply AWS credential environment variables through your local `.env`; no host AWS mount is needed for Demo. With host networking, `127.0.0.1` service URLs refer to the host, so a host-local Zetaris URL is reachable when that service is running. Live investigation remains read-only for AWS; saving a decision still needs the explicit Zetaris append configuration and a user click.
+
+For the local Node path, install **Git and Node.js 24+**:
 
 ```bash
 git clone https://github.com/milaforge/cloud-cost-investigator.git

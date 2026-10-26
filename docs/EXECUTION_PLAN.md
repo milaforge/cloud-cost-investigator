@@ -6,6 +6,18 @@
 - **Proof:** `node --import tsx --test --test-isolation=none tests/demo-web-ui.test.ts` passed 12/12, including accepted and rejected starts with an existing result. `npx biome check src/web/app.js tests/demo-web-ui.test.ts` and `npm run typecheck` passed.
 - **Mode/next:** isolated browser DOM fixture only; no live AWS/model/Zetaris run or browser layout proof. Restart `npm start` to load the UI change; broader live and release gates remain open.
 
+## Docker web startup and worker import — 2026-10-26
+
+- **Gate/owner/slice:** Days 3–4 web setup, Milad. Compose builds the Node 24 web image, serves the UI on host loopback port 36335, injects optional `.env` values, and keeps host AWS profile mounting in an explicit read-only Live overlay. No evidence policy or external service access changed.
+- **Failure and fix:** The first image served the UI but omitted root `cli.ts`, so the forked investigation worker failed module loading before producing a report. Container import reproduced `ERR_MODULE_NOT_FOUND` for `/app/cli.ts`. The image now includes that file. The incidental local `npm start` URL used port 36335; Compose fixes that port for stable browser access.
+- **Verified:** `docker compose up -d --build` started the corrected image; the container worker completed a synthetic scripted B investigation with `not_recommended`. The running UI and `/api/config` returned HTTP 200. Container checks confirmed presence of configured scope/model/history environment keys without printing values. The optional AWS overlay passed Compose validation and a container check confirmed the profile directory and selector were visible to the host-matched UID. `npm run typecheck`, focused web/worker tests **12/12**, scoped formatting and `git diff --check` passed. An initial Compose start on port 8787 failed because that host port was occupied. Repository-wide `npm run lint` still fails on 12 pre-existing empty historical JSON captures.
+- **Mode/next:** Docker startup, synthetic worker execution and credential-path metadata only; no live AWS, model or Zetaris call. Live operators using a host `AWS_PROFILE` must use the documented `compose.aws.yaml` command and configure container-reachable service URLs. Existing live-evidence and release gates remain open.
+
+### Host network selection — 2026-10-26
+
+- **Owner/change:** Milad, same web setup gate. At user direction, Compose uses `network_mode: host` and has no port publication. The web process binds `127.0.0.1:36335`, preserving local-only access and the existing exact Host/Origin checks. Host-local service URLs now resolve in the host namespace.
+- **Verified:** Base and AWS-overlay Compose config passed. `docker compose -f compose.yaml -f compose.aws.yaml up -d --build` restarted the service; Docker inspect reported `network=host`, `ss` showed only `127.0.0.1:36335`, and the UI returned HTTP 200. A synthetic scripted B investigation completed through the container worker with `not_recommended`. `npm run typecheck`, focused web HTTP tests **3/3**, scoped format and `git diff --check` passed. No live AWS, model or Zetaris request was made.
+
 ## Follow-through Zetaris save default — 2026-10-26
 
 - **Gate/owner/slice:** Days 3–4 Follow through UI, Milad. The user directed removal of the separate Zetaris storage checkbox. Submitting **Save decision to Zetaris** now sends the previously checked `allow_append: true` with the selected Live report and validated decision; investigation requests still send `false`. The server's append configuration, scoped validation and readback stay in place.
