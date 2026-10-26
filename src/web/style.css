@@ -924,3 +924,41 @@ dialog::backdrop {
   margin-top: 8px;
   resize: vertical;
 }
+
+.decision-form {
+  max-width: 660px;
+  margin: 24px 0;
+}
+.decision-form fieldset {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+.decision-form label {
+  display: grid;
+  gap: 6px;
+}
+.decision-form input:not([type="checkbox"]),
+.decision-form textarea,
+.decision-form select {
+  width: 100%;
+}
+.decision-form label:has(input[type="checkbox"]) {
+  display: block;
+}
+.followup-demo {
+  margin-top: 32px;
+}
+#decision-receipt {
+  overflow-wrap: anywhere;
+}
+
+.followup-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}

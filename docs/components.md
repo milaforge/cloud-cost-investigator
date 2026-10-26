@@ -36,7 +36,10 @@ commands, accepts provider URLs/credentials from the browser, or exposes SQL.
 Existing CLI entry points remain intact; their optional progress callbacks feed
 bounded browser events. Offline investigations and learning never enable remote
 history or models. Follow-through requires both server append configuration and
-an explicit browser acknowledgment and uses a unique synthetic account.
+an explicit browser acknowledgment. The user-decision form reuses `recordDecision`
+to validate and append a linked recommendation and attributed Accept/Defer event,
+then verify exact readback. Its receipt exposes both record IDs. The separate
+scripted demonstration uses a unique synthetic account.
 
 Worker deadlines are 2 minutes for offline investigation/learning, 15 minutes
 for a model investigation, 20 minutes for the multi-investigation model learning
@@ -44,20 +47,25 @@ demonstration, and 3 minutes for follow-through. Existing tool/model bounds
 still apply. Stop/server shutdown terminates the worker; an IPC disconnect also
 terminates an orphaned worker. Parent-owned temporary directories are cleaned on
 worker exit, including cancellation. A cancelled or failed write can leave remote
-records; no automatic retry is attempted. Latest job state and at most 160 bounded
-progress events stay in server memory. Reconnecting polls that state without
+records; history writes are never retried automatically. Latest job state,
+current activity and at most 160 bounded progress events stay in server memory.
+The runner emits active-stage heartbeats every two seconds; these replace current
+activity rather than accumulating in the execution tree. Reconnecting polls that state without
 starting another run; duplicate submissions of the current request ID reuse its
 job only when their payload matches. Additional concurrent runs are rejected.
 
 The upload boundary reuses `validateReport`; the browser renders text nodes,
 never report-authored HTML. Only fixed assets and allowlisted API routes are
 served. Exact Host/origin checks, loopback binding, restrictive content policy,
-no-store responses, 2 MiB report uploads, 4 KiB action requests and bounded HTTP
+no-store responses, 2 MiB report uploads, 24 KiB ordinary action requests and bounded HTTP
 requests protect the local boundary. Configuration status exposes booleans,
 never credential or endpoint values. Uploaded reports are returned only to their
-requesting page; they are not persisted or used to authorize actions. Validation
-proves internal consistency, not external authenticity. AWS remains read-only;
-the only remote writes are the explicit synthetic follow-through demonstration.
+requesting page. A decision request may carry a report up to 2 MiB plus 24 KiB
+of decision metadata; it uses the same report validator and requires explicit
+write acknowledgment. Validation proves internal consistency, not external
+authenticity or infrastructure approval. AWS remains read-only; remote writes
+are limited to the acknowledged append-only decision flow and synthetic
+follow-through demonstration.
 
 ## Sponsor technology explanation
 

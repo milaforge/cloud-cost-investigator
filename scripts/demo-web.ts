@@ -116,7 +116,7 @@ export async function startDemoServer(port = 0) {
           req.url === '/api/validate'
             ? MAX_REPORT_BYTES
             : req.url === '/api/run'
-              ? 24 * 1024
+              ? MAX_REPORT_BYTES + 24 * 1024
               : 4096;
         if (size > limit) {
           reply(413, {
@@ -131,6 +131,16 @@ export async function startDemoServer(port = 0) {
       }
       const input: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       if (req.url === '/api/run') {
+        if (
+          size > 24 * 1024 &&
+          (!input ||
+            typeof input !== 'object' ||
+            !('kind' in input) ||
+            input.kind !== 'decision')
+        ) {
+          reply(413, { error: 'Request exceeds the size limit.' });
+          return;
+        }
         try {
           reply(202, jobs.start(input));
         } catch (error) {

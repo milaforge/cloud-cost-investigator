@@ -11,6 +11,8 @@ import {
   validateDemoRun,
   demoConfiguration,
 } from '../scripts/demo-web-jobs.ts';
+import { generateDemoReports } from '../scripts/demo-web.ts';
+import type { recordDecision } from '../src/investigation/follow-up.ts';
 import { mockZetarisLedger } from './helpers/zetaris-ledger.ts';
 
 const input = {
@@ -26,12 +28,21 @@ const input = {
   allow_append: false,
   history: false,
 };
-async function finish<T = InvestigationReport>(jobs: DemoJobs) {
+async function settle(jobs: DemoJobs) {
   const until = Date.now() + 20000;
   while (jobs.current?.status === 'running' && Date.now() < until)
     await setTimeout(20);
-  assert.equal(jobs.current?.status, 'complete', JSON.stringify(jobs.current));
-  return jobs.current?.result as T;
+  assert.notEqual(
+    jobs.current?.status,
+    'running',
+    JSON.stringify(jobs.current),
+  );
+  return jobs.current;
+}
+async function finish<T = InvestigationReport>(jobs: DemoJobs) {
+  const job = await settle(jobs);
+  assert.equal(job?.status, 'complete', JSON.stringify(job));
+  return job?.result as T;
 }
 
 test('web execution validates opt-ins and rejects unapproved input', () => {
@@ -104,6 +115,7 @@ test('stop is explicit and prevents the worker from replacing a cancelled result
 
 test('browser follow-through worker reaches the real adapter via a local HTTP fixture, without external calls', async (t) => {
   const nativeFetch = globalThis.fetch;
+  let uncertainInsert = false;
   const { records } = mockZetarisLedger(t);
   const fixtureFetch = globalThis.fetch;
   t.mock.restoreAll();
@@ -112,6 +124,12 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     for await (const chunk of req) body += chunk;
     try {
       const response = await fixtureFetch('http://fixture', { body });
+      if (uncertainInsert && JSON.parse(body).sql.startsWith('INSERT')) {
+        uncertainInsert = false;
+        res.writeHead(500);
+        res.end('{}');
+        return;
+      }
       res.writeHead(response.status, { 'Content-Type': 'application/json' });
       res.end(await response.text());
     } catch {
@@ -152,6 +170,95 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     assert.equal(historyReport.historical_context.zetaris, 'ok');
     assert.equal(records.length, 7);
     assert.ok(jobs.current?.events.some((e) => e.includes('append disabled')));
+    const report = (await generateDemoReports()).A;
+    const decisionInput = {
+      request_id: 'engineer-accept',
+      kind: 'decision',
+      real_services: true,
+      allow_append: true,
+      report,
+      instance_id: report.candidates[0].instance_id,
+      decision: {
+        kind: 'accepted',
+        actor: 'engineer-42',
+        reason: 'Accepted in local fixture test.',
+      },
+    };
+    for (const change of [
+      { allow_append: false },
+      { real_services: false },
+      { instance_id: 'i-other' },
+      { decision: { ...decisionInput.decision, kind: 'delete' } },
+      { decision: { ...decisionInput.decision, actor: 'spaces not allowed' } },
+      { sql: 'arbitrary SQL' },
+      { report: { ...report, completion_status: 'partial' } },
+    ])
+      assert.throws(() => validateDemoRun({ ...decisionInput, ...change }));
+    jobs.start(decisionInput);
+    const receipt =
+      await finish<Awaited<ReturnType<typeof recordDecision>>>(jobs);
+    assert.equal(records.length, 9);
+    assert.equal(receipt.decision.record.schema_version, 2);
+    assert.equal(
+      JSON.parse(receipt.decision.record.summary_json).actor,
+      'engineer-42',
+    );
+    assert.equal(
+      receipt.recommendation.record.investigation_id,
+      report.investigation_id,
+    );
+    assert.ok(
+      jobs.current?.events.some((e) => e.includes('readback verified')),
+    );
+    jobs.start({ ...decisionInput, request_id: 'same-decision' });
+    assert.deepEqual(await finish(jobs), receipt);
+    assert.equal(records.length, 9);
+    jobs.start({
+      ...decisionInput,
+      request_id: 'conflict-decision',
+      decision: { ...decisionInput.decision, reason: 'Changed reason' },
+    });
+    const conflict = await settle(jobs);
+    assert.equal(conflict?.status, 'failed');
+    assert.match(conflict?.error ?? '', /cannot be overwritten/);
+    assert.equal(records.length, 9);
+    const deferredReport = (await generateDemoReports()).A;
+    const review_at = new Date(Date.now() + 3600000).toISOString();
+    // A failed worker reports its error before its close/cleanup event.
+    await setTimeout(100);
+    jobs.start({
+      ...decisionInput,
+      request_id: 'engineer-defer',
+      report: deferredReport,
+      decision: {
+        kind: 'deferred',
+        actor: 'engineer-42',
+        reason: 'Revisit after migration.',
+        review_at,
+      },
+    });
+    const deferred =
+      await finish<Awaited<ReturnType<typeof recordDecision>>>(jobs);
+    assert.equal(
+      JSON.parse(deferred.decision.record.summary_json).review_at,
+      review_at,
+    );
+    assert.equal(records.length, 11);
+    uncertainInsert = true;
+    jobs.start({
+      ...decisionInput,
+      request_id: 'uncertain-save',
+      report: (await generateDemoReports()).A,
+    });
+    const uncertain = await settle(jobs);
+    assert.equal(uncertain?.status, 'failed');
+    assert.equal(uncertain?.result, undefined);
+    assert.match(uncertain?.error ?? '', /could not be verified/);
+    assert.equal(
+      records.length,
+      12,
+      'uncertain recommendation write is not automatically replayed',
+    );
     assert.equal(JSON.stringify(jobs.current).includes('fixture-key'), false);
   } finally {
     jobs.close();
@@ -163,7 +270,9 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
 });
 
 test('explicit model control preserves a provider failure without scripted fallback', async () => {
+  let attempts = 0;
   const fixture = createServer((_req, res) => {
+    attempts++;
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end('{"error":{"message":"fixture failure"}}');
   });
@@ -188,6 +297,13 @@ test('explicit model control preserves a provider failure without scripted fallb
       real_services: true,
     });
     const result = await finish(jobs);
+    assert.equal(attempts, 3);
+    assert.equal(result.budget.planner_calls, 3);
+    assert.equal(
+      jobs.current?.events.filter((e) => e.includes('retry ')).length,
+      2,
+    );
+    assert.ok(jobs.current?.activity);
     assert.equal(result.planner.mode, 'live');
     assert.equal(result.completion_status, 'failed');
     assert.ok(result.trace.some((t) => t.failure_code === 'model_http_500'));
@@ -195,6 +311,56 @@ test('explicit model control preserves a provider failure without scripted fallb
       JSON.stringify(jobs.current).includes('fixture-model-key'),
       false,
     );
+  } finally {
+    jobs.close();
+    fixture.closeAllConnections();
+    await new Promise<void>((resolve) => fixture.close(() => resolve()));
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('stopping during planner backoff prevents another provider request', async () => {
+  let attempts = 0;
+  const fixture = createServer((_req, res) => {
+    attempts++;
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end('{}');
+  });
+  await new Promise<void>((resolve) => fixture.listen(0, '127.0.0.1', resolve));
+  const settings = {
+    LLM_BASE_URL: `http://127.0.0.1:${(fixture.address() as AddressInfo).port}/v1`,
+    LLM_MODEL: 'fixture',
+    LLM_API_KEY: 'fixture-key',
+    LLM_EXTRA_BODY: '{}',
+    LLM_RESPONSE_FORMAT: 'text',
+  };
+  const previous = Object.fromEntries(
+    Object.keys(settings).map((k) => [k, process.env[k]]),
+  );
+  Object.assign(process.env, settings);
+  const jobs = new DemoJobs();
+  try {
+    jobs.start({
+      ...input,
+      request_id: 'cancel-backoff',
+      planner: 'model',
+      real_services: true,
+    });
+    const until = Date.now() + 10000;
+    while (
+      !jobs.current?.events.some((e) => e.includes('retry 2/3')) &&
+      Date.now() < until
+    )
+      await setTimeout(20);
+    assert.ok(jobs.current?.events.some((e) => e.includes('retry 2/3')));
+    jobs.cancel('cancel-backoff');
+    await setTimeout(3000);
+    assert.equal(attempts, 1);
+    assert.equal(jobs.current?.status, 'cancelled');
+    assert.equal(jobs.current?.result, undefined);
   } finally {
     jobs.close();
     fixture.closeAllConnections();

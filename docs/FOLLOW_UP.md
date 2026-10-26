@@ -12,6 +12,31 @@ Use the existing [Zetaris setup](ZETARIS_HISTORY.md). No table provisioning or
 infrastructure write is performed by these commands. Do not put secrets in decision
 reasons, actor IDs, outcome notes or evidence references.
 
+## Record a decision in the web UI
+
+Run `npm run demo:web`. After an investigation completes, select a conditional
+recommendation and choose **Record your decision in Zetaris**. In **Follow through**,
+choose **Accept** for a separate change process or **Defer** with a future UTC review
+date. Enter your engineer ID and reason, acknowledge real storage, then choose
+**Save decision to Zetaris**. No decision is preselected. Rejected windows and
+incomplete investigations cannot receive a decision.
+
+The server validates the report and decision, then uses the existing append-only
+writer to persist the linked recommendation and decision. **Saved to Zetaris**
+appears only after exact readback verification. The receipt includes both record
+IDs and a JSON download. Evidence mode and resource scope remain visible; a
+synthetic recommendation stays labeled synthetic even when its history is stored
+in real Zetaris. Changing the selected recommendation clears the form and receipt.
+Engineer IDs are recorded attribution, not authenticated approval identities.
+
+Server append configuration is required. An uncertain save may have retained rows;
+inspect history before retrying. There is no automatic write retry or infrastructure
+execution. Later reviews and outcomes use the CLI below. The **Demo** checkbox switches between the selected investigation
+and the separate fictional follow-through illustration. It starts unchecked;
+only one mode is visible. Switching modes performs no service call and clears
+write acknowledgment. Running the demo still requires explicit acknowledgment
+of its seven retained records. It does not record the engineer's form selection.
+
 ## 1. Produce a recommendation
 
 ```bash

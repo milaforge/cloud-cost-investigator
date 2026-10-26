@@ -103,6 +103,25 @@
   live AWS or remote history requests. No dependency added, no infrastructure
   writes, commit or push. Combined sponsor/live-evidence/release gates stay open.
 
+### Follow-through rejected-start controls — 2026-10-25
+
+- **Gate/owner:** Days 3–4 demo usability, Milad. Missing service acknowledgment
+  previously opened the progress panel with a default-visible Stop button despite
+  having no job; Stop consequently returned without making a request. Validation
+  now uses the existing toast and focuses the required acknowledgment. Idle state,
+  pending submission and server-rejected starts hide active-job controls; empty
+  event panels stay hidden. Confirmed Stop requests show pending feedback.
+- **Proof:** `node --import tsx /tmp/cci-followup-state-browser.mjs` reproduced
+  the visible ghost Stop before the patch, then passed acknowledgment/no-request,
+  rejected-start, empty-events and confirmed-run cancellation assertions against
+  the real page with intercepted local job responses. Focused
+  `node --import tsx --test --test-isolation=none tests/demo-web.test.ts
+  tests/demo-web-jobs.test.ts` passed **8/8**, including actual worker cancellation.
+  JS syntax, scoped Biome lint/format and `git diff --check` passed.
+- **Mode/limits/next:** local browser/HTTP fixtures only; no real Zetaris writes
+  or other external calls. Prior planner-retry work is preserved. No blocker for
+  this slice; refresh the page. Combined integration/release gates stay open.
+
 ### Planner retry recovery and responsive progress — 2026-10-25
 
 - **Gate/owner:** Days 3–4 model reliability and demo usability, Milad. User
@@ -1129,3 +1148,40 @@ Zayan owns data-source truth; Milad owns verdict/report truth. Agree on shared c
   /tmp/cci-toast-countdown-check.mjs` passed simulated-clock expiry, restart,
   cleanup and focus checks; existing DOM checks, lint, formatting, JS syntax and
   diff checks passed. Browser visual verification remains pending.
+
+## Engineer decision UI — 2026-10-25
+
+- **Gate/owner:** demo decision follow-through, Milad. Complete conditional
+  recommendations offer **Record your decision in Zetaris**. The primary form
+  requires an explicit Accept/Defer choice, engineer ID, reason, future UTC review
+  date for defer and real-storage acknowledgment. The fictional seven-record
+  demonstration is separate. Successful saves display verified record IDs and a
+  downloadable receipt; AWS remains read-only.
+- **Proof/mode:** `node --import tsx --test --test-isolation=none
+  tests/follow-up.test.ts tests/demo-web-jobs.test.ts tests/demo-web.test.ts`:
+  **19/19 passed**. Includes actual isolated workers against a local HTTP Zetaris
+  ledger fixture: accept, defer, exact duplicate, immutable conflict and ambiguous
+  committed insert with no retry. No real remote record was written for this task.
+- **Browser:** `node --import tsx /tmp/cci-decision-browser.mjs` passed the complete
+  browser → server → worker → adapter → local ledger flow: unselected/disabled
+  initial form, required acknowledgment, Accept/Defer, verified receipts, target
+  reset, UTC date persistence, no page errors and no 390px horizontal overflow.
+  Desktop/mobile screenshots reviewed. `npm run typecheck`, scoped Biome lint and
+  `node --check src/web/app.js` passed.
+- **Boundary/next:** local fixture proof establishes wiring and failure behavior,
+  not new live Zetaris connectivity or authenticated approval. Existing remote
+  integration receipts remain separate. Restart the demo to load changed assets;
+  later reviews and attributed outcomes use the existing CLI workflow.
+
+## Follow-through Demo checkbox — 2026-10-25
+
+- **Gate/owner:** demo presentation, Milad. Follow through defaults to the selected
+  investigation's decision form. A native **Demo** checkbox exclusively shows the
+  fictional illustration instead. Switching performs no service call and clears
+  write acknowledgment; the recommendation CTA returns to investigation mode.
+- **Proof/mode:** `node --import tsx /tmp/cci-followup-mode-browser.mjs` passed:
+  default state, exclusive visibility, acknowledgment reset, no toggle writes,
+  existing Accept/Defer saves and verified receipts through local fixture storage,
+  and 390px layout without overflow or page errors. `npm run typecheck`, scoped
+  Biome lint/format, JS syntax and diff whitespace checks passed. No remote calls
+  or new dependencies. Restart the demo server to load the changed assets.

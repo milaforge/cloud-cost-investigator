@@ -57,8 +57,8 @@ function eventRecord(
   };
 }
 
-/** Explicit operator input. One immutable decision per recommendation in this bounded MVP. */
-export async function recordDecision(
+/** Shared validation for CLI and browser decision entry; performs no I/O. */
+export function prepareDecision(
   inputReport: InvestigationReport,
   instance: string,
   input: unknown,
@@ -81,6 +81,20 @@ export async function recordDecision(
   });
   if (event.kind !== 'deferred' && event.kind !== 'accepted')
     throw new Error('follow_up_decision_required');
+  return { report, recommendation, event };
+}
+
+/** Explicit operator input. One immutable decision per recommendation in this bounded MVP. */
+export async function recordDecision(
+  inputReport: InvestigationReport,
+  instance: string,
+  input: unknown,
+) {
+  const { recommendation, event } = prepareDecision(
+    inputReport,
+    instance,
+    input,
+  );
   const recorded = nowIso();
   const decision = eventRecord(
     recommendation,

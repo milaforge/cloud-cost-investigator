@@ -3,6 +3,7 @@ const reports = {};
 let active = null;
 let candidateIndex = 0;
 let loading = false;
+let decisionKey = '';
 const labels = {
   conditional_recommendation: 'Conditional recommendation',
   not_recommended: 'Not recommended',
@@ -284,6 +285,7 @@ function timeline(candidate, report) {
   return section;
 }
 function render(focusCandidate = false) {
+  syncDecisionForm();
   const r = reports[active];
   for (const button of document.querySelectorAll('[data-report]'))
     button.setAttribute(
@@ -436,6 +438,19 @@ function render(focusCandidate = false) {
     const next = node('div', undefined, 'next-action');
     next.append(node('h3', 'Next action'), list(c.next_human_actions));
     card.append(next);
+    if (
+      r.completion_status === 'complete' &&
+      c.verdict === 'conditional_recommendation'
+    ) {
+      const decide = node('button', 'Record your decision in Zetaris');
+      decide.type = 'button';
+      decide.addEventListener('click', () => {
+        setFollowupDemo(false);
+        showView('followup');
+        $('decision-choice').focus();
+      });
+      card.append(decide);
+    }
     if (c.missing_checks.length) {
       const pending = node('div', undefined, 'pending-checks');
       pending.append(
@@ -678,6 +693,10 @@ function render(focusCandidate = false) {
         `${t.step}. ${human(t.phase)}${t.action?.tool ? ` · ${t.action.tool}` : ''}${t.status ? ` · ${human(t.status)}` : ''}`,
       ),
       node('p', t.reason),
+      node(
+        'p',
+        `trace_id: ${t.trace_id} · confidence: ${human(t.confidence)} · retry_count: ${t.retry_count ?? 'unknown'}`,
+      ),
       citations(t.evidence_ids),
     );
     if (t.action) step.append(disclosure('Action details', [facts(t.action)]));
@@ -803,7 +822,12 @@ let currentJob = null;
 let submitted = false;
 let polling = null;
 let appliedJob = null;
-const runButtons = ['run-investigate', 'run-learn', 'run-followup'];
+const runButtons = [
+  'run-investigate',
+  'run-learn',
+  'run-followup',
+  'save-decision',
+];
 $('scenario').addEventListener('change', () => {
   dismissToast();
   active = null;
@@ -989,8 +1013,113 @@ function renderFollowup(result) {
     disclosure('Method and limits', [node('p', result.methodology)]),
   );
 }
+function setFollowupDemo(demo) {
+  $('followup-demo-mode').checked = demo;
+  $('followup-investigation').hidden = demo;
+  $('followup-demo').hidden = !demo;
+  $('decision-ack').checked = false;
+  $('append-ack').checked = false;
+}
+$('followup-demo-mode').addEventListener('change', () => {
+  setFollowupDemo($('followup-demo-mode').checked);
+});
+function decisionTarget() {
+  const report = reports[active];
+  const candidate = report?.candidates[candidateIndex];
+  return report?.completion_status === 'complete' &&
+    candidate?.verdict === 'conditional_recommendation'
+    ? { report, candidate }
+    : null;
+}
+function syncDecisionForm() {
+  const target = decisionTarget();
+  const key = target
+    ? `${target.report.investigation_id}:${target.candidate.instance_id}`
+    : '';
+  if (key === decisionKey) return;
+  decisionKey = key;
+  $('decision-form').reset();
+  $('decision-review-field').hidden = true;
+  $('decision-review').required = false;
+  $('decision-fields').disabled =
+    !target || submitted || currentJob?.status === 'running';
+  $('save-decision').disabled = $('decision-fields').disabled;
+  $('decision-receipt').replaceChildren();
+  $('decision-context').textContent = target
+    ? `${modes[target.report.integration_mode]} · Account ${target.report.request.account_id} · ${target.report.request.region} · ${target.candidate.instance_id} · Daily ${schedule(target.candidate.proposed_window)} UTC. Investigation ${target.report.investigation_id}.`
+    : 'Run an investigation or load a report, then select a completed conditional recommendation in Investigate.';
+}
+function renderDecisionReceipt(receipt) {
+  const record = receipt.decision.record;
+  const event = JSON.parse(record.summary_json);
+  $('decision-receipt').replaceChildren(
+    node('h3', 'Saved to Zetaris'),
+    node('p', 'Recommendation and decision readback verified.', 'mode'),
+    node(
+      'p',
+      `${modes[record.source_mode]} · ${record.account_id} · ${record.region} · ${record.instance_id}`,
+    ),
+    node(
+      'p',
+      `${human(event.kind)} by ${event.actor} · ${record.recorded_at_utc}`,
+    ),
+    node('p', event.reason),
+    ...(event.kind === 'deferred'
+      ? [node('p', `Review due: ${event.review_at}`)]
+      : []),
+    node('p', 'No infrastructure change was executed.', 'hint'),
+    disclosure('Zetaris storage receipt', [
+      facts({
+        recommendation_record_id: receipt.recommendation.record.record_id,
+        decision_record_id: record.record_id,
+        investigation_id: record.investigation_id,
+      }),
+      downloadButton(receipt, 'zetaris-decision-receipt.json'),
+    ]),
+  );
+}
+$('decision-choice').addEventListener('change', () => {
+  const deferred = $('decision-choice').value === 'deferred';
+  $('decision-review-field').hidden = !deferred;
+  $('decision-review').required = deferred;
+});
+$('decision-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (submitted || currentJob?.status === 'running') return;
+  const target = decisionTarget();
+  if (!target || !$('decision-form').reportValidity()) return;
+  const decision = {
+    kind: $('decision-choice').value,
+    actor: $('decision-actor').value.trim(),
+    reason: $('decision-reason').value.trim(),
+  };
+  if (!decision.reason) {
+    showToast('Enter a reason for your decision.');
+    return;
+  }
+  if (decision.kind === 'deferred') {
+    const date = new Date(`${$('decision-review').value}Z`);
+    if (!Number.isFinite(+date) || +date <= Date.now()) {
+      showToast('Choose a future UTC review date.');
+      $('decision-review').focus();
+      return;
+    }
+    decision.review_at = date.toISOString();
+  }
+  $('decision-receipt').replaceChildren();
+  await submitRun({
+    request_id: crypto.randomUUID(),
+    kind: 'decision',
+    real_services: true,
+    allow_append: $('decision-ack').checked,
+    report: target.report,
+    instance_id: target.candidate.instance_id,
+    decision,
+  });
+});
 function renderEvents(events) {
   const root = $('run-events');
+  root.closest('.event-panel').hidden = events.length === 0;
   const statuses = {
     ok: ['✓', 'event-ok', 'Complete'],
     no_match: ['○', 'event-neutral', 'No match'],
@@ -1033,7 +1162,11 @@ function renderEvents(events) {
       const line = node('div', undefined, 'event-leaf');
       if (step) line.append(node('span', `${step[1]}. `, 'event-step'));
       const parts = (step ? step[2] : entry).split(' · ');
-      for (const [index, part] of parts.entries()) {
+      const metadata = parts.filter((part) =>
+        /^(trace_id|confidence|retry_count)=/.test(part),
+      );
+      const visible = parts.filter((part) => !metadata.includes(part));
+      for (const [index, part] of visible.entries()) {
         if (index) line.append(document.createTextNode(' · '));
         if (Object.hasOwn(statuses, part)) {
           const status = statuses[part];
@@ -1042,6 +1175,11 @@ function renderEvents(events) {
           );
         } else line.append(document.createTextNode(part));
       }
+      if (metadata.length)
+        line.append(
+          document.createTextNode(' '),
+          info('Trace metadata', metadata.join(' · ')),
+        );
       children.append(line);
     }
     branch.append(heading, children);
@@ -1052,22 +1190,35 @@ function renderEvents(events) {
 function paintJob(job) {
   if (!job) {
     currentJob = null;
+    $('decision-fields').disabled = submitted || !decisionTarget();
+    $('run-state').hidden = true;
+    $('cancel-run').hidden = true;
+    $('view-last-result').hidden = true;
+    renderEvents([]);
+    $('run-events').dataset.events = '[]';
     runButtons.forEach((id) => {
-      $(id).disabled = submitted;
+      $(id).disabled =
+        submitted || (id === 'save-decision' && !decisionTarget());
     });
     return;
   }
   currentJob = job;
   $('run-state').hidden = false;
   const running = job.status === 'running';
+  $('decision-fields').disabled = running || submitted || !decisionTarget();
   runButtons.forEach((id) => {
-    $(id).disabled = running || submitted;
+    $(id).disabled =
+      running || submitted || (id === 'save-decision' && !decisionTarget());
   });
   $('cancel-run').hidden = !running;
   $('view-last-result').hidden = job.status !== 'complete' || !job.result;
-  $('run-status').textContent =
-    `${human(job.kind)} · ${job.status}${job.error ? ` — ${job.error}` : ''}${running && job.events.length ? ` · ${job.events.at(-1)}` : ''}`;
-  renderEvents(job.events);
+  const status = `${human(job.kind)} · ${job.status}${job.error ? ` — ${job.error}` : ''}${running ? ` · ${job.activity || job.events.at(-1) || 'Starting worker…'}` : ''}`;
+  if ($('run-status').textContent !== status)
+    $('run-status').textContent = status;
+  if (JSON.stringify(job.events) !== $('run-events').dataset.events) {
+    renderEvents(job.events);
+    $('run-events').dataset.events = JSON.stringify(job.events);
+  }
   if (
     job.status === 'complete' &&
     job.result &&
@@ -1075,21 +1226,28 @@ function paintJob(job) {
   ) {
     appliedJob = job.request_id;
     if (job.kind === 'investigate') showReport(job.result);
-    else if (job.kind === 'learn') {
+    else if (job.kind === 'decision') {
+      renderDecisionReceipt(job.result);
+      setFollowupDemo(false);
+      showView('followup');
+    } else if (job.kind === 'learn') {
       renderLearning(job.result);
       showView('learn');
     } else {
       renderFollowup(job.result);
+      setFollowupDemo(true);
       showView('followup');
     }
     const complete =
       job.kind === 'investigate'
         ? job.result.completion_status === 'complete'
-        : job.result.passed;
+        : job.kind === 'decision' || job.result.passed;
     $('run-status').textContent =
       job.kind === 'investigate' && job.result.completion_status === 'failed'
         ? `Investigate · Failed — ${human(job.result.stop_reason)}; inspect discovery gaps`
-        : `${human(job.kind)} · ${complete ? 'Finished' : 'Finished with incomplete or failed checks — inspect the result'}`;
+        : job.kind === 'decision'
+          ? 'Saved to Zetaris — recommendation and decision readback verified'
+          : `${human(job.kind)} · ${complete ? 'Finished' : 'Finished with incomplete or failed checks — inspect the result'}`;
   }
 }
 async function pollJob() {
@@ -1144,9 +1302,15 @@ async function startRun(kind) {
       (kind === 'investigate' && $('investigate-history').checked)) &&
     !real
   ) {
-    $('run-state').hidden = false;
-    $('run-status').textContent =
-      'Select the explicit real-service acknowledgment before running this action.';
+    showToast(
+      'Select the explicit real-service acknowledgment before running this action.',
+    );
+    const acknowledgment = $(
+      kind === 'followup' ? 'append-ack' : 'real-investigate',
+    );
+    const details = acknowledgment.closest('details');
+    if (details) details.open = true;
+    acknowledgment.focus();
     return;
   }
   let ownerEvidence;
@@ -1181,12 +1345,6 @@ async function startRun(kind) {
       },
     ];
   }
-  submitted = true;
-  runButtons.forEach((id) => {
-    $(id).disabled = true;
-  });
-  $('run-state').hidden = false;
-  $('run-status').textContent = 'Starting…';
   const body = {
     request_id: crypto.randomUUID(),
     ...(ownerEvidence ? { owner_evidence: ownerEvidence } : {}),
@@ -1208,6 +1366,20 @@ async function startRun(kind) {
     allow_append: kind === 'followup' && $('append-ack').checked,
     history: kind === 'investigate' && $('investigate-history').checked,
   };
+  await submitRun(body);
+}
+async function submitRun(body) {
+  submitted = true;
+  runButtons.forEach((id) => {
+    $(id).disabled = true;
+  });
+  $('decision-fields').disabled = true;
+  $('run-state').hidden = false;
+  $('run-status').textContent = 'Starting…';
+  $('cancel-run').hidden = true;
+  $('view-last-result').hidden = true;
+  renderEvents([]);
+  $('run-events').dataset.events = '[]';
   try {
     const response = await fetch('/api/run', {
       method: 'POST',
@@ -1217,7 +1389,8 @@ async function startRun(kind) {
     });
     const result = await response.json();
     if (!response.ok) {
-      $('run-status').textContent = result.error;
+      paintJob(currentJob);
+      showToast(result.error);
       return;
     }
     paintJob(result);
@@ -1228,8 +1401,12 @@ async function startRun(kind) {
     polling = setTimeout(pollJob, 500);
   } finally {
     submitted = false;
+    $('decision-fields').disabled =
+      currentJob?.status === 'running' || !decisionTarget();
     runButtons.forEach((id) => {
-      $(id).disabled = currentJob?.status === 'running';
+      $(id).disabled =
+        currentJob?.status === 'running' ||
+        (id === 'save-decision' && !decisionTarget());
     });
   }
 }
@@ -1250,7 +1427,9 @@ $('view-last-result').addEventListener('click', () => {
   paintJob(currentJob);
 });
 $('cancel-run').addEventListener('click', async () => {
-  if (!currentJob) return;
+  if (currentJob?.status !== 'running') return;
+  $('cancel-run').disabled = true;
+  $('cancel-run').textContent = 'Stopping…';
   try {
     const response = await fetch('/api/cancel', {
       method: 'POST',
@@ -1263,6 +1442,9 @@ $('cancel-run').addEventListener('click', async () => {
   } catch {
     $('run-status').textContent =
       'Stop could not be confirmed. Reconnecting; no new action was submitted.';
+  } finally {
+    $('cancel-run').disabled = false;
+    $('cancel-run').textContent = 'Stop run';
   }
   polling = setTimeout(pollJob, 500);
 });
@@ -1272,7 +1454,9 @@ fetch('/api/config')
     $('service-status').textContent =
       `Model configuration: ${config.model ? 'present, unverified' : 'missing or invalid'}. Zetaris history: ${config.zetaris ? 'configured, unverified' : 'missing'}. AWS uses the server credential chain; the account ID is a scope check.`;
     $('followup-config').textContent =
-      `Zetaris configuration: ${config.zetaris ? 'present, unverified' : 'missing'}. Server append opt-in: ${config.zetaris_append ? 'enabled' : 'disabled'}. Configure server .env and restart if needed.`;
+      config.zetaris && config.zetaris_append
+        ? 'Zetaris is configured for saving decisions. Connectivity is verified when you save.'
+        : 'Zetaris saving is unavailable: configure history credentials, history table and append opt-in in server .env, then restart.';
   })
   .catch(() => {
     $('service-status').textContent = 'Could not read configuration status.';

@@ -11,25 +11,75 @@ import {
   validateScope,
   validateOwnerEvidence,
   type OwnerEvidence,
+  type InvestigationReport,
+  object,
 } from '../src/contracts.ts';
+import { prepareDecision } from '../src/investigation/follow-up.ts';
 import { INVESTIGATION_TIMEOUT_MS } from '../src/investigation/limits.ts';
 import { modelConfigFromEnv } from '../src/config.ts';
 
-export type DemoRun = {
+export type DecisionRun = {
   request_id: string;
-  kind: 'investigate' | 'learn' | 'followup';
-  planner: 'scripted' | 'model';
-  real_services: boolean;
-  allow_append: boolean;
-  history: boolean;
-  evidence: 'mock' | 'aws';
-  scenario: 'A' | 'B' | 'C' | 'mixed' | 'missing';
-  account: string;
-  region: string;
-  max_candidates: number;
-  owner_evidence?: OwnerEvidence[];
+  kind: 'decision';
+  real_services: true;
+  allow_append: true;
+  report: InvestigationReport;
+  instance_id: string;
+  decision: {
+    kind: 'accepted' | 'deferred';
+    actor: string;
+    reason: string;
+    review_at?: string;
+  };
 };
+export type DemoRun =
+  | DecisionRun
+  | {
+      request_id: string;
+      kind: 'investigate' | 'learn' | 'followup';
+      planner: 'scripted' | 'model';
+      real_services: boolean;
+      allow_append: boolean;
+      history: boolean;
+      evidence: 'mock' | 'aws';
+      scenario: 'A' | 'B' | 'C' | 'mixed' | 'missing';
+      account: string;
+      region: string;
+      max_candidates: number;
+      owner_evidence?: OwnerEvidence[];
+    };
 export function validateDemoRun(value: unknown): DemoRun {
+  if (object(value).kind === 'decision') {
+    const o = exact(value, [
+      'request_id',
+      'kind',
+      'real_services',
+      'allow_append',
+      'report',
+      'instance_id',
+      'decision',
+    ]);
+    if (o.real_services !== true || o.allow_append !== true)
+      throw new Error(
+        'Decision storage requires explicit Zetaris write acknowledgment',
+      );
+    const instance_id = identifier(o.instance_id);
+    const { report, event } = prepareDecision(
+      o.report as InvestigationReport,
+      instance_id,
+      o.decision,
+    );
+    const { recommendation_record_id: _recordId, ...decision } = event;
+    return {
+      request_id: identifier(o.request_id),
+      kind: 'decision',
+      real_services: true,
+      allow_append: true,
+      report,
+      instance_id,
+      decision,
+    };
+  }
   const o = exact(value, [
     'request_id',
     'kind',
@@ -125,10 +175,11 @@ export type DemoJob = {
   started_at: string;
   finished_at?: string;
   events: string[];
+  activity?: string;
   result?: unknown;
   error?: string;
 };
-/** One isolated worker at a time; never retry external effects after uncertainty. */
+/** One isolated worker at a time; planner retries never rerun tools or history writes. */
 export class DemoJobs {
   current: DemoJob | null = null;
   private child?: ChildProcess;
@@ -143,11 +194,14 @@ export class DemoJobs {
     }
     if (this.child) throw new Error('demo_busy');
     const config = demoConfiguration();
-    if (run.planner === 'model' && !config.model)
+    if (run.kind !== 'decision' && run.planner === 'model' && !config.model)
       throw new Error('demo_model_not_configured');
-    if (run.kind === 'followup' && (!config.zetaris || !config.zetaris_append))
+    if (
+      (run.kind === 'followup' || run.kind === 'decision') &&
+      (!config.zetaris || !config.zetaris_append)
+    )
       throw new Error('demo_zetaris_not_configured');
-    if (run.history && !config.zetaris)
+    if (run.kind !== 'decision' && run.history && !config.zetaris)
       throw new Error('demo_zetaris_history_not_configured');
     const job: DemoJob = {
       request_id: run.request_id,
@@ -189,7 +243,7 @@ export class DemoJobs {
           'Demo deadline exceeded. External writes may have completed; inspect history before a new attempt.',
           'failed',
         ),
-      run.kind === 'followup'
+      run.kind === 'followup' || run.kind === 'decision'
         ? 180_000
         : run.planner === 'model'
           ? run.kind === 'investigate'
@@ -200,15 +254,32 @@ export class DemoJobs {
     child.on('message', (message: unknown) => {
       if (job.status !== 'running' || !message || typeof message !== 'object')
         return;
-      const m = message as { type?: string; text?: unknown; result?: unknown };
-      if (m.type === 'progress' && typeof m.text === 'string') {
-        job.events.push(m.text.slice(0, 500));
-        if (job.events.length > 160) job.events.shift();
+      const m = message as {
+        type?: string;
+        text?: unknown;
+        result?: unknown;
+        code?: unknown;
+      };
+      if (
+        (m.type === 'progress' || m.type === 'activity') &&
+        typeof m.text === 'string'
+      ) {
+        job.activity = m.text.slice(0, 500);
+        if (m.type === 'progress') {
+          job.events.push(job.activity);
+          if (job.events.length > 160) job.events.shift();
+        }
       } else if (m.type === 'result') {
         job.result = m.result;
       } else if (m.type === 'failure')
         stop(
-          'Demo failed. No fallback or automatic retry was used. Inspect retained progress before retrying; external writes may have completed.',
+          run.kind === 'decision'
+            ? m.code === 'follow_up_decision_conflict'
+              ? 'A different decision is already stored for this recommendation. Existing decisions cannot be overwritten.'
+              : m.code === 'follow_up_date_invalid'
+                ? 'The review date must still be in the future when saving.'
+                : 'Zetaris save could not be verified. Records may already exist; inspect history before trying again. No automatic retry was made.'
+            : 'Demo failed. Inspect retained progress and planner retry attempts before starting a new run; external writes may have completed.',
           'failed',
         );
     });
@@ -224,7 +295,7 @@ export class DemoJobs {
           code === 0 && job.result !== undefined ? 'complete' : 'failed';
         if (job.status === 'failed')
           job.error =
-            'Demo worker exited without a complete result. No retry was attempted.';
+            'Demo worker exited without a complete result. Inspect retained progress before starting a new run.';
         job.finished_at = new Date().toISOString();
       }
     });

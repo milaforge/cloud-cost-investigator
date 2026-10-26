@@ -834,6 +834,17 @@
   progress callback; the browser polls the existing job. Avoid rebuilding an
   unchanged event tree so keyboard focus and tooltip state survive polling.
 
+## Rejected demo starts remain idle (2026-10-25)
+
+- Missing real-service acknowledgment is a validation error, not a job. Use the
+  existing toast and focus the acknowledgment; never reveal active-job controls
+  to report validation failures. Stop is meaningful only for a confirmed running
+  job; hide empty execution events and clear stale controls during submission.
+- A server-rejected start restores the actual job state. Stop requests display
+  pending feedback while awaiting confirmation. Preserve explicit history-write
+  acknowledgment; UI fixes never bypass it or start remote follow-through writes.
+
+
 ## Trace metadata and evidence retries (2026-10-25)
 
 - User correction: trace metadata is required, not optional quality-bar decoration. The old omission was intentional to avoid invented certainty/counters; it is superseded for newly captured runs. Create the investigation ID at run start, attach it as `trace_id` on every trace entry, and identify entries by `(trace_id, step)`.
@@ -841,3 +852,26 @@
 - The executor owns up to three retries after an initial failed read-only provider call, with identical validated arguments and 2s/4s/8s backoff plus positive jitter. Retain every failed trace; only the final response enters the registry so outages cannot shadow recovered evidence. Returned error/unavailable and thrown failures/timeouts retry; malformed/out-of-scope data and cancellation remain terminal. Partial/no-match remain meaningful successful responses.
 - Count every physical provider call, including retries. Allow up to eight discovery attempts for its two logical tools; allow twelve physical attempts for the three candidate tools, preserving existing planner/runtime caps. Budgets and finalization reserve may stop retries sooner. Planner retries remain separately bounded and never cause tool replay. Uncertain historical writes are not retry-safe and remain excluded.
 - This supersedes the earlier immediate-discovery-stop and no-tool-retry decisions only for bounded same-tool recovery. Exhausted discovery still stops before another model decision or different evidence tool. No new production dependency or AWS write permission is needed.
+
+## Explicit engineer decisions in the web UI (2026-10-25)
+
+- A scripted fictional decision does not capture the engineer's intent. Make the
+  actual Accept/Defer form primary and keep the seven-record demonstration in a
+  separate disclosure. Do not preselect a decision or reuse acknowledgment when
+  the selected recommendation changes.
+- Reuse `prepareDecision` for side-effect-free validation and `recordDecision`
+  for append/readback; the browser must not own history identifiers or SQL.
+  Complete conditional recommendations alone are eligible. Engineer attribution
+  is not authenticated authority and acceptance never executes infrastructure.
+- Clearly label real Zetaris storage separately from synthetic evidence. Claim
+  success only after both recommendation and decision readback, with downloadable
+  record IDs. Preserve immutable decisions and ambiguous-write failure semantics;
+  do not automatically retry remote writes. Reviews/outcomes remain in the CLI.
+
+## Follow-through mode choice (2026-10-25)
+
+- The user requested a single **Demo** checkbox instead of displaying the actual
+  investigation form alongside the fictional illustration. Default unchecked;
+  expose only the selected mode. Toggling changes presentation only and clears
+  write acknowledgments. The recommendation CTA always opens investigation mode.
+  The existing demo still requires explicit retained-record acknowledgment and Run.

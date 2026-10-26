@@ -8,13 +8,15 @@ import { validateReport } from '../src/investigation/report.ts';
 import { demonstrateWarmLearning } from './demo-warm.ts';
 import { demonstrateFollowUps } from './demo-follow-up.ts';
 import { validateDemoRun } from './demo-web-jobs.ts';
+import { recordDecision } from '../src/investigation/follow-up.ts';
 
 let completed = false;
 process.once('disconnect', () => {
   if (!completed) process.exit(1);
 });
 
-const progress = (text: string) => process.send?.({ type: 'progress', text });
+const progress = (text: string, activity = false) =>
+  process.send?.({ type: activity ? 'activity' : 'progress', text });
 process.once('message', async (value) => {
   try {
     const run = validateDemoRun(value);
@@ -23,7 +25,32 @@ process.once('message', async (value) => {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
     }
     let result: unknown;
-    if (run.kind === 'learn') {
+    if (run.kind === 'decision') {
+      progress(
+        'Saving your recommendation and decision to Zetaris; verifying readback. No infrastructure changes.',
+      );
+      const started = Date.now();
+      const heartbeat = setInterval(
+        () =>
+          progress(
+            `Saving to Zetaris and verifying stored records · ${Math.floor((Date.now() - started) / 1000)}s elapsed`,
+            true,
+          ),
+        2000,
+      );
+      try {
+        result = await recordDecision(
+          run.report,
+          run.instance_id,
+          run.decision,
+        );
+        progress(
+          'Saved to Zetaris: recommendation and decision readback verified.',
+        );
+      } finally {
+        clearInterval(heartbeat);
+      }
+    } else if (run.kind === 'learn') {
       progress(
         `Evidence: synthetic · Planner: ${run.planner} · H-MEM: real temporary local storage · Zetaris: disabled`,
       );
@@ -68,7 +95,7 @@ process.once('message', async (value) => {
             ? { limits: { tool_timeout_ms: 25000 } }
             : {}),
           onProgress(event) {
-            if (event.event !== 'activity') progress(progressText(event));
+            progress(progressText(event), event.event === 'activity');
           },
         }),
       );
@@ -95,8 +122,15 @@ process.once('message', async (value) => {
       completed = true;
       process.disconnect();
     });
-  } catch {
-    process.send?.({ type: 'failure' }, undefined, undefined, () => {
+  } catch (error) {
+    const code =
+      error instanceof Error &&
+      ['follow_up_decision_conflict', 'follow_up_date_invalid'].includes(
+        error.message,
+      )
+        ? error.message
+        : undefined;
+    process.send?.({ type: 'failure', code }, undefined, undefined, () => {
       completed = true;
       process.exitCode = 1;
       process.disconnect();
