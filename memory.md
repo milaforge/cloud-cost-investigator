@@ -1,5 +1,10 @@
 # Project Memory
 
+## New Live investigation presentation (2026-10-26)
+
+- Clear the selected Live report and its related learning/decision context when the server accepts a new investigation. The result then belongs to the new run; retaining the prior report beside current progress can misattribute evidence or decisions.
+- Keep the previous report through client and server validation failures, since no new investigation has started.
+
 ## Follow-through save action (2026-10-26)
 
 - The operator's **Save decision to Zetaris** click is the browser's explicit authorization for a scoped historical append. Do not require a second checkbox; send `allow_append: true` only with that Live decision submission. Investigation runs keep `allow_append: false`.

@@ -1,5 +1,11 @@
 # Cloud Cost Investigator — Execution Plan (Milad + Zayan)
 
+## Live investigation result reset — 2026-10-26
+
+- **Gate/owner/slice:** Days 3–4 web flow, Milad. An accepted new Live investigation clears the selected previous report, loaded-result control and related learning/decision context before displaying the new job. A rejected start preserves the prior report.
+- **Proof:** `node --import tsx --test --test-isolation=none tests/demo-web-ui.test.ts` passed 12/12, including accepted and rejected starts with an existing result. `npx biome check src/web/app.js tests/demo-web-ui.test.ts` and `npm run typecheck` passed.
+- **Mode/next:** isolated browser DOM fixture only; no live AWS/model/Zetaris run or browser layout proof. Restart `npm start` to load the UI change; broader live and release gates remain open.
+
 ## Follow-through Zetaris save default — 2026-10-26
 
 - **Gate/owner/slice:** Days 3–4 Follow through UI, Milad. The user directed removal of the separate Zetaris storage checkbox. Submitting **Save decision to Zetaris** now sends the previously checked `allow_append: true` with the selected Live report and validated decision; investigation requests still send `false`. The server's append configuration, scoped validation and readback stay in place.

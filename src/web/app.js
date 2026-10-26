@@ -1412,6 +1412,16 @@ async function submitRun(body) {
       ).focus();
       return;
     }
+    if (body.kind === 'investigate') {
+      delete reports.loaded;
+      active = null;
+      candidateIndex = 0;
+      $('loaded').hidden = true;
+      if ($('evidence').open) $('evidence').close();
+      updateText('message', '');
+      showView('investigate');
+      render();
+    }
     paintJob(result);
     polling = setTimeout(pollJob, 100);
   } catch {

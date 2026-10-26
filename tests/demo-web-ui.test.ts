@@ -481,6 +481,10 @@ test('Live tabs expose operations and report context while excluding every demo 
 test('Run investigation reports configuration errors without presenting a running job', async () => {
   const p = page();
   p.mode('live');
+  const previous = (await generateDemoReports()).A;
+  p.context.previous = { ...previous, integration_mode: 'live' };
+  p.run('showReport(previous)');
+  assert.equal(p.run('active'), 'loaded');
   p.context.fetch = async () => ({
     ok: false,
     json: async () => ({
@@ -496,6 +500,12 @@ test('Run investigation reports configuration errors without presenting a runnin
   assert.equal(p.get('run-state').visible, false);
   assert.equal(p.get('cancel-run').visible, false);
   assert.equal(p.get('run-events').closest('.event-panel')?.visible, false);
+  assert.equal(
+    p.run('active'),
+    'loaded',
+    'rejected start preserves the result',
+  );
+  assert.equal(p.get('loaded').visible, true);
   assert.equal(p.get('run-investigate'), p.run('document.activeElement'));
   p.get('dismiss-toast').listeners.click();
   assert.equal(p.get('run-investigate'), p.run('document.activeElement'));
@@ -510,6 +520,11 @@ test('Run investigation reports configuration errors without presenting a runnin
     }),
   });
   await p.get('run-investigate').listeners.click();
+  assert.equal(p.run('active'), null, 'accepted run clears the prior result');
+  assert.equal(p.run('reports.loaded'), undefined);
+  assert.equal(p.get('loaded').visible, false);
+  assert.equal(p.get('report').children[0].className, 'empty-report');
+  assert.equal(p.get('view-learn').visible, false);
   assert.equal(p.get('run-state').visible, true);
   assert.equal(p.get('cancel-run').visible, true);
   assert.equal(p.get('run-investigate').textContent, 'Investigating…');
