@@ -1,0 +1,61 @@
+{
+  "captured_at": "2026-10-26T06:02:21.592Z",
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "evidence_mode": "mock",
+  "planner_mode": "live",
+  "note": "Demo UI account/region with fictional resources and synthetic AWS evidence. B injects three operations exceptions. No history configured. All runs retained, including failures.",
+  "runs": [
+    {
+      "scenario": "A",
+      "service": "staging-api",
+      "instance_id": "i-0a17c9e2b4d680f31",
+      "trace_id": "388dce8b-aaa2-4dad-98dd-15bac5b3cc0d",
+      "completion_status": "complete",
+      "verdict": "conditional_recommendation",
+      "budget": {
+        "discovery_attempts": 2,
+        "candidate_attempts": 3,
+        "planner_calls": 6,
+        "elapsed_ms": 35605
+      },
+      "failure_codes": []
+    },
+    {
+      "scenario": "B",
+      "service": "finance-batch",
+      "instance_id": "i-07b3d8a91e6c204f5",
+      "trace_id": "e81b9d50-d793-4bc9-a9f6-4c815cf38db4",
+      "completion_status": "complete",
+      "verdict": "not_recommended",
+      "budget": {
+        "discovery_attempts": 2,
+        "candidate_attempts": 5,
+        "planner_calls": 7,
+        "elapsed_ms": 53385
+      },
+      "failure_codes": [
+        "model_http_500",
+        "model_http_500"
+      ]
+    },
+    {
+      "scenario": "C",
+      "service": "orders-worker",
+      "instance_id": "i-0c92e5f714a3b680d",
+      "trace_id": "8accfe7c-c27c-47ba-820f-a953ee20001e",
+      "completion_status": "complete",
+      "verdict": "not_recommended",
+      "budget": {
+        "discovery_attempts": 2,
+        "candidate_attempts": 3,
+        "planner_calls": 9,
+        "elapsed_ms": 192607
+      },
+      "failure_codes": [
+        "planner_timeout",
+        "model_http_500",
+        "model_http_500"
+      ]
+    }
+  ]
+}

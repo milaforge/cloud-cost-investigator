@@ -1,0 +1,66 @@
+{
+  "captured_at": "2026-10-26T05:42:23.927Z",
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "evidence_mode": "mock",
+  "planner_mode": "live",
+  "note": "Fictional AWS-shaped resources. B injects three operations exceptions. No history configured. All runs retained, including failures.",
+  "runs": [
+    {
+      "scenario": "A",
+      "service": "staging-api",
+      "instance_id": "i-0a17c9e2b4d680f31",
+      "trace_id": "e8714fe6-4f8f-4df7-9db9-ef9d54885cd0",
+      "completion_status": "failed",
+      "verdict": null,
+      "budget": {
+        "discovery_attempts": 0,
+        "candidate_attempts": 0,
+        "planner_calls": 3,
+        "elapsed_ms": 6800
+      },
+      "failure_codes": [
+        "model_transport_unavailable",
+        "model_transport_unavailable",
+        "model_transport_unavailable"
+      ]
+    },
+    {
+      "scenario": "B",
+      "service": "finance-batch",
+      "instance_id": "i-07b3d8a91e6c204f5",
+      "trace_id": "d38c18d7-6115-4d90-87de-3c1a80cbf4aa",
+      "completion_status": "failed",
+      "verdict": null,
+      "budget": {
+        "discovery_attempts": 0,
+        "candidate_attempts": 0,
+        "planner_calls": 3,
+        "elapsed_ms": 6985
+      },
+      "failure_codes": [
+        "model_transport_unavailable",
+        "model_transport_unavailable",
+        "model_transport_unavailable"
+      ]
+    },
+    {
+      "scenario": "C",
+      "service": "orders-worker",
+      "instance_id": "i-0c92e5f714a3b680d",
+      "trace_id": "1e61fda9-14ee-434e-ac6f-c4a02b0ddc73",
+      "completion_status": "failed",
+      "verdict": null,
+      "budget": {
+        "discovery_attempts": 0,
+        "candidate_attempts": 0,
+        "planner_calls": 3,
+        "elapsed_ms": 6488
+      },
+      "failure_codes": [
+        "model_transport_unavailable",
+        "model_transport_unavailable",
+        "model_transport_unavailable"
+      ]
+    }
+  ]
+}

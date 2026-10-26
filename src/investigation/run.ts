@@ -1,9 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import {
-  INVESTIGATION_TIMEOUT_MS,
-  REPORT_FINALIZATION_RESERVE_MS,
-} from './limits.ts';
-import {
   type Action,
   type BillingData,
   type CandidateReport,
@@ -12,23 +8,27 @@ import {
   type InvestigationRequest,
   type MetricsData,
   type Observation,
+  type OwnerEvidence,
   type PlannerFailureCode,
   type ToolAction,
   type TraceEntry,
   traceConfidence,
   validateAction,
   validateObservation,
-  validateRequest,
   validateOwnerEvidence,
-  type OwnerEvidence,
+  validateRequest,
 } from '../contracts.ts';
 import {
   type HistoryHint,
   type HistoryOptions,
   InvestigationHistory,
 } from './history.ts';
+import {
+  INVESTIGATION_TIMEOUT_MS,
+  REPORT_FINALIZATION_RESERVE_MS,
+} from './limits.ts';
+import { assessOperationalCheck, lessonTool } from './memory.ts';
 import type { CurrentEvidenceProvider } from './mock.ts';
-import { ModelHttpError } from './provider-error.ts';
 import {
   MODEL_PLANNER_TIMEOUT_MS,
   type Planner,
@@ -36,14 +36,14 @@ import {
 } from './planner.ts';
 import {
   assessScheduling,
-  schedulingConflict,
-  schedulingProof,
   calculateSavings,
   rankCandidates,
   sameSchedule,
+  schedulingConflict,
+  schedulingProof,
 } from './policy.ts';
+import { ModelHttpError } from './provider-error.ts';
 import { validateReport } from './report.ts';
-import { assessOperationalCheck, lessonTool } from './memory.ts';
 
 export interface PlannerState {
   request: InvestigationRequest;
@@ -244,6 +244,7 @@ export async function runInvestigation(
     extra: Partial<TraceEntry> = {},
   ) => {
     const entry: TraceEntry = {
+      timestamp: new Date().toISOString(),
       trace_id: investigation_id,
       confidence: traceConfidence(
         extra.failure_code ? 'error' : extra.status,

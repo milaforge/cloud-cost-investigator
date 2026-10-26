@@ -1,18 +1,11 @@
 import {
-  schedulingConflict,
-  schedulingProof,
-  calculateSavings,
-  rankCandidates,
-  sameSchedule,
-} from './policy.ts';
-import {
   type Action,
   array,
   bool,
   type CandidateReport,
   exact,
-  type Hypothesis,
   type HistoricalComparison,
+  type Hypothesis,
   type InvestigationReport,
   identifier,
   integer,
@@ -21,17 +14,24 @@ import {
   type Schedule,
   type ToolAction,
   type TraceEntry,
-  traceConfidence,
   textValue,
+  traceConfidence,
   utc,
   validateAction,
   validateObservation,
+  validateOwnerEvidence,
+  validatePlannerFailureCode,
   validateRequest,
   validateSchedule,
   validateScope,
-  validatePlannerFailureCode,
-  validateOwnerEvidence,
 } from '../contracts.ts';
+import {
+  calculateSavings,
+  rankCandidates,
+  sameSchedule,
+  schedulingConflict,
+  schedulingProof,
+} from './policy.ts';
 
 const strings = (value: unknown) => array(value, 100).map((v) => textValue(v));
 const ids = (value: unknown) => {
@@ -110,6 +110,7 @@ function candidate(value: unknown): CandidateReport {
 
 function traceEntry(value: unknown, investigation_id: string): TraceEntry {
   const t = exact(value, [
+    'timestamp',
     'trace_id',
     'confidence',
     'retry_count',
@@ -127,6 +128,7 @@ function traceEntry(value: unknown, investigation_id: string): TraceEntry {
   if (!legacy && metadata.some((v) => v === undefined))
     throw new Error('Incomplete trace metadata');
   const entry: TraceEntry = {
+    timestamp: t.timestamp == null ? null : utc(t.timestamp),
     trace_id: legacy ? investigation_id : identifier(t.trace_id),
     confidence: legacy
       ? 'unassessed'
@@ -436,8 +438,19 @@ export function validateReport(value: unknown): InvestigationReport {
   }[] = [];
   const toolRetries = new Map<string, TraceEntry>();
   let plannerRetries = 0;
+  let previousTimestamp = started_at;
   for (let i = 0; i < trace.length; i++) {
     const t = trace[i];
+    if (t.timestamp != null) {
+      if (
+        Date.parse(t.timestamp) < Date.parse(previousTimestamp) ||
+        Date.parse(t.timestamp) > Date.parse(finished_at)
+      )
+        throw new Error(
+          'Trace timestamp outside ordered investigation interval',
+        );
+      previousTimestamp = t.timestamp;
+    }
     if (t.trace_id !== investigation_id) throw new Error('Trace ID mismatch');
     if (t.retry_count !== null) {
       const expectedConfidence = traceConfidence(
@@ -842,7 +855,7 @@ export function renderReport(value: InvestigationReport): string {
       `${t.step}. ${t.phase}${t.status ? ` (${t.status})` : ''}${t.failure_code ? ` [${t.failure_code}]` : ''}: ${t.reason} ${citations(t.evidence_ids)}${t.provider_error ? ` Provider: ${t.provider_error.body}${t.provider_error.truncated ? ' [truncated]' : ''}` : ''}`,
     );
     lines.push(
-      `  trace_id=${t.trace_id}; confidence=${t.confidence}; retry_count=${t.retry_count ?? 'unknown'}`,
+      `  timestamp=${t.timestamp ?? 'unknown'}; trace_id=${t.trace_id}; confidence=${t.confidence}; retry_count=${t.retry_count ?? 'unknown'}`,
     );
     if (t.action) lines.push(`  Validated action: ${JSON.stringify(t.action)}`);
   }

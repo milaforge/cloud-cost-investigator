@@ -1,0 +1,98 @@
+{
+  "investigation_id": "e8714fe6-4f8f-4df7-9db9-ef9d54885cd0",
+  "goal": "evaluate_ec2_off_hours_scheduling",
+  "request": {
+    "account_id": "123456789012",
+    "region": "us-east-1",
+    "window": {
+      "from": "2026-09-28T00:00:00Z",
+      "to": "2026-10-26T00:00:00Z"
+    },
+    "max_candidates": 1
+  },
+  "started_at": "2026-10-26T05:42:03.653Z",
+  "finished_at": "2026-10-26T05:42:10.453Z",
+  "completion_status": "failed",
+  "integration_mode": "mock",
+  "planner": {
+    "mode": "live",
+    "model": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+  },
+  "discovery": {
+    "discovered_count": 0,
+    "candidate_limit": 1,
+    "gaps": []
+  },
+  "candidates": [],
+  "evidence": [],
+  "trace": [
+    {
+      "trace_id": "e8714fe6-4f8f-4df7-9db9-ef9d54885cd0",
+      "confidence": "insufficient",
+      "retry_count": 0,
+      "step": 1,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "model_transport_unavailable"
+    },
+    {
+      "trace_id": "e8714fe6-4f8f-4df7-9db9-ef9d54885cd0",
+      "confidence": "insufficient",
+      "retry_count": 1,
+      "step": 2,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "model_transport_unavailable"
+    },
+    {
+      "trace_id": "e8714fe6-4f8f-4df7-9db9-ef9d54885cd0",
+      "confidence": "insufficient",
+      "retry_count": 2,
+      "step": 3,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "model_transport_unavailable"
+    },
+    {
+      "trace_id": "e8714fe6-4f8f-4df7-9db9-ef9d54885cd0",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 4,
+      "phase": "evaluator",
+      "reason": "Planner stopped: retry or call budget exhausted. Retaining completed evidence; unresolved safety remains unknown.",
+      "evidence_ids": []
+    },
+    {
+      "trace_id": "e8714fe6-4f8f-4df7-9db9-ef9d54885cd0",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 5,
+      "phase": "finish",
+      "reason": "planner_unavailable_or_invalid",
+      "evidence_ids": []
+    }
+  ],
+  "historical_context": {
+    "zetaris": "not_configured",
+    "hmem": "not_configured",
+    "comparisons": [],
+    "context_ids": [],
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts."
+    ]
+  },
+  "budget": {
+    "discovery_attempts": 0,
+    "candidate_attempts": 0,
+    "planner_calls": 3,
+    "elapsed_ms": 6800
+  },
+  "limitations": [
+    "Conditional scheduling requires human approval. Savings are estimates for the UTC calendar month following the observation window, not all-in invoice reductions.",
+    "The configured live model is not independently verified as event-approved."
+  ],
+  "stop_reason": "planner_unavailable_or_invalid"
+}

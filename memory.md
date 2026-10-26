@@ -875,3 +875,14 @@
   expose only the selected mode. Toggling changes presentation only and clears
   write acknowledgments. The recommendation CTA always opens investigation mode.
   The existing demo still requires explicit retained-record acknowledgment and Run.
+
+## Real-model trace examples with realistic synthetic identities (2026-10-26)
+
+- Use the existing real planner and runner for published model traces. Change fictional instance/job identities at the synthetic provider boundary before planning, so model output, arguments and evidence agree; never rewrite saved reports to make a run look real. Preserve explicit mock provenance even when resource IDs look like AWS IDs.
+- Keep each scenario and its complete trace in a native HTML disclosure. Save immutable per-run reports and retain failed capture attempts separately; actual planner failures and injected evidence outages must be distinguished. The capture script configures no history, verifies TLS and loads only the existing model configuration.
+
+## Readable trace format and measured fractional confidence (2026-10-26)
+
+- User correction: examples should expose timestamps, explicit actions, input summaries, concise decision rationales, factual outputs and status. Record timestamps at runtime and derive a reusable readable JSONL view from validated reports; do not fabricate historical timing or replace concise rationale with hidden thinking. `--trace-jsonl` is a final export, mutually exclusive with full-report JSON.
+- User chose measured coverage rather than model self-ratings. Numeric JSONL `confidence` is distinct complete authoritative gap-free checks retrieved so far / five required evidence checks for the current candidate. Retain the categorical report confidence under JSONL `evidence_support`. This is completeness, never a safety probability or verdict threshold; failed attempts and future/other-instance checks cannot inflate it. Historical untimed traces export null measurements.
+- The user requested the actual demo UI account ID rather than an obvious synthetic scope and explicitly authorized forwarding it to the configured public NVIDIA endpoint. New captures use that scope with synthetic resources/telemetry, preserve mock provenance and leave older receipts unchanged.

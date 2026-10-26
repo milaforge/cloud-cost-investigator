@@ -61,6 +61,74 @@
   Task 2 branch for review; upstream request-timing Windows portability remains
   a separate follow-up. Both Task 2 safety stashes remain retained locally.
 
+### Readable timestamped JSONL and measured confidence — 2026-10-26
+
+- **Gate/owner:** Days 3–4 trace explanation, Milad. User selected measured
+  evidence coverage as fractional confidence. The runner records actual UTC step
+  timestamps; `--trace-jsonl` exports role/action/input/rationale/output/status,
+  numeric coverage, categorical support, retry counts and citations. Existing full
+  report semantics remain compatible; historical timestamps/scores stay unknown.
+- **Definition:** complete authoritative gap-free evidence checks already retrieved
+  for this instance / five required checks. Failed/future evidence never counts;
+  candidate checks never transfer to another instance. The score does not control
+  verdicts or claim calibrated safety probability. User-approved account/region
+  match the demo UI; resources and AWS observations remain synthetic.
+- **Real execution:** reran `scripts/capture-trace-examples.ts` into
+  [readable capture receipts](evaluation/trace-readable-2026-10-26/summary.json).
+  Three complete investigations, 22 real model attempts, 54 trace events.
+  B recovered from two actual HTTP 500s and three injected tool failures; C
+  recovered from a timeout and two HTTP 500s. All failures remain in the reports
+  and JSONL. TLS verified, no AWS/history requests. Older receipts unchanged.
+- **Verification:** `npm run typecheck`, `npm run typecheck:aws`, scoped Biome
+  and `git diff --check` passed. Focused trace/JSONL/planner/report suites passed
+  **44/44**; diagnostic/warm compatibility suites passed **23/23**. Actual CLI
+  JSONL, timestamp ordering/bounds, unknown legacy metadata, partial evidence,
+  cross-instance isolation and mutually exclusive output flags are covered.
+  All three documented JSONL blocks match their saved exports and validated
+  report projections exactly. The pre-existing report-test stdout capture race
+  reproduced during the first combined run (38/39), then passed after flushing
+  prior reporter output before capture; no full-suite run is claimed.
+- **Limits/next:** designed synthetic scenarios with a live model, not a production
+  reliability estimate or live AWS proof. No blocker for this slice; combined
+  sponsor/live-AWS release gates remain open.
+
+### Three real-model trace examples — 2026-10-26
+
+- **Gate/owner:** Days 3–4 explainability proof, Milad. [Trace examples](TRACE_EXAMPLE.md)
+  now provide three native HTML disclosures with complete captured JSONL traces:
+  staging API conditional recommendation, finance batch contradiction with recovery,
+  and orders worker continuous-dependency contradiction. Fictional AWS-shaped
+  identities are supplied before planning; evidence mode remains explicitly mock.
+- **Execution:** `node --import ./scripts/model-request-timing.mjs --import tsx
+  scripts/capture-trace-examples.ts docs/evaluation/trace-model-2026-10-26-network`
+  completed all three using `nvidia/nemotron-3.5-super-vl-120b-a12b`: 18 real model attempts,
+  including one 60-second planner timeout followed by recovery. Scenario B also
+  traces three injected read-only tool exceptions and fourth-call success.
+  [Summary and immutable reports](evaluation/trace-model-2026-10-26-network/summary.json)
+  retain actual budgets, reasons, timestamps and verdicts.
+- **Verification:** `npm run typecheck`, scoped Biome checks and
+  `node --import tsx --test --test-isolation=none tests/trace-retry.test.ts`
+  passed (14/14). Report/citation validation, all three exact full-trace JSONL
+  comparisons, HTML disclosure structure and whitespace checks passed.
+- **Limits/next:** synthetic AWS only, TLS verified, no history or infrastructure
+  calls. The first sandboxed attempt failed all three at model transport and is
+  [preserved separately](evaluation/trace-model-2026-10-26/summary.json); network-enabled
+  runs are not substituted into that denominator. This is illustrative proof,
+  not a production reliability measurement. Combined live-AWS/sponsor gates remain open.
+
+### Fresh trace example capture — 2026-10-26
+
+- **Gate/owner:** Days 3–4 trace transparency, Milad. Reran the injected-outage
+  command in [the trace example](TRACE_EXAMPLE.md); saved the new immutable
+  [B report](evaluation/trace-metadata-2026-10-26/B-retry.json), leaving the
+  Oct 25 receipt intact. Synthetic evidence, scripted planner, no external calls.
+- **Proof:** actual operations attempts carry retry counts 0/1/2/3, recovering
+  on the fourth call before rejecting the window on fresh conflicting evidence.
+  Five planner calls, seven evidence attempts, 16,054ms including real backoff.
+  Report validation and exact JSONL-to-report projection checks passed.
+- **Limits/next:** this refresh proves local trace capture only; live-evidence
+  and combined sponsor/release gates remain open. No blocker for this slice.
+
 ### Per-step trace metadata and bounded evidence recovery — 2026-10-25
 
 - **Gate/owner:** Days 3–4 agent reliability and trace transparency, Milad. Every

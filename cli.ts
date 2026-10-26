@@ -1,14 +1,15 @@
 import { pathToFileURL } from 'node:url';
 import { loadProjectEnv } from './src/config.ts';
 import { type InvestigationRequest, validateRequest } from './src/contracts.ts';
+import type { CurrentEvidenceProvider } from './src/investigation/mock.ts';
 import { MockProvider, type MockScenario } from './src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from './src/investigation/model.ts';
 import { NvidiaPlanner } from './src/investigation/nvidia.ts';
 import { ScriptedPlanner } from './src/investigation/planner.ts';
 import { renderReport, validateReport } from './src/investigation/report.ts';
 import { runInvestigation } from './src/investigation/run.ts';
+import { renderTraceJsonl } from './src/investigation/trace.ts';
 import { createAwsEvidenceProvider } from './src/tools/aws-agent.ts';
-import type { CurrentEvidenceProvider } from './src/investigation/mock.ts';
 
 export const HELP = `Cloud Cost Investigator
 
@@ -23,6 +24,7 @@ Options:
   --evidence MODE       aws (default, read-only AWS APIs) or mock
   --scenario MODE       A, B (default), C, mixed, clear, or missing
   --json                Write only the validated report JSON to stdout
+  --trace-jsonl          Write readable decision events as JSONL (excludes --json)
   --help                Show this help
 
 AWS mode ends at the last complete UTC day and requires a 12-digit account ID.
@@ -41,6 +43,7 @@ export interface CliOptions {
   scenario: MockScenario;
   evidence: 'mock' | 'aws';
   json: boolean;
+  trace_jsonl?: boolean;
 }
 
 export function parseArgs(
@@ -54,6 +57,7 @@ export function parseArgs(
   if (argv.length === 2 && argv[1] === '--help') return 'help';
   const values = new Map<string, string>();
   let json = false;
+  let traceJsonl = false;
   const allowed = [
     '--account',
     '--region',
@@ -65,6 +69,11 @@ export function parseArgs(
   ];
   for (let i = 1; i < argv.length; i++) {
     const flag = argv[i];
+    if (flag === '--trace-jsonl') {
+      if (traceJsonl) throw new Error('Duplicate flag');
+      traceJsonl = true;
+      continue;
+    }
     if (flag === '--json') {
       if (json) throw new Error('Duplicate flag');
       json = true;
@@ -78,6 +87,7 @@ export function parseArgs(
     values.set(flag, value);
   }
   const evidence = values.get('--evidence') ?? 'aws';
+  if (json && traceJsonl) throw new Error('Choose JSON or JSONL output');
   if (evidence !== 'mock' && evidence !== 'aws')
     throw new Error('Invalid evidence provider');
   if (
@@ -117,6 +127,7 @@ export function parseArgs(
     scenario: scenario as MockScenario,
     evidence,
     json,
+    trace_jsonl: traceJsonl,
   };
 }
 
@@ -173,9 +184,11 @@ export async function main(
       }),
     );
     process.stdout.write(
-      options.json
-        ? `${JSON.stringify(report, null, 2)}\n`
-        : renderReport(report),
+      options.trace_jsonl
+        ? renderTraceJsonl(report)
+        : options.json
+          ? `${JSON.stringify(report, null, 2)}\n`
+          : renderReport(report),
     );
     return report.completion_status === 'complete'
       ? 0

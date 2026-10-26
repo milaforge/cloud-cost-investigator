@@ -252,6 +252,8 @@ export interface Hypothesis {
   reason: string;
 }
 export interface TraceEntry {
+  /** Actual step emission time; absent/null on older retained receipts. */
+  timestamp?: string | null;
   /** Correlation ID shared by every step in this investigation. */
   trace_id: string;
   /** Evidence support for this step, never a probability of shutdown safety. */

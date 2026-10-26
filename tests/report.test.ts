@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { setImmediate } from 'node:timers/promises';
 import { main, parseArgs } from '../cli.ts';
 import { validateReport } from '../src/investigation/report.ts';
 
 // Exercise the real entry point without subprocesses (restricted environments can deny spawning).
 async function cli(...args: string[]) {
+  // Flush the previous test's reporter output before temporarily capturing stdout.
+  await setImmediate();
   let stdout = '';
   let stderr = '';
   const originalOut = process.stdout.write;
@@ -44,6 +47,27 @@ const args = [
   '--evidence',
   'mock',
 ];
+
+test('CLI emits readable JSONL with real step timestamps and measured coverage', async () => {
+  const result = await cli(...args, '--trace-jsonl');
+  assert.equal(result.status, 0, result.stderr);
+  const events = result.stdout
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line));
+  assert.equal(events[0].confidence, 0);
+  assert.equal(events.at(-1).confidence, 0.8);
+  assert.ok(
+    events.every(
+      (e) =>
+        e.timestamp &&
+        e.input_summary &&
+        e.output_summary &&
+        e.reasoning &&
+        e.status,
+    ),
+  );
+});
 
 test('CLI discovers a candidate and emits validated mock/scripted JSON only', async () => {
   const result = await cli(...args, '--json');
