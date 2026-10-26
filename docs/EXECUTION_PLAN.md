@@ -1738,3 +1738,10 @@ Zayan owns data-source truth; Milad owns verdict/report truth. Agree on shared c
   and 390px layout without overflow or page errors. `npm run typecheck`, scoped
   Biome lint/format, JS syntax and diff whitespace checks passed. No remote calls
   or new dependencies. Restart the demo server to load the changed assets.
+
+### Actionable operator follow-up — 2026-10-26
+
+- **Gate/owner:** Days 3–4 report usability, Milad. Next actions omit tool/status prefixes and the unsupported-window finding; incomplete/short history becomes one period-selection or wait-and-rerun task. Owner requests and external approval remain; missing checks retain diagnostic detail. No policy or integration changes.
+- **Verified:** `node --import tsx --test --test-isolation=none --test-name-pattern='human actions|A fails closed|partial CPU observations|policy boundary' tests/recommendation-boundary.test.ts tests/broader-scenarios.test.ts` passed 14/14. `npm run typecheck`, scoped Biome lint on the four touched TypeScript files, and scoped `git diff --check` passed.
+- **Limits/next:** synthetic/scripted tests only. Broader scenario tests expose two unrelated multi-candidate call-count assertions (actual 14, expected 13); leave concurrent runtime work intact. Global diff check also reports existing whitespace in `slides.md:5`. Restart the server and generate a new report to see the updated actions; stored reports are unchanged. Live/release gates remain open.
+- **Final broader result:** both test files completed 40/42 passing; the two failures are the call-count assertions above. Initial typecheck passed, but a final rerun during concurrent edits reported `tests/report.test.ts:260` (`null` is not assignable to `Schedule`); current typecheck is therefore blocked. Final scoped lint and diff checks passed.

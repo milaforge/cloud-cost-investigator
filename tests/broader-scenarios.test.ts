@@ -174,7 +174,12 @@ for (const condition of [
       high_peak: /exceeds the low-utilization policy thresholds/,
     }[condition];
     assert.match(r.candidates[0].missing_checks.join(' '), expectedAction);
-    assert.match(r.candidates[0].next_human_actions.join(' '), expectedAction);
+    assert.match(
+      r.candidates[0].next_human_actions.join(' '),
+      condition === 'partial'
+        ? /Ask the workload owner to supply an authoritative job schedule/
+        : expectedAction,
+    );
     assert.match(
       r.candidates[0].next_human_actions.join(' '),
       /Rerun the investigation with fresh evidence/,

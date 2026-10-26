@@ -289,6 +289,34 @@ export function assessScheduling(
     return { proof: null, missing_checks };
   return { proof: [metrics, operations, dependencies], missing_checks };
 }
+/** Keep diagnostics in missing_checks; expose only operator tasks here. */
+export function nextHumanActions(missingChecks: string[]): string[] {
+  const actions = new Set<string>();
+  for (const check of missingChecks) {
+    const action = check.replace(
+      /^(?:get_ec2_\w+|list_ec2_instances)(?: \([^)]*\))?: /,
+      '',
+    );
+    // This is a finding, not a task the operator can perform.
+    if (action.startsWith('The agent could not establish')) continue;
+    if (
+      action.startsWith('Utilization coverage is incomplete') ||
+      action.startsWith('Insufficient history for a recurring schedule')
+    ) {
+      actions.add(
+        'Select a period with at least seven complete days of utilization history, or wait for enough observations, then rerun the investigation.',
+      );
+    } else if (action.startsWith('Authorized human shutdown decision')) {
+      actions.add(
+        'Review the retrieved evidence and obtain authorized human approval through the external change process before any infrastructure change.',
+      );
+    } else {
+      actions.add(action);
+    }
+  }
+  return [...actions];
+}
+
 export function schedulingProof(
   request: InvestigationRequest,
   candidate: CandidateReport,

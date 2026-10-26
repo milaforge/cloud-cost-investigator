@@ -116,3 +116,5 @@ Do not diagnose Cost Explorer `AccessDeniedException` as a missing IAM grant fro
 Validate model API protocol compatibility separately from model names and credentials: this planner uses Chat Completions; a Codex backend or Responses-only route is not automatically compatible. Do not guess alternate credential destinations. For remote Zetaris local storage, require the server-visible persistent directory; creating a local workspace folder does not provision remote storage.
 
 Before recommending a Zetaris local storage path, inspect the configured filesystem access root as well as volume mounts. A writable mounted parent directory does not establish that application path validation allows every subdirectory. In the supplied deployment, `ZETARIS_LOCAL_FILE_SYTEM_ROOT_PATH` is `/home/zetaris/customer-data/shared`; UI picker paths may additionally be relative to that root and need separate verification.
+
+- Operator-facing Next action lists must contain concrete human tasks, without tool/status prefixes or diagnostic-only findings. Combine duplicate history guidance; retain full evidence gaps in missing checks and preserve the human approval boundary.

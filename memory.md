@@ -1128,3 +1128,7 @@
 - User correction supersedes the partial-metric prerequisite stop and early conflict exit. After inventory/billing identify a candidate, partial/unavailable metrics must not block scoped SSM/ELBv2 reads. Optional proposed windows label challenges; collection does not manufacture a window.
 - Partial low-CPU observations may motivate a tentative hypothesis, with current citations and the same threshold checks. Only complete authoritative proof can recommend scheduling; scope validation, cancellation, discovery recovery and aggregate budgets are unchanged. Keep a discovered contradiction while attempting remaining checks.
 - The earlier warm-demo saved-call requirement depended on early stopping. Preserve dated receipts; current learning proof checks prioritized collection, fresh evidence and correction, while measuring rather than requiring call savings.
+
+## Operator-facing next actions (2026-10-26)
+
+- User correction: Next action contains concrete tasks a human can perform. Keep tool/status diagnostics in missing checks, strip those prefixes from action text, omit the unsupported-window finding, and combine incomplete/short utilization history into one period-selection or wait-and-rerun task. Preserve owner schedule/dependency requests and the external human approval boundary; this presentation change does not relax evidence policy.

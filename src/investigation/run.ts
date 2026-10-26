@@ -36,6 +36,7 @@ import {
 } from './planner.ts';
 import {
   assessScheduling,
+  nextHumanActions,
   calculateSavings,
   rankCandidates,
   sameSchedule,
@@ -941,7 +942,7 @@ export async function runInvestigation(
         ...assessScheduling(request, candidate, evidence).missing_checks,
       );
       candidate.next_human_actions = [
-        ...candidate.missing_checks,
+        ...nextHumanActions(candidate.missing_checks),
         'Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change.',
       ];
       if (candidate.proposed_window)

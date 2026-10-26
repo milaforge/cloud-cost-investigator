@@ -3,6 +3,7 @@ import test from 'node:test';
 import type { Observation } from '../src/contracts.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
+import { nextHumanActions } from '../src/investigation/policy.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
 
@@ -12,6 +13,26 @@ const request = {
   max_candidates: 1,
   window: { from: '2026-09-01T00:00:00Z', to: '2026-09-29T00:00:00Z' },
 };
+
+test('human actions combine history gaps and omit diagnostic-only statements', () => {
+  const checks = [
+    'get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history.',
+    'get_ec2_metrics (partial; sample_count): Utilization coverage is incomplete for the requested period.',
+    'get_ec2_operations (partial; jobs): Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.',
+    'get_ec2_dependencies (partial; consumers): Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance.',
+    'get_ec2_metrics: Insufficient history for a recurring schedule: at least seven days of utilization are required by policy.',
+  ];
+  const actions = nextHumanActions(checks);
+  assert.equal(actions.length, 3);
+  assert.match(
+    actions[0],
+    /^Select a period with at least seven complete days/,
+  );
+  assert.match(actions[1], /^Ask the workload owner/);
+  assert.match(actions[2], /^Ask service owners/);
+  assert.ok(actions.every((action) => !/get_ec2_|partial/.test(action)));
+  assert.equal(checks.length, 5, 'diagnostic evidence stays intact');
+});
 
 for (const tool of ['get_ec2_operations', 'get_ec2_dependencies'] as const) {
   for (const gap of [
