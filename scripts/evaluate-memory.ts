@@ -233,7 +233,7 @@ export async function evaluateMemory() {
           0,
         ),
         interpretation:
-          'Training cost is additional if prior investigations were run solely to seed memory. A tie or loss is a valid result. Stable recurring blockers can benefit; changed blockers can make the remembered ordering worse.',
+          'Training cost is additional if prior investigations were run solely to seed memory. A tie or loss is a valid result. All remaining candidate checks run even after a contradiction, so prioritization alone does not save total tool calls. Earlier saved-call measurements used the superseded early-stop policy.',
       },
       rows,
     };

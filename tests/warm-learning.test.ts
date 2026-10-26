@@ -35,12 +35,12 @@ const cold = () =>
     provider: new MockProvider('C'),
   });
 
-test('end-to-end H-MEM lesson reduces work, revalidates fresh evidence and persists the correction', async (t) => {
+test('end-to-end H-MEM lesson prioritizes checks, revalidates fresh evidence and persists the correction', async (t) => {
   t.mock.method(console, 'error', () => {});
   const result = await demonstrateWarmLearning('scripted');
   assert.equal(result.passed, true, JSON.stringify(result.checks));
-  assert.equal(result.comparison?.planner_calls_saved, 1);
-  assert.equal(result.comparison?.tool_calls_saved, 1);
+  assert.equal(result.comparison?.planner_calls_saved, 0);
+  assert.equal(result.comparison?.tool_calls_saved, 0);
   assert.deepEqual(
     result.runs.map(({ report }) => report.candidates[0].verdict),
     ['not_recommended', 'not_recommended', 'conditional_recommendation'],

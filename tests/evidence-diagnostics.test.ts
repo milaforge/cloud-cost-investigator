@@ -190,19 +190,12 @@ test('partial metrics preserve per-field counts and bounds without imputing miss
     provider: liveClockProvider,
     planner: new ScriptedPlanner(),
   });
-  assert.equal(report.stop_reason, 'metrics_evidence_incomplete');
+  assert.equal(report.stop_reason, 'planner_finished');
   assert.equal(report.candidates[0].verdict, 'needs_verification');
-  assert.equal(report.candidates[0].proposed_window, null);
-  assert.ok(
-    !report.evidence.some(
-      (o) =>
-        o.tool === 'get_ec2_operations' || o.tool === 'get_ec2_dependencies',
-    ),
-  );
-  assert.match(
-    renderReport(report),
-    /targeted jobs and dependency checks were not reached/,
-  );
+  assert.ok(report.candidates[0].proposed_window);
+  for (const tool of ['get_ec2_operations', 'get_ec2_dependencies'])
+    assert.ok(report.evidence.some((o) => o.tool === tool));
+  assert.doesNotMatch(renderReport(report), /checks were not reached/);
   assert.match(renderReport(report), /cpu_avg: 7\/168 samples/);
   assert.deepEqual(validateReport(report), report);
 });

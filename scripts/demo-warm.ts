@@ -144,15 +144,17 @@ export async function demonstrateWarmLearning(
         operationalChecks(cold).join(',') ===
           'get_ec2_operations,get_ec2_dependencies',
       warm_checks_dependency_first:
-        !!warm && operationalChecks(warm).join(',') === 'get_ec2_dependencies',
+        !!warm &&
+        operationalChecks(warm).join(',') ===
+          'get_ec2_dependencies,get_ec2_operations',
       same_correct_rejection:
         verdict(cold) === 'not_recommended' &&
         verdict(warm) === 'not_recommended',
-      warm_uses_fewer_calls:
+      warm_collects_all_checks:
         !!cold &&
         !!warm &&
-        warm.budget.planner_calls < cold.budget.planner_calls &&
-        toolCount(warm) < toolCount(cold),
+        operationalChecks(warm).length === 2 &&
+        operationalChecks(cold).length === 2,
       fresh_disjoint_evidence: new Set(allIds).size === allIds.length,
       warm_verifies_lesson: !!warm?.trace.some(
         (t) =>
@@ -191,7 +193,7 @@ export async function demonstrateWarmLearning(
       evidence_mode: 'mock',
       memory_engine: 'vendor/hmem',
       methodology:
-        'One sequential cold C, warm C and changed A investigation. Real H-MEM is reopened between runs; Zetaris is disabled to isolate memory contribution. Same model and runner throughout. Earlier means fewer planner/tool calls; wall time is reported separately. All current conclusions pass report validation with fresh evidence. This designed demonstration does not establish production accuracy or live AWS integration.',
+        'One sequential cold C, warm C and changed A investigation. Real H-MEM is reopened between runs; Zetaris is disabled to isolate memory contribution. Same model and runner throughout. Memory prioritizes the learned check; all available checks still run. Total call differences and wall time are measured, not assumed to improve. All current conclusions pass report validation with fresh evidence. This designed demonstration does not establish production accuracy or live AWS integration.',
       checks,
       comparison:
         cold && warm

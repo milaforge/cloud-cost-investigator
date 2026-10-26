@@ -41,6 +41,7 @@ import {
   sameSchedule,
   schedulingConflict,
   schedulingProof,
+  supportsTentativeWindow,
 } from './policy.ts';
 import { ModelHttpError } from './provider-error.ts';
 import { validateReport } from './report.ts';
@@ -545,24 +546,10 @@ export async function runInvestigation(
           action,
           retry_count: plannerRetryCount,
         });
-        const metrics = find('get_ec2_metrics');
-        const metricsBlocked =
-          candidate &&
-          !candidate.proposed_window &&
-          metrics &&
-          (metrics.status !== 'ok' ||
-            !metrics.data ||
-            !metrics.coverage.complete ||
-            metrics.missing_fields.length > 0);
-        stopReason = metricsBlocked
-          ? 'metrics_evidence_incomplete'
-          : 'planner_finished';
-        if (metricsBlocked)
-          add(
-            'evaluator',
-            'Stopped because utilization evidence is incomplete or unavailable. A supported UTC window could not be established, so targeted jobs and dependency checks were not reached. Obtain adequate metric coverage and rerun.',
-            [metrics.evidence_id],
-          );
+        stopReason =
+          candidate?.verdict === 'not_recommended'
+            ? 'hypothesis_contradicted'
+            : 'planner_finished';
         break;
       }
       if (action.type === 'propose') {
@@ -574,14 +561,11 @@ export async function runInvestigation(
           !candidate ||
           candidate.proposed_window ||
           !metricData ||
-          !metrics?.coverage.complete ||
-          metrics.missing_fields.length ||
-          metricData.average_cpu_percent > 10 ||
-          metricData.peak_cpu_percent > 20 ||
+          !supportsTentativeWindow(metrics) ||
           JSON.stringify(action.window) !==
             JSON.stringify(metricData.suggested_window) ||
           action.evidence_ids.length !== 1 ||
-          action.evidence_ids[0] !== metrics.evidence_id
+          action.evidence_ids[0] !== metrics?.evidence_id
         ) {
           stopReason = 'unsupported_hypothesis';
           break;
@@ -639,18 +623,12 @@ export async function runInvestigation(
       }
       if (
         action.tool === 'get_ec2_operations' &&
+        a.proposed_window !== undefined &&
         (!candidate?.proposed_window ||
           JSON.stringify(a.proposed_window) !==
             JSON.stringify(candidate.proposed_window))
       ) {
         stopReason = 'challenge_window_mismatch';
-        break;
-      }
-      if (
-        action.tool === 'get_ec2_dependencies' &&
-        !candidate?.proposed_window
-      ) {
-        stopReason = 'hypothesis_required';
         break;
       }
       const signature = JSON.stringify([
@@ -875,7 +853,7 @@ export async function runInvestigation(
           proposedWindow,
           observation,
         );
-        if (conflict) {
+        if (conflict && candidate.verdict !== 'not_recommended') {
           candidate.verdict = 'not_recommended';
           candidate.explanation =
             conflict === 'scheduled_maintenance'
@@ -892,11 +870,22 @@ export async function runInvestigation(
           });
           add('evaluator', candidate.explanation, [observation.evidence_id]);
           stopReason = 'hypothesis_contradicted';
-          break;
         }
       }
+      if (
+        candidate.verdict === 'not_recommended' &&
+        find('get_ec2_operations') &&
+        find('get_ec2_dependencies')
+      ) {
+        stopReason = 'hypothesis_contradicted';
+        break;
+      }
       const proof = schedulingProof(request, candidate, evidence);
-      if (proof && candidate.proposed_window) {
+      if (
+        proof &&
+        candidate.proposed_window &&
+        candidate.verdict !== 'not_recommended'
+      ) {
         candidate.verdict = 'conditional_recommendation';
         candidate.explanation =
           'Current complete operational evidence clears this window conditionally; obtain human approval and revalidate before execution.';
@@ -965,6 +954,8 @@ export async function runInvestigation(
       add('evaluator', candidate.explanation);
     }
     if (candidate?.verdict === 'not_recommended') {
+      if (!find('get_ec2_operations') || !find('get_ec2_dependencies'))
+        degraded = true;
       candidate.next_human_actions = [
         'Keep the proposed window rejected; review the cited conflict with the resource owner.',
       ];

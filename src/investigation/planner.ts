@@ -1,10 +1,10 @@
 import {
   type Action,
-  type MetricsData,
   type ToolArgs,
   type ToolName,
   validatePlannerFailureCode,
 } from '../contracts.ts';
+import { supportsTentativeWindow } from './policy.ts';
 import { historicalPriority } from './history.ts';
 import type { PlannerState } from './run.ts';
 
@@ -50,8 +50,7 @@ export class ScriptedPlanner implements Planner {
         if (!state.candidate_id) throw new Error('Candidate required');
         args.instance_id = state.candidate_id;
       }
-      if (name === 'get_ec2_operations') {
-        if (!state.proposed_window) throw new Error('Proposed window required');
+      if (name === 'get_ec2_operations' && state.proposed_window) {
         args.proposed_window = state.proposed_window;
       }
       return { type: 'tool', tool: name, reason, args };
@@ -80,25 +79,8 @@ export class ScriptedPlanner implements Planner {
     const metrics = state.observations.find(
       (o) => o.tool === 'get_ec2_metrics',
     );
-    if (!state.proposed_window) {
-      if (
-        metrics?.status !== 'ok' ||
-        !metrics.data ||
-        !metrics.coverage.complete ||
-        metrics.missing_fields.length
-      )
-        return {
-          type: 'finish',
-          reason:
-            'No complete utilization observation supports a plausible window.',
-        };
-      const data = metrics.data as MetricsData;
-      if (data.average_cpu_percent > 10 || data.peak_cpu_percent > 20)
-        return {
-          type: 'finish',
-          reason:
-            'Observed utilization or peaks do not support an idle-window hypothesis.',
-        };
+    if (!state.proposed_window && supportsTentativeWindow(metrics)) {
+      const data = metrics.data;
       return {
         type: 'propose',
         window: data.suggested_window,
@@ -107,10 +89,9 @@ export class ScriptedPlanner implements Planner {
           'Observed low average and peak CPU suggest this window; challenge it before any decision.',
       };
     }
-    const priority = historicalPriority(
-      state.historical_hints,
-      state.proposed_window,
-    );
+    const priority = state.proposed_window
+      ? historicalPriority(state.historical_hints, state.proposed_window)
+      : undefined;
     if (priority && !attempted(priority))
       return tool(
         priority,
@@ -119,7 +100,7 @@ export class ScriptedPlanner implements Planner {
     if (!attempted('get_ec2_operations'))
       return tool(
         'get_ec2_operations',
-        'Try to falsify the proposed window with overlapping critical jobs.',
+        'Collect scoped schedules and jobs; challenge the tentative window when available.',
       );
     if (!attempted('get_ec2_dependencies'))
       return tool(

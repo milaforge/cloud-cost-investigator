@@ -120,8 +120,8 @@ for (const failure of ['error', 'unavailable', 'throw', 'timeout'] as const) {
       attempts.map((s) => s.confidence),
       ['insufficient', 'insufficient', 'insufficient', 'supported'],
     );
-    assert.equal(report.budget.candidate_attempts, 5);
-    assert.equal(report.budget.planner_calls, 4);
+    assert.equal(report.budget.candidate_attempts, 6);
+    assert.equal(report.budget.planner_calls, 5);
     assert.equal(report.candidates[0].verdict, 'not_recommended');
     assert.equal(report.completion_status, 'complete');
     assert.ok(!JSON.stringify(report).includes('secret-provider-detail'));

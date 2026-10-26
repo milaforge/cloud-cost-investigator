@@ -2,6 +2,8 @@
 
 [What](../README.md) · [How](HOW.md)
 
+> Current collection policy (2026-10-26): all remaining candidate checks run within budgets, even after a contradiction. H-MEM may prioritize a learned check but does not skip other checks. Earlier saved-call receipts below remain historical measurements under the old early-stop policy. Current `demo:warm` verifies ordering, fresh evidence and correction; it reports call deltas without requiring a speedup.
+
 ## Configuration
 
 Set `HMEM_PERSIST_DIR=.cci-memory` to retain lessons between investigations. Leave it unset to disable local reasoning memory. Keep generated state untracked and use one writer per directory. The local store is capped at 100 records.

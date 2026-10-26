@@ -148,6 +148,8 @@ Model-produced arguments/actions are validated against an allowlist. Protect all
 | `not_recommended`                            | Retrieved current evidence directly conflicts with the proposed window or establishes required continuous operation; say which window was rejected                                                                                        |
 | `needs_verification`                         | A critical data gap, stale scope, unreliable coverage, contradictory observations, or unresolved safety risk prevents a recommendation                                                                                                    |
 
+After candidate selection, attempt metrics, operations and dependencies within the existing aggregate budgets, even when utilization is partial/unavailable or a conflict is found. Scoped operational reads do not require a proposed window. Partial low-utilization observations may motivate a tentative hypothesis; complete authoritative evidence remains mandatory for recommending it. Invalid scoped output and cancellation remain terminal. Memory may prioritize checks but no longer skips remaining checks after a contradiction.
+
 Every candidate is challenged with at least one **targeted disconfirming** inquiry before any supported recommendation. The evaluator may replan based on a newly discovered risk. A rejected hypothesis must be _actually rejected_, not simply recommended with a warning. Low average CPU, a `dev` tag, or no matching jobs in a non-authoritative source cannot clear the safety gate. If a fresh operational constraint is unknown, defer.
 
 ## 7. Savings discipline

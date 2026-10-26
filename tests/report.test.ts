@@ -56,7 +56,7 @@ test('CLI emits readable JSONL with real step timestamps and measured coverage',
     .split('\n')
     .map((line) => JSON.parse(line));
   assert.equal(events[0].confidence, 0);
-  assert.equal(events.at(-1).confidence, 0.8);
+  assert.equal(events.at(-1).confidence, 1);
   assert.ok(
     events.every(
       (e) =>

@@ -2,13 +2,17 @@
 
 [What](../README.md) · [How](HOW.md)
 
-When partial or unavailable metrics prevent an initial window, the report uses
-`metrics_evidence_incomplete` and explains that targeted jobs/dependency checks
-were not reached. This is a prerequisite stop, not evidence that those workloads
-are absent. Metric sample counts and affected fields appear in the report;
-optional inventory metadata is separate from resource discovery coverage.
-[Owner statements captured in the web UI](HOW.md#open-the-web-demo) are separate,
-unverified report context and do not change the verdict.
+Partial or unavailable metrics do not prevent the remaining scoped SSM operations
+and ELBv2 dependency reads. Available low average/peak CPU samples may establish a
+tentative window even with coverage gaps; without a window, the agent collects
+operational facts without inventing one. All remaining existing candidate checks
+are attempted within call/time budgets, including after a contradiction. Invalid
+scoped data and cancellation remain terminal; failed inventory/billing discovery
+still stops after bounded recovery. Native empty scans never prove workload-wide
+absence. Final recommendations still require complete authoritative evidence and
+at least seven days of utilization. Sample counts and missing fields explain
+uncertainty; historical `metrics_evidence_incomplete` receipts reflect the earlier
+stop policy, not current behavior.
 
 ## Run
 

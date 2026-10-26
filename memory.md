@@ -1122,3 +1122,9 @@
 
 - User explicitly requested plain `npm start` use project `.env` AWS profile and region even when the launching shell exports different values. This supersedes blanket shell precedence for these two keys at web startup only. Other commands and settings retain shell precedence; omitted file keys preserve inherited values.
 - Apply the override once before starting the server. Workers inherit that selection; ordinary adapter reloads preserve it. Use native Node parsing, sanitized file errors and no configuration-value logging. The expected-account guard and separate decision-write acknowledgment remain mandatory.
+
+## Complete candidate collection before final disposition (2026-10-26)
+
+- User correction supersedes the partial-metric prerequisite stop and early conflict exit. After inventory/billing identify a candidate, partial/unavailable metrics must not block scoped SSM/ELBv2 reads. Optional proposed windows label challenges; collection does not manufacture a window.
+- Partial low-CPU observations may motivate a tentative hypothesis, with current citations and the same threshold checks. Only complete authoritative proof can recommend scheduling; scope validation, cancellation, discovery recovery and aggregate budgets are unchanged. Keep a discovered contradiction while attempting remaining checks.
+- The earlier warm-demo saved-call requirement depended on early stopping. Preserve dated receipts; current learning proof checks prioritized collection, fresh evidence and correction, while measuring rather than requiring call savings.

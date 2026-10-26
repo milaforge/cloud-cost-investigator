@@ -30,6 +30,7 @@ import {
   rankCandidates,
   sameSchedule,
   schedulingConflict,
+  supportsTentativeWindow,
   schedulingProof,
 } from './policy.ts';
 
@@ -255,9 +256,7 @@ export function validateReport(value: unknown): InvestigationReport {
     }
     if (o.tool === 'get_ec2_operations') {
       const c = candidates.find((c) => c.instance_id === args.instance_id);
-      if (!c?.proposed_window)
-        throw new Error('Untargeted operational evidence');
-      args.proposed_window = c.proposed_window;
+      if (c?.proposed_window) args.proposed_window = c.proposed_window;
     }
     const action = validateAction({
       type: 'tool',
@@ -527,15 +526,15 @@ export function validateReport(value: unknown): InvestigationReport {
       const targetedWindow = t.action.args.proposed_window;
       if (
         e.tool === 'get_ec2_operations' &&
-        (!targetedWindow ||
-          !proposals.some(
-            (p) =>
-              sameSchedule(p.action.window, targetedWindow) &&
-              p.action.evidence_ids.some(
-                (id) =>
-                  evidenceById(id).scope.instance_id === e.scope.instance_id,
-              ),
-          ))
+        targetedWindow &&
+        !proposals.some(
+          (p) =>
+            sameSchedule(p.action.window, targetedWindow) &&
+            p.action.evidence_ids.some(
+              (id) =>
+                evidenceById(id).scope.instance_id === e.scope.instance_id,
+            ),
+        )
       )
         throw new Error('Challenge preceded hypothesis');
       retrieved.add(e.evidence_id);
@@ -629,8 +628,7 @@ export function validateReport(value: unknown): InvestigationReport {
         return (
           e.tool === 'get_ec2_metrics' &&
           usable(e) &&
-          e.coverage.complete &&
-          !e.missing_fields.length &&
+          supportsTentativeWindow(e) &&
           e.scope.instance_id === c.instance_id &&
           e.data &&
           'suggested_window' in e.data &&

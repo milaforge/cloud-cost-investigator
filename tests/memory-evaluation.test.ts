@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { evaluateMemory } from '../scripts/evaluate-memory.ts';
 
-test('memory evaluation preserves ties, changed-lesson regressions, teaching cost and partial outcomes', async () => {
+test('memory evaluation preserves complete-collection ties, teaching cost and partial outcomes', async () => {
   const result = await evaluateMemory();
   assert.equal(result.passed, true);
   assert.equal(result.rows.length, 8);
@@ -22,8 +22,8 @@ test('memory evaluation preserves ties, changed-lesson regressions, teaching cos
     assert.ok(result);
     return result.tool_calls;
   };
-  assert.ok(calls(recurring, 'hmem') < calls(recurring, 'jobs_first'));
-  assert.ok(calls(changed, 'hmem') > calls(changed, 'jobs_first'));
+  assert.equal(calls(recurring, 'hmem'), calls(recurring, 'jobs_first'));
+  assert.equal(calls(changed, 'hmem'), calls(changed, 'jobs_first'));
   assert.equal(result.comparison.warm_tool_calls_saved_vs_best_fixed, 0);
   for (const row of result.rows)
     for (const r of row.results) {

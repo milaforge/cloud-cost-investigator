@@ -231,8 +231,8 @@ test('mixed top three isolate identical proposed windows, share discovery, and r
     ['conditional_recommendation', 'not_recommended', 'not_recommended'],
   );
   assert.equal(r.budget.discovery_attempts, 2);
-  assert.equal(r.budget.candidate_attempts, 8);
-  assert.equal(r.budget.planner_calls, 12);
+  assert.equal(r.budget.candidate_attempts, 9);
+  assert.equal(r.budget.planner_calls, 13);
   for (let i = 0; i < 3; i++) {
     const summary = reasoningSummaryFromReport(r, i);
     const record = historyRecordFromReport(r, i);
@@ -457,7 +457,7 @@ test('model transport uses candidate-specific choices and observations across al
     },
   );
   assert.equal(r.completion_status, 'complete');
-  assert.equal(calls, 12);
+  assert.equal(calls, 13);
   assert.deepEqual(
     r.candidates.map((c) => c.verdict),
     ['conditional_recommendation', 'not_recommended', 'not_recommended'],

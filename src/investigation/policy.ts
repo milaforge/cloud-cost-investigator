@@ -25,6 +25,21 @@ export const authoritative = (o: Observation | undefined): o is Observation =>
   o.coverage.authoritative &&
   o.missing_fields.length === 0;
 
+/** Partial observations can motivate a question, never establish scheduling safety. */
+export function supportsTentativeWindow(
+  o: Observation | undefined,
+): o is Observation & { data: MetricsData } {
+  return (
+    !!o &&
+    o.tool === 'get_ec2_metrics' &&
+    ['ok', 'partial'].includes(o.status) &&
+    !!o.data &&
+    'suggested_window' in o.data &&
+    o.data.average_cpu_percent <= 10 &&
+    o.data.peak_cpu_percent <= 20
+  );
+}
+
 /** A daily proposal conflicts if any dated execution overlaps it in the planning month. */
 export function schedulingConflict(
   request: InvestigationRequest,

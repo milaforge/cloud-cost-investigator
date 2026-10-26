@@ -124,6 +124,7 @@ suggested window and does not accept null/no-match metric payloads. Network data
 and sample counts remain available in the detailed collector records.
 
 Operations/dependencies collect native facts through the read-only sources below.
+The optional `proposed_window` labels a targeted challenge; SSM and ELBv2 collection also works without it. Partial/unavailable metrics do not prevent these reads within the investigation budget.
 Even a completed empty native scan has `partial` status, false coverage and
 explicit unknowns: it cannot establish workload-wide absence or owner clearance.
 Legacy synthetic cron strings and tags are never promoted to authority.

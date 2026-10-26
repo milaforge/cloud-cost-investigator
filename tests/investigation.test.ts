@@ -78,7 +78,7 @@ test('EC2 2: critical job rejects the window after a genuinely later safety chal
   assert.deepEqual(c.contradicting_evidence_ids, conflict.evidence_ids);
   assert.equal(c.estimated_monthly_savings, null);
   assert.deepEqual(r.budget.discovery_attempts, 2);
-  assert.equal(r.budget.candidate_attempts, 2);
+  assert.equal(r.budget.candidate_attempts, 3);
   assert.equal(r.planner.mode, 'scripted');
   assert.deepEqual(r.historical_context.context_ids, []);
   const operations = r.evidence.find((e) => e.tool === 'get_ec2_operations');
@@ -92,9 +92,7 @@ test('EC2 2: critical job rejects the window after a genuinely later safety chal
         job.window.end_hour_utc > window.start_hour_utc,
     ),
   );
-  assert.ok(
-    c.missing_checks.some((check) => check.includes('get_ec2_dependencies')),
-  );
+  assert.ok(r.evidence.some((e) => e.tool === 'get_ec2_dependencies'));
   scenarioProof(t, r);
 });
 
@@ -265,7 +263,10 @@ test('partial operational observation retains status and a positive conflict, wh
   });
   assert.equal(r.completion_status, 'partial');
   assert.equal(r.candidates[0].verdict, 'not_recommended');
-  assert.equal(r.evidence.at(-1)?.status, 'partial');
+  assert.equal(
+    r.evidence.find((e) => e.tool === 'get_ec2_operations')?.status,
+    'partial',
+  );
 });
 
 for (const tool of ['list_ec2_instances', 'get_ec2_billing'] as const) {
@@ -462,7 +463,8 @@ test('EC2 4: an unexplained high CPU peak defers without inventing a conflict', 
   });
   assert.equal(r.candidates[0].verdict, 'needs_verification');
   assert.equal(r.candidates[0].proposed_window, null);
-  assert.ok(!r.evidence.some((e) => e.tool === 'get_ec2_operations'));
+  assert.ok(r.evidence.some((e) => e.tool === 'get_ec2_operations'));
+  assert.ok(r.evidence.some((e) => e.tool === 'get_ec2_dependencies'));
   const metrics = r.evidence.find((e) => e.tool === 'get_ec2_metrics');
   assert.ok(metrics?.data && 'peak_cpu_percent' in metrics.data);
   assert.equal(metrics.data.average_cpu_percent, 2);
@@ -477,11 +479,7 @@ test('EC2 4: an unexplained high CPU peak defers without inventing a conflict', 
       'get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history.',
     ),
   );
-  assert.ok(
-    r.candidates[0].missing_checks.some((s) =>
-      s.includes('get_ec2_operations'),
-    ),
-  );
+  assert.ok(r.evidence.some((e) => e.tool === 'get_ec2_operations'));
   assert.ok(
     r.trace.some(
       (entry) =>

@@ -504,9 +504,10 @@ export function validateAction(value: unknown): Action {
   if (candidateTool) args.instance_id = identifier(a.instance_id);
   else if (a.instance_id !== undefined)
     throw new Error('Discovery cannot select an instance');
-  if (tool === 'get_ec2_operations')
-    args.proposed_window = validateSchedule(a.proposed_window);
-  else if (a.proposed_window !== undefined)
+  if (tool === 'get_ec2_operations') {
+    if (a.proposed_window !== undefined)
+      args.proposed_window = validateSchedule(a.proposed_window);
+  } else if (a.proposed_window !== undefined)
     throw new Error('Unexpected proposed window');
   return { type: 'tool', tool, args, reason };
 }

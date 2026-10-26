@@ -110,7 +110,10 @@ test('D: learned conflict takes priority over unqueried checks and keeps current
   const rows = await zetaris(t);
   const cold = await run(dir, true);
   assert.deepEqual(cold.historical_context.context_ids, []);
-  assert.deepEqual(checks(cold), ['get_ec2_operations']);
+  assert.deepEqual(checks(cold), [
+    'get_ec2_operations',
+    'get_ec2_dependencies',
+  ]);
   assert.equal(rows.length, 1);
   const warm = await run(dir, true);
   assert.equal(warm.historical_context.zetaris, 'ok');
@@ -121,7 +124,10 @@ test('D: learned conflict takes priority over unqueried checks and keeps current
   assert.ok(
     warm.historical_context.context_ids.some((id) => id.startsWith('zetaris:')),
   );
-  assert.deepEqual(checks(warm), ['get_ec2_operations']);
+  assert.deepEqual(checks(warm), [
+    'get_ec2_operations',
+    'get_ec2_dependencies',
+  ]);
   assert.equal(warm.candidates[0].verdict, 'not_recommended');
   assert.equal(rows.length, 2);
   assert.ok(
@@ -160,7 +166,10 @@ test('history services fail independently and disclose no provider errors', asyn
   const memoryOnly = await run(dir, true);
   assert.equal(memoryOnly.historical_context.zetaris, 'unavailable');
   assert.equal(memoryOnly.historical_context.hmem, 'ok');
-  assert.deepEqual(checks(memoryOnly), ['get_ec2_operations']);
+  assert.deepEqual(checks(memoryOnly), [
+    'get_ec2_operations',
+    'get_ec2_dependencies',
+  ]);
   const blocked = `${dir}/blocked`;
   await writeFile(blocked, 'file');
   const neither = await run(blocked, true);
@@ -179,7 +188,10 @@ test('Zetaris audit history does not dictate query order when H-MEM is unavailab
   const warm = await run(blocked, true);
   assert.equal(warm.historical_context.hmem, 'unavailable');
   assert.equal(warm.historical_context.zetaris, 'ok');
-  assert.deepEqual(checks(warm), ['get_ec2_operations']);
+  assert.deepEqual(checks(warm), [
+    'get_ec2_operations',
+    'get_ec2_dependencies',
+  ]);
   assert.ok(
     warm.historical_context.context_ids.some((id) => id.startsWith('zetaris:')),
   );
@@ -195,7 +207,10 @@ test('future historical records cannot influence current query order; disabled a
   process.env.ZETARIS_HISTORY_ALLOW_APPEND = 'false';
   const report = await run(undefined, true);
   assert.deepEqual(report.historical_context.context_ids, []);
-  assert.deepEqual(checks(report), ['get_ec2_operations']);
+  assert.deepEqual(checks(report), [
+    'get_ec2_operations',
+    'get_ec2_dependencies',
+  ]);
   assert.equal(rows.length, 1);
   assert.ok(
     report.historical_context.limitations.includes(
@@ -266,7 +281,10 @@ test('model adapter receives bounded historical hints and binds fresh prioritize
     history: { hmem_directory: dir },
   });
   assert.ok(sawHints);
-  assert.deepEqual(checks(report), ['get_ec2_operations']);
+  assert.deepEqual(checks(report), [
+    'get_ec2_operations',
+    'get_ec2_dependencies',
+  ]);
   assert.equal(report.candidates[0].verdict, 'not_recommended');
 });
 
@@ -339,12 +357,10 @@ for (const [prior, current, previousVerdict, currentVerdict, name] of [
       renderReport(report),
       /Historical comparison .*previous verdict=/,
     );
-    assert.deepEqual(
-      checks(report),
-      current === 'A' || current === 'C'
-        ? ['get_ec2_operations', 'get_ec2_dependencies']
-        : ['get_ec2_operations'],
-    );
+    assert.deepEqual(checks(report), [
+      'get_ec2_operations',
+      'get_ec2_dependencies',
+    ]);
     const candidate = report.candidates[0];
     const dependency = report.evidence.find(
       (e) => e.tool === 'get_ec2_dependencies',

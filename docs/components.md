@@ -112,6 +112,8 @@ These sponsor proofs use **synthetic operational evidence**. Real persistence an
 - `src/investigation/mock.ts` owns synthetic direct evidence and A/B/C/mixed/clear/missing scenarios. Metrics summarize the suggested daily UTC window across the observed lookback. These are application contracts, not claims about available AWS endpoints.
 - `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → supported/contradicted/unresolved transition; it renders the detailed CLI trace.
 
+Candidate collection is independent of recommendation clearance: partial or unavailable metrics still permit operations/dependency reads, with no invented window. A tentative low-utilization window can cite partial observations. A conflict is retained while remaining checks run; complete evidence is still required for a recommendation. Model choices exclude finishing while candidate reads remain. Memory changes check priority, not whether the remaining checks run.
+
 Hard bounds: two logical discovery actions, up to four attempts each (eight total);
 twelve tool attempts per candidate; the existing aggregate planner cap of
 `2 + 7 * max_candidates` (23 maximum), including recovery attempts, remains.
