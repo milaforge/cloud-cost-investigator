@@ -102,8 +102,14 @@ test('investigation requests five-minute metrics and retains two-day gaps in a s
   const options = parseArgs([...args, '--lookback-days', '7']);
   assert.notEqual(options, 'help');
   if (options === 'help') return;
-  for (const source of ['cli', 'standalone', 'two_days', 'explicit_hourly']) {
-    availableDays = source === 'two_days' ? 2 : 7;
+  for (const source of [
+    'cli',
+    'standalone',
+    'two_days',
+    'explicit_hourly',
+    'empty',
+  ]) {
+    availableDays = source === 'empty' ? 0 : source === 'two_days' ? 2 : 7;
     expectedPeriod = source === 'explicit_hourly' ? 3600 : 300;
     const provider =
       source === 'cli' || source === 'two_days'
@@ -130,6 +136,20 @@ test('investigation requests five-minute metrics and retains two-day gaps in a s
       input,
       { mode: 'live', started_at, now: new Date().toISOString() },
     );
+    if (source === 'empty') {
+      assert.equal(result.status, 'unavailable');
+      assert.equal(result.data, null);
+      assert.equal(result.coverage.complete, false);
+      assert.equal(result.metric_coverage?.length, METRICS.length);
+      for (const series of result.metric_coverage ?? []) {
+        assert.equal(series.period_seconds, 300);
+        assert.equal(series.expected_points, 2016);
+        assert.equal(series.returned_points, 0);
+        assert.equal(series.first_sample_at, null);
+        assert.equal(series.last_sample_at, null);
+      }
+      continue;
+    }
     assert.equal(result.status, source === 'two_days' ? 'partial' : 'ok');
     assert.equal(result.coverage.complete, source !== 'two_days');
     assert.equal(result.coverage.authoritative, source !== 'two_days');

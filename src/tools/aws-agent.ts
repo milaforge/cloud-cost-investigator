@@ -312,7 +312,7 @@ export function createAwsEvidenceProvider(
                   e.data.statistic === metric.statistic,
               )?.data;
               const period =
-                series?.periodSeconds ?? options.config?.periodSeconds ?? 3600;
+                series?.periodSeconds ?? options.config?.periodSeconds ?? 300;
               return {
                 field: metric.id,
                 period_seconds: period,
