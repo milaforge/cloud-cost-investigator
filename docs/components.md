@@ -34,11 +34,19 @@ only displays the selected report's memory status; this web investigation path
 does not enable live H-MEM recall/storage. Setup and interactions live in [How](HOW.md#open-the-web-demo).
 
 `scripts/demo-web-jobs.ts` validates the allowlisted action, mode, scope and
-explicit service/write choices; it permits one isolated child worker at a time.
+service/write transport choices; it permits one isolated child worker at a time.
 `scripts/demo-web-worker.ts` calls the existing investigator, H-MEM demonstration
 or Zetaris follow-through functions directly. It never executes arbitrary shell
 commands, accepts provider URLs/credentials from the browser, or exposes SQL.
-The browser exposes only live investigations and live-report decisions. Existing
+The browser exposes only live investigations and live-report decisions.
+For Live investigations the HTTP boundary binds the configured model, automatic
+read-only Zetaris history when configured, and validated server `.env` AWS scope
+(`AWS_EXPECTED_ACCOUNT_ID`, `AWS_REGION`, `CCI_MAX_CANDIDATES`, default limit 1).
+Browser overrides are rejected; missing/invalid scope or model configuration fails
+before worker startup. Clicking Run investigation is the explicit live-run action;
+there is no configuration section or service checkbox. Setup errors use the existing
+toast with `.env` and restart guidance, without showing a running job.
+Only validated scope and configuration status are returned, never credentials. Existing
 CLI/demo entry points and worker regression harnesses remain intact; optional
 progress callbacks feed
 bounded browser events. Offline investigations and learning never enable remote

@@ -48,8 +48,10 @@ AWS SDK v3 clients use the default Node credential chain, including local profil
 SSO, environment credentials or workload roles. Do not pass credentials through
 tool arguments. Select a profile with `AWS_PROFILE` if needed and provide region
 through SDK configuration or `AWS_REGION`. Do not commit credentials or exports.
-`AWS_EXPECTED_ACCOUNT_ID` optionally guards the standalone smoke probe; the
-investigation uses its required `--account` argument as the account guard.
+`AWS_EXPECTED_ACCOUNT_ID` supplies the web Live scope and optionally guards the
+standalone smoke probe; the investigation CLI uses its required `--account`
+argument as the account guard. See [web setup](HOW.md#open-the-web-demo) for
+server-configured region and candidate limits.
 
 Follow [AWS setup and account requirements](AWS_SETUP.md) for profile/environment
 setup, identity and region checks, permissions and common failures.

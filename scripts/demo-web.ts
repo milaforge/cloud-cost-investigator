@@ -1,5 +1,9 @@
 import { loadProjectEnv } from '../src/config.ts';
-import { DemoJobs, demoConfiguration } from './demo-web-jobs.ts';
+import {
+  DemoJobs,
+  demoConfiguration,
+  liveInvestigationFromEnv,
+} from './demo-web-jobs.ts';
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -185,20 +189,29 @@ export async function startDemoServer(port = 0) {
           return;
         }
         try {
-          reply(202, jobs.start(input));
+          const run =
+            input &&
+            typeof input === 'object' &&
+            'kind' in input &&
+            input.kind === 'investigate'
+              ? liveInvestigationFromEnv(input)
+              : input;
+          reply(202, jobs.start(run));
         } catch (error) {
           const code = error instanceof Error ? error.message : '';
           reply(code === 'demo_busy' ? 409 : 400, {
             error:
               code === 'demo_busy'
                 ? 'Another demo is still running.'
-                : code === 'demo_model_not_configured'
-                  ? 'Model configuration is missing or invalid. Configure server .env and restart.'
-                  : code === 'demo_zetaris_not_configured'
-                    ? 'Zetaris configuration and append opt-in are required in server .env. Restart after configuring.'
-                    : code === 'demo_zetaris_history_not_configured'
-                      ? 'Zetaris history configuration is required in server .env. Restart after configuring.'
-                      : 'Invalid demo request or missing explicit service opt-in.',
+                : code === 'live_scope_not_configured'
+                  ? 'Set AWS_EXPECTED_ACCOUNT_ID (12 digits), AWS_REGION and CCI_MAX_CANDIDATES (1–3; default 1) in .env, then restart npm start.'
+                  : code === 'demo_model_not_configured'
+                    ? 'Model configuration is missing or invalid. Set LLM_BASE_URL, LLM_MODEL and any required LLM_API_KEY (or NVIDIA_API_KEY) in .env, then restart npm start.'
+                    : code === 'demo_zetaris_not_configured'
+                      ? 'Zetaris configuration and append opt-in are required in server .env. Restart after configuring.'
+                      : code === 'demo_zetaris_history_not_configured'
+                        ? 'Zetaris history configuration is required in server .env. Restart after configuring.'
+                        : 'Invalid demo request or missing explicit service opt-in.',
           });
         }
         return;

@@ -11,6 +11,55 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Run-click configuration validation without a Live settings section — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. User correction removes the entire
+  Live configuration section and its service checkbox. Clicking Run investigation
+  authorizes the read/model run. The server validates loaded AWS scope and model
+  configuration before worker startup; failures name `.env` settings and request
+  restarting `npm start`. The UI uses its existing toast, restores button focus
+  and never presents a running job, Stop button or events for rejected setup.
+  Separate decision-write acknowledgment remains. Removed unused panel styles;
+  updated agent rules, setup, product context, architecture and rationale.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/demo-web-ui.test.ts tests/demo-web.test.ts tests/demo-web-jobs.test.ts`
+  passed **17/17** with local loopback access. Includes missing/invalid scope and
+  model configuration before worker startup, direct Run clicks, pending validation,
+  successful starts, mode isolation and rejection of browser overrides.
+  `npm run typecheck`, targeted `npx --no-install biome lint` (four changed JS/TS
+  files), `npx --no-install biome format` (those files plus web CSS),
+  `node --check src/web/app.js` and `git diff --check` passed.
+- **Mode/limits/next:** synthetic/local HTTP fixture and DOM-handler proof only;
+  no live AWS, paid-model or remote Zetaris calls and no `.env` edits. No blocker
+  for this slice. Restart `npm start` to reload cached UI assets; configure the
+  intended AWS account guard before a live run. Broader release gates remain open.
+
+
+### Server-configured Live investigations — 2026-10-26
+
+The newer Run-click correction above supersedes the displayed configuration and
+separate investigation service acknowledgment in this earlier implementation.
+
+- **Gate/owner:** Days 3–4 web usability, Milad. Removed browser planner,
+  Zetaris-read and editable scope controls. Live always uses the configured model,
+  automatically reads configured Zetaris history without appending, and displays
+  validated server scope from `AWS_EXPECTED_ACCOUNT_ID`, `AWS_REGION` and
+  `CCI_MAX_CANDIDATES` (1–3, default 1). The HTTP boundary rejects overrides and
+  missing/invalid scope before worker startup. Explicit service/write safeguards
+  remain. Setup, AWS references, project context, agent rules and memory align.
+- **Executed proof:** `npm run typecheck` passed; `node --import tsx --test
+  --test-isolation=none tests/demo-web-ui.test.ts tests/demo-web.test.ts
+  tests/demo-web-jobs.test.ts tests/evidence-diagnostics.test.ts` passed **22/22**.
+  Targeted `npx biome lint` and `npx biome format` on the six changed JS/TS files,
+  plus `git diff --check`, passed. The first sandbox test run had four local
+  `listen EPERM` failures; the complete rerun with loopback access passed.
+- **Mode/limits:** synthetic/local HTTP fixtures only, no live AWS/model/Zetaris
+  calls and no `.env` edits. Existing concurrent edits preserved. Configuration
+  presence inspection found `AWS_REGION` present, account guard and candidate
+  limit absent. **Next action:** set the intended `AWS_EXPECTED_ACCOUNT_ID`,
+  optionally set `CCI_MAX_CANDIDATES`, and restart the server. Missing account
+  configuration blocks Live execution; broader release gates remain open.
+
 ### Missing `.env` startup guidance — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web setup usability, Milad. `npm start` uses the

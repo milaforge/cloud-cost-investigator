@@ -60,6 +60,9 @@ function page(
     setAttribute(key: string, value: string) {
       this.attributes[key] = value;
     }
+    getAttribute(key: string) {
+      return this.attributes[key] ?? null;
+    }
     append(...children: Element[]) {
       for (const child of children) {
         child.parent = this;
@@ -200,7 +203,7 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   p.run('Object.assign(reports, previews)');
   assert.equal(p.get('mode').value, 'demo');
   assert.equal(p.run('active'), null);
-  for (const id of ['run-investigate', 'live-services', 'load'])
+  for (const id of ['run-investigate', 'load'])
     assert.equal(p.get(id).visible, false, id);
   for (const view of ['investigate', 'learn', 'followup']) {
     p.tab(view);
@@ -293,7 +296,23 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
 test('Live tabs expose operations and report context while excluding every demo control', async () => {
   const p = page();
   p.mode('live');
-  for (const id of ['run-investigate', 'live-services', 'load'])
+  for (const id of [
+    'planner',
+    'investigate-history',
+    'account',
+    'region',
+    'candidate-limit',
+    'live-services',
+    'real-investigate',
+    'live-scope',
+    'service-status',
+  ])
+    assert.equal(
+      p.elements.some((el) => el.attributes.id === id),
+      false,
+      id,
+    );
+  for (const id of ['run-investigate', 'load'])
     assert.equal(p.get(id).visible, true, id);
   const tabs = p.elements.filter((el) => el.dataset.view);
   for (const view of ['learn', 'followup']) {
@@ -334,15 +353,15 @@ test('Live tabs expose operations and report context while excluding every demo 
   assert.equal(p.get('learn-live').visible, true);
   p.tab('investigate');
   await p.run("startRun('investigate')");
-  assert.equal(
-    p.requests.some((r) => r.url === '/api/run'),
-    false,
-    'fresh acknowledgment required',
-  );
-  p.get('real-investigate').checked = true;
-  await p.run("startRun('investigate')");
   assert.equal(p.requests.at(-1)?.body?.evidence, 'aws');
   assert.equal(p.requests.at(-1)?.body?.real_services, true);
+  assert.deepEqual(Object.keys(p.requests.at(-1)?.body ?? {}).sort(), [
+    'allow_append',
+    'evidence',
+    'kind',
+    'real_services',
+    'request_id',
+  ]);
   assert.equal('owner_evidence' in (p.requests.at(-1)?.body ?? {}), false);
   const count = p.requests.length;
   await p.run("submitRun({kind:'learn'})");
@@ -361,10 +380,8 @@ test('Live tabs expose operations and report context while excluding every demo 
     'synthetic imports cannot replace a Live report',
   );
   p.mode('demo');
-  assert.equal(p.get('real-investigate').checked, false);
   assert.equal(p.run('active'), null);
   assert.equal(p.get('scenario').value, '');
-  assert.equal(p.get('live-services').visible, false);
   assert.ok(
     tabs.every((el) => !el.disabled),
     'Demo tabs remain enabled',
@@ -380,6 +397,43 @@ test('Live tabs expose operations and report context while excluding every demo 
     tabs.every((el) => !el.disabled),
     'loading a live report unlocks tabs',
   );
+});
+
+test('Run investigation reports configuration errors without presenting a running job', async () => {
+  const p = page();
+  p.mode('live');
+  p.context.fetch = async () => ({
+    ok: false,
+    json: async () => ({
+      error: 'Set AWS_EXPECTED_ACCOUNT_ID in .env, then restart npm start.',
+    }),
+  });
+  await p.get('run-investigate').listeners.click();
+  assert.match(
+    p.get('toast-message').textContent,
+    /AWS_EXPECTED_ACCOUNT_ID.*\.env.*restart npm start/,
+  );
+  assert.equal(p.get('toast').visible, true);
+  assert.equal(p.get('run-state').visible, false);
+  assert.equal(p.get('cancel-run').visible, false);
+  assert.equal(p.get('run-events').closest('.event-panel')?.visible, false);
+  assert.equal(p.get('run-investigate'), p.run('document.activeElement'));
+  p.get('dismiss-toast').listeners.click();
+  assert.equal(p.get('run-investigate'), p.run('document.activeElement'));
+  p.context.fetch = async () => ({
+    ok: true,
+    json: async () => ({
+      request_id: 'valid-config',
+      kind: 'investigate',
+      source_mode: 'live',
+      status: 'running',
+      events: [],
+    }),
+  });
+  await p.get('run-investigate').listeners.click();
+  assert.equal(p.get('run-state').visible, true);
+  assert.equal(p.get('cancel-run').visible, true);
+  assert.equal(p.get('run-investigate').textContent, 'Investigating…');
 });
 
 test('resumed jobs and completed results stay out of Demo; Live progress uses actual source mode', () => {
@@ -413,4 +467,65 @@ test('resumed jobs and completed results stay out of Demo; Live progress uses ac
   p.mode('demo');
   assert.equal(p.get('run-state').visible, false);
   assert.equal(p.run('active'), null);
+});
+
+test('action loading follows pending and resumed jobs, restores labels on terminal states and failed starts', async () => {
+  const p = page();
+  p.get('run-investigate').textContent = 'Run investigation';
+  p.get('save-decision').textContent = 'Save decision to Zetaris';
+  p.mode('live');
+  await p.run("startRun('investigate')");
+  assert.equal(p.get('run-investigate').attributes['aria-busy'], 'false');
+  assert.equal(p.get('run-state').visible, false, 'validation starts no job');
+  assert.equal(p.get('run-investigate'), p.run('document.activeElement'));
+
+  let resolveStart!: (value: unknown) => void;
+  p.context.fetch = () =>
+    new Promise((resolve) => {
+      resolveStart = resolve;
+    });
+  const pending = p.run("startRun('investigate')");
+  assert.equal(p.get('run-investigate').attributes['aria-busy'], 'true');
+  assert.equal(p.get('run-investigate').textContent, 'Checking configuration…');
+  assert.equal(
+    p.get('run-state').visible,
+    false,
+    'configuration is not yet accepted',
+  );
+  assert.equal(p.get('run-investigate').disabled, true);
+  assert.equal(p.get('save-decision').attributes['aria-busy'], 'false');
+  assert.equal(p.get('cancel-run').visible, false, 'start is not confirmed');
+  resolveStart({ ok: false, json: async () => ({ error: 'Rejected' }) });
+  await pending;
+  assert.equal(p.get('run-investigate').attributes['aria-busy'], 'false');
+  assert.equal(p.get('run-investigate').textContent, 'Run investigation');
+  assert.equal(p.get('run-investigate').disabled, false);
+
+  for (const terminal of ['complete', 'failed', 'cancelled']) {
+    p.run(
+      "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:[]})",
+    );
+    p.run(
+      "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',activity:'Checking evidence',events:[]})",
+    );
+    assert.equal(p.get('run-investigate').textContent, 'Investigating…');
+    assert.equal(p.get('run-investigate').attributes['aria-busy'], 'true');
+    p.context.terminal = terminal;
+    p.run(
+      "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:terminal,events:[]})",
+    );
+    assert.equal(p.get('run-investigate').attributes['aria-busy'], 'false');
+    assert.equal(p.get('run-investigate').textContent, 'Run investigation');
+    assert.equal(p.get('run-investigate').disabled, false);
+    assert.equal(p.get('cancel-run').visible, false);
+  }
+  p.run(
+    "paintJob({request_id:'decision',kind:'decision',source_mode:'live',status:'running',events:[]})",
+  );
+  assert.equal(p.get('save-decision').attributes['aria-busy'], 'true');
+  assert.equal(p.get('save-decision').textContent, 'Saving decision…');
+  assert.equal(p.get('run-investigate').attributes['aria-busy'], 'false');
+  p.run('paintJob(null)');
+  assert.equal(p.get('save-decision').textContent, 'Save decision to Zetaris');
+  assert.equal(p.get('save-decision').attributes['aria-busy'], 'false');
 });

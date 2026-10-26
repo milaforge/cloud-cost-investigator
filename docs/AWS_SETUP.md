@@ -112,10 +112,12 @@ npm run investigate -- --evidence aws --account $env:AWS_EXPECTED_ACCOUNT_ID --r
 
 The investigation requires both `--account` and `--region`; its explicit region
 overrides the SDK region default, and the account argument is checked against
-STS. An account ID is a scope guard, not a credential. The optional
-`AWS_EXPECTED_ACCOUNT_ID` is consumed directly by the standalone
-`npm run demo:aws -- --live` smoke script; the investigation instead derives its
-guard from `--account`. By default the smoke script checks only STS and inventory;
+STS. An account ID is a scope guard, not a credential.
+`AWS_EXPECTED_ACCOUNT_ID` supplies the web UI's Live account scope and optionally
+guards the standalone `npm run demo:aws -- --live` smoke script. The investigation
+CLI still derives its guard from `--account`. Web Live also reads `AWS_REGION`
+and `CCI_MAX_CANDIDATES` (1–3, default 1) from server `.env`; restart after edits.
+By default the smoke script checks only STS and inventory;
 `--live --operations` additionally probes SSM and ELBv2 for one retrieved running
 instance. Neither smoke mode queries CloudWatch or Cost Explorer.
 

@@ -44,7 +44,12 @@ until an investigation result or validated saved live report is selected.
 Demo is preview-only: generated synthetic/scripted
 investigation reports, an illustrative learning flow and illustrative fictional
 follow-through. It has no run, owner-input, model/service or remote-write controls.
-Live owns AWS investigation controls, live report loading and
+Live uses the server-configured model, AWS scope (`AWS_EXPECTED_ACCOUNT_ID`,
+`AWS_REGION`, `CCI_MAX_CANDIDATES`) and automatic configured Zetaris history
+reads. It has no Live configuration section or service checkbox: Run investigation
+authorizes the run and validates loaded server configuration before worker startup.
+Configuration errors request `.env` fixes and restarting `npm start`.
+It owns investigation controls, live report loading and
 explicitly acknowledged Zetaris decision recording. Live Learn displays the
 selected report's memory status; live H-MEM recall/storage are not enabled by
 this browser workflow. Separate CLI learning/follow-through demonstrations remain

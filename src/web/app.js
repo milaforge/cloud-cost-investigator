@@ -23,6 +23,17 @@ const node = (tag, text, className) => {
   return el;
 };
 const human = (value) => value.replaceAll('_', ' ');
+function buttonBusy(button, busy, label) {
+  if (button.getAttribute('aria-busy') === String(busy)) return;
+  if (busy) {
+    button.dataset.idleLabel = button.textContent;
+    button.textContent = label;
+  } else if (button.dataset.idleLabel !== undefined) {
+    button.textContent = button.dataset.idleLabel;
+    delete button.dataset.idleLabel;
+  }
+  button.setAttribute('aria-busy', String(busy));
+}
 const toastDuration = 10_000;
 let toastTimer;
 let toastCountdown;
@@ -52,7 +63,7 @@ function showToast(message) {
 }
 $('dismiss-toast').addEventListener('click', () => {
   dismissToast();
-  $(isDemo() ? 'scenario' : 'real-investigate').focus();
+  $(isDemo() ? 'scenario' : 'run-investigate').focus();
 });
 let infoId = 0;
 function info(label, text, symbol = 'i', className = 'info-button') {
@@ -840,9 +851,23 @@ document.addEventListener('drop', (e) => {
 $('close-evidence').addEventListener('click', () => $('evidence').close());
 let currentJob = null;
 let submitted = false;
+let submittingKind = null;
 let polling = null;
 let appliedJob = null;
 const runButtons = ['run-investigate', 'save-decision'];
+function syncRunButtonLoading() {
+  const kind = submitted
+    ? submittingKind
+    : currentJob?.status === 'running' && jobMatchesMode(currentJob)
+      ? currentJob.kind
+      : null;
+  buttonBusy($('run-investigate'), kind === 'investigate', 'Investigating…');
+  if (kind === 'investigate')
+    $('run-investigate').textContent = submitted
+      ? 'Checking configuration…'
+      : 'Investigating…';
+  buttonBusy($('save-decision'), kind === 'decision', 'Saving decision…');
+}
 async function selectScenario(scenario) {
   dismissToast();
   if (!isDemo()) return;
@@ -900,13 +925,9 @@ function setMode() {
     element.hidden = !demo;
   for (const element of document.querySelectorAll('[data-live-only]'))
     element.hidden = demo;
-  $('aws-scope').hidden = demo;
-  $('live-services').open = !demo;
   $('live-evidence').hidden = demo;
-  for (const id of ['real-investigate', 'investigate-history', 'decision-ack'])
-    $(id).checked = false;
+  $('decision-ack').checked = false;
   $('scenario').value = '';
-  $('planner').value = 'scripted';
   $('loaded').hidden = true;
   if ($('evidence').open) $('evidence').close();
   $('message').textContent = '';
@@ -1126,6 +1147,7 @@ function paintJob(job) {
     loading || submitted || (!isDemo() && job?.status === 'running');
   if (!job) {
     currentJob = null;
+    syncRunButtonLoading();
     $('decision-fields').disabled = submitted || !decisionTarget();
     $('run-state').hidden = true;
     $('cancel-run').hidden = true;
@@ -1139,6 +1161,7 @@ function paintJob(job) {
     return;
   }
   currentJob = job;
+  syncRunButtonLoading();
   const running = job.status === 'running';
   $('run-state').hidden = !jobMatchesMode(job);
   $('decision-fields').disabled = running || submitted || !decisionTarget();
@@ -1211,27 +1234,12 @@ async function startRun(kind) {
     currentJob?.status === 'running'
   )
     return;
-  if (!$('real-investigate').checked) {
-    showToast(
-      'Select the explicit real-service acknowledgment before running this action.',
-    );
-    $('live-services').open = true;
-    $('real-investigate').focus();
-    return;
-  }
   const body = {
     request_id: crypto.randomUUID(),
     kind,
-    planner: $('planner').value,
     evidence: 'aws',
-    // Required by the existing transport; ignored for AWS evidence.
-    scenario: 'A',
-    account: $('account').value.trim(),
-    region: $('region').value.trim(),
-    max_candidates: Number($('candidate-limit').value),
     real_services: true,
     allow_append: false,
-    history: $('investigate-history').checked,
   };
   await submitRun(body);
 }
@@ -1244,17 +1252,13 @@ async function submitRun(body) {
   )
     return;
   submitted = true;
+  submittingKind = body.kind;
+  syncRunButtonLoading();
   $('mode').disabled = true;
   runButtons.forEach((id) => {
     $(id).disabled = true;
   });
   $('decision-fields').disabled = true;
-  $('run-state').hidden = false;
-  $('run-status').textContent = 'Starting…';
-  $('cancel-run').hidden = true;
-  $('view-last-result').hidden = true;
-  renderEvents([]);
-  $('run-events').dataset.events = '[]';
   try {
     const response = await fetch('/api/run', {
       method: 'POST',
@@ -1266,16 +1270,22 @@ async function submitRun(body) {
     if (!response.ok) {
       paintJob(currentJob);
       showToast(result.error);
+      $(
+        body.kind === 'investigate' ? 'run-investigate' : 'save-decision',
+      ).focus();
       return;
     }
     paintJob(result);
     polling = setTimeout(pollJob, 100);
   } catch {
+    $('run-state').hidden = false;
     $('run-status').textContent =
       'Start could not be confirmed. Checking server state; the action will not be resubmitted.';
     polling = setTimeout(pollJob, 500);
   } finally {
     submitted = false;
+    submittingKind = null;
+    syncRunButtonLoading();
     $('mode').disabled = loading || currentJob?.status === 'running';
     $('decision-fields').disabled =
       currentJob?.status === 'running' || !decisionTarget();
@@ -1315,18 +1325,15 @@ $('cancel-run').addEventListener('click', async () => {
   polling = setTimeout(pollJob, 500);
 });
 async function loadConfiguration() {
-  fetch('/api/config')
+  return fetch('/api/config')
     .then((r) => r.json())
     .then((config) => {
-      $('service-status').textContent =
-        `Model configuration: ${config.model ? 'present, unverified' : 'missing or invalid'}. Zetaris history: ${config.zetaris ? 'configured, unverified' : 'missing'}. AWS uses the server credential chain; the account ID is a scope check.`;
       $('followup-config').textContent =
         config.zetaris && config.zetaris_append
           ? 'Zetaris is configured for saving decisions. Connectivity is verified when you save.'
           : 'Zetaris saving is unavailable: configure history credentials, history table and append opt-in in server .env, then restart.';
     })
     .catch(() => {
-      $('service-status').textContent = 'Could not read configuration status.';
       $('followup-config').textContent = 'Configuration status unavailable.';
     });
 }

@@ -603,17 +603,10 @@ dd {
   justify-content: space-between;
   font-size: 0.65rem;
 }
-.service-controls {
-  margin-top: 12px;
-}
-.service-controls label,
 .intro label {
   display: block;
   font-size: 0.8rem;
   margin: 14px 0;
-}
-.service-controls p {
-  font-size: 0.75rem;
 }
 input[type="checkbox"] {
   margin-right: 7px;

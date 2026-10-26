@@ -16,7 +16,7 @@
 
 <p id="message" role="status" aria-live="polite">Generating the demonstration…</p>
 <section id="report" aria-label="Investigation report" aria-busy="true"></section>
-<details id="live-services" class="service-controls" data-live-only hidden><summary>Real services & scope</summary><p class="hint">Uses server configuration. Credentials stay on this computer. Configuration is not proof of connectivity.</p><p id="service-status"></p><label><input type="checkbox" id="real-investigate"> Enable real services for this run</label><label>Planner <select id="planner"><option value="scripted">Scripted · offline</option><option value="model">Configured model · may incur usage</option></select></label><p class="hint">Live AWS evidence · read-only</p><label><input type="checkbox" id="investigate-history"> Read Zetaris decision history for discovered instances (no writes)</label><div id="aws-scope" hidden><label>Account ID <input id="account" value="605629425343" inputmode="numeric" maxlength="12" placeholder="12-digit AWS account"></label><label>Region <input id="region" value="eu-west-3"></label><label>Candidate limit <select id="candidate-limit"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label><p class="hint">The account ID verifies scope; it does not sign in to AWS. Configure the server's AWS SDK credentials or AWS_PROFILE before starting it. Last 14 complete UTC days. Missing operational sources remain unknown. No history writes.</p></div></details>
+
 </section>
 <section id="view-learn" hidden>
 <div id="learn-demo" data-demo-only>

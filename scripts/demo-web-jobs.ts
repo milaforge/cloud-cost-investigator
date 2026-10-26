@@ -147,18 +147,70 @@ export function validateDemoRun(value: unknown): DemoRun {
     max_candidates: integer(o.max_candidates, 1, 3),
   };
 }
-export function demoConfiguration() {
+function liveScopeFromEnv(env: NodeJS.ProcessEnv) {
+  try {
+    const scope = validateScope({
+      account_id: env.AWS_EXPECTED_ACCOUNT_ID,
+      region: env.AWS_REGION,
+    });
+    if (!/^\d{12}$/.test(scope.account_id)) throw new Error();
+    return {
+      account: scope.account_id,
+      region: scope.region,
+      max_candidates: integer(Number(env.CCI_MAX_CANDIDATES ?? '1'), 1, 3),
+    };
+  } catch {
+    throw new Error('live_scope_not_configured');
+  }
+}
+
+/** Browser requests cannot choose a planner, history policy or AWS scope. */
+export function liveInvestigationFromEnv(
+  input: unknown,
+  env: NodeJS.ProcessEnv = process.env,
+): DemoRun {
+  const o = exact(input, [
+    'request_id',
+    'kind',
+    'evidence',
+    'real_services',
+    'allow_append',
+  ]);
+  if (
+    o.kind !== 'investigate' ||
+    o.evidence !== 'aws' ||
+    o.real_services !== true ||
+    o.allow_append !== false
+  )
+    throw new Error('Invalid live investigation request');
+  return validateDemoRun({
+    ...o,
+    ...liveScopeFromEnv(env),
+    planner: 'model',
+    history: demoConfiguration(env).zetaris,
+    // The worker's shared transport requires a scenario; AWS ignores it.
+    scenario: 'A',
+  });
+}
+
+export function demoConfiguration(env: NodeJS.ProcessEnv = process.env) {
   let model = false;
   try {
-    modelConfigFromEnv();
+    modelConfigFromEnv(env);
     model = true;
   } catch {
     /* Presence/format only, no network probe. */
   }
-  const env = process.env;
+  let live_scope = null;
+  try {
+    live_scope = liveScopeFromEnv(env);
+  } catch {
+    /* Invalid values are never returned to the browser. */
+  }
   const login = !!(env.ZETARIS_USERNAME && env.ZETARIS_PASSWORD);
   const token = !!(env.ZETARIS_API_KEY && env.ZETARIS_ORG_ID);
   return {
+    live_scope,
     model,
     zetaris: !!(
       env.ZETARIS_BASE_URL &&

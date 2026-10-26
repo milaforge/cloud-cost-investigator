@@ -1,5 +1,37 @@
 # Project Memory
 
+## Run-time configuration feedback without a Live settings panel (2026-10-26)
+
+- User correction: remove the entire Live configuration section, including its
+  real-service checkbox. Clicking Run investigation authorizes the live read/model
+  run; no extra browser acknowledgment is needed for that investigation.
+- Validate the server's loaded `.env` configuration at the run boundary. Missing
+  or invalid AWS scope/model settings fail before any worker starts; the existing
+  toast names the settings to fix and says to restart `npm start`. Preserve shell
+  precedence, default candidate limit, read-only AWS and optional read-only history.
+- Pending configuration checks may show button loading, but do not reveal a running
+  job, Stop button or execution events. Configuration validation is not a network
+  connectivity proof. Decision writes retain their separate explicit acknowledgment.
+- This supersedes displayed Live scope and the separate investigation service
+  acknowledgment in the earlier server-owned settings decision, as well as older
+  missing-service-acknowledgment browser guidance.
+
+## Server-owned Live investigation settings (2026-10-26)
+
+- The user removed planner/history choices and editable AWS scope from Live.
+  Live means the configured model and automatic read-only Zetaris history when
+  configured; missing history is labeled unavailable, never synthetic fallback.
+- Reuse `AWS_EXPECTED_ACCOUNT_ID` for the account guard and `AWS_REGION` for
+  scope; `CCI_MAX_CANDIDATES` is 1–3 and defaults to 1. Keep CLI flags unchanged.
+  Server `.env` loading preserves shell precedence. Never migrate the former
+  hardcoded browser account into configuration without knowing the intended scope.
+- Bind and validate these settings at the HTTP boundary. Browser overrides fail,
+  invalid scope starts no worker, and configuration responses expose only validated
+  scope/status. Keep append-write safeguards; the newer user correction above
+  replaces the investigation acknowledgment with the Run action.
+- This supersedes the Oct 24 optional browser Zetaris-recall choice. History
+  remains historical context and cannot satisfy fresh-evidence safety checks.
+
 ## Missing web configuration notice (2026-10-26)
 
 - Reuse the environment loader's missing-file result to show setup guidance at

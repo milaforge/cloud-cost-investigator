@@ -125,6 +125,87 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
   }
 });
 
+test('Live HTTP configuration rejects missing scope and browser overrides before starting work', async () => {
+  const keys = [
+    'AWS_EXPECTED_ACCOUNT_ID',
+    'AWS_REGION',
+    'CCI_MAX_CANDIDATES',
+    'LLM_BASE_URL',
+    'LLM_MODEL',
+    'LLM_API_KEY',
+    'LLM_RESPONSE_FORMAT',
+    'LLM_EXTRA_BODY',
+    'NVIDIA_API_KEY',
+  ] as const;
+  const previous = keys.map((key) => process.env[key]);
+  const { server, url } = await startDemoServer();
+  try {
+    process.env.AWS_EXPECTED_ACCOUNT_ID = '';
+    process.env.AWS_REGION = 'eu-west-3';
+    process.env.CCI_MAX_CANDIDATES = '2';
+    const post = (body: object) =>
+      fetch(`${url}/api/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: url },
+        body: JSON.stringify(body),
+      });
+    const body = {
+      request_id: 'config-http-test',
+      kind: 'investigate',
+      evidence: 'aws',
+      real_services: true,
+      allow_append: false,
+    };
+    const rejected = await post(body);
+    assert.equal(rejected.status, 400);
+    assert.match(
+      (await rejected.json()).error,
+      /AWS_EXPECTED_ACCOUNT_ID.*\.env.*restart npm start/,
+    );
+    assert.equal(await (await fetch(`${url}/api/job`)).json(), null);
+    process.env.AWS_EXPECTED_ACCOUNT_ID = '123456789012';
+    const config = await (await fetch(`${url}/api/config`)).json();
+    assert.deepEqual(config.live_scope, {
+      account: '123456789012',
+      region: 'eu-west-3',
+      max_candidates: 2,
+    });
+    for (const key of keys.filter(
+      (key) => key.startsWith('LLM_') || key === 'NVIDIA_API_KEY',
+    ))
+      delete process.env[key];
+    for (const model of [undefined, 'invalid']) {
+      if (model !== undefined) {
+        process.env.LLM_BASE_URL = model;
+        process.env.LLM_MODEL = 'test-model';
+      }
+      const modelRejected = await post(body);
+      assert.equal(modelRejected.status, 400);
+      assert.match(
+        (await modelRejected.json()).error,
+        /Model configuration.*\.env.*restart npm start/,
+      );
+      assert.equal(await (await fetch(`${url}/api/job`)).json(), null);
+    }
+    const injected = await post({
+      ...body,
+      planner: 'scripted',
+      account: '999999999999',
+    });
+    assert.equal(injected.status, 400);
+    assert.equal(await (await fetch(`${url}/api/job`)).json(), null);
+  } finally {
+    keys.forEach((key, index) => {
+      if (previous[index] === undefined) delete process.env[key];
+      else process.env[key] = previous[index];
+    });
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});
+
 test('browser launcher reports success and gracefully handles a missing opener', {
   skip: process.platform === 'win32',
 }, async () => {

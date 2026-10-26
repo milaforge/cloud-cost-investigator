@@ -179,7 +179,7 @@ defaults to **Demo**, with no scenario or report selected.
 
 | Tab | Demo — preview only | Live — operations |
 | --- | --- | --- |
-| **Investigate** | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Configure AWS account, region, candidate limit and planner; acknowledge real services, then **Run investigation**. Optionally read Zetaris history. Load a live report for inspection. |
+| **Investigate** | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Click **Run investigation** to validate server configuration and start. Missing or invalid settings prompt `.env` fixes and a restart of `npm start`. Uses the configured model and reads configured Zetaris history automatically. Load a live report for inspection. |
 | **Learn** | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes. | Inspect the selected live report's H-MEM status and limitations. Live recall/lesson storage are not enabled by this browser workflow; no synthetic demonstration is offered here. |
 | **Follow through** | Read illustrative defer/review and accept/outcome paths. No forms, service calls or retained records. | Accept or defer a completed conditional recommendation, with attributed reason and explicit Zetaris storage acknowledgment. Readback verifies the stored decision and linked recommendation. |
 
@@ -193,8 +193,8 @@ The separate [H-MEM demonstration](evaluation/README.md) and
 [follow-through CLI](FOLLOW_UP.md#reproducible-proof) retain their existing
 explicit service/write requirements outside this preview UI.
 
-Switching modes clears the displayed report, scenario and service/write/owner
-acknowledgments, closes open evidence and never starts a run. Live mode is locked
+Switching modes clears the displayed report, scenario and decision-write
+acknowledgment, closes open evidence and never starts a run. Live mode is locked
 while a run is active. A page reopened in Demo can enter Live to manage an
 already active run. Prior completed results require **View last result** in Live;
 synthetic jobs and results are excluded from live operations.
@@ -202,14 +202,21 @@ synthetic jobs and results are excluded from live operations.
 The server loads the project `.env`, preserving shell precedence, but does not
 contact services on startup. If `.env` is missing, startup suggests copying or
 renaming `.env.example` to `.env`, filling in the required service values and
-restarting; Demo mode remains available. Live configuration labels indicate presence, **not
-verified connectivity**. In Live, select the configured planner and explicitly
-enable real services before running. [Model setup](CLI_GUIDE.md#model-configuration)
+restarting; Demo mode remains available. Set `AWS_EXPECTED_ACCOUNT_ID` (12 digits),
+`AWS_REGION` and `CCI_MAX_CANDIDATES` (1–3, default 1) in `.env`, then restart
+`npm start`. Live has no configuration section or service checkbox. Clicking
+**Run investigation** authorizes the live read/model run and validates the loaded
+AWS scope and model configuration before starting a worker. Missing or invalid
+settings show a toast explaining which `.env` settings to fix and to restart
+`npm start`; no running job, Stop button or execution events appear. Configuration
+validation does not establish service connectivity. Live always uses the configured
+model. [Model setup](CLI_GUIDE.md#model-configuration)
 stays server-side; model calls may incur usage. The [AWS setup](AWS_SETUP.md) and
 missing-source limits still apply. The account ID checks the authenticated AWS
 scope; it does not authenticate the browser. Configure the server's AWS SDK
-credential chain or `AWS_PROFILE` before starting it. **Read Zetaris decision
-history** queries prior records for discovered instances without appending.
+credential chain or `AWS_PROFILE` before starting it. Configured Zetaris decision
+history is queried automatically for discovered instances without appending.
+If history is not configured, the resulting report records it as unconfigured.
 History never replaces live evidence. The normal CLI still defaults to live AWS.
 
 Live decision recording requires [Zetaris setup](ZETARIS_SETUP.md), server-side
@@ -251,8 +258,7 @@ the key checks and proposal/rejection sequence. UTC timestamps label evidence
 collection; reasoning steps without recorded times say so. Hover, focus or tap
 an **i** control for supporting details. Select evidence links for observations
 and coverage. Expand **Window, assumptions & remaining checks** or **Full
-investigation trace** for the complete detail. **Real services & scope** sits
-below the report. Motion respects the system reduced-motion preference. Architecture and
+investigation trace** for the complete detail. Motion respects the system reduced-motion preference. Architecture and
 execution bounds live in [components](components.md#local-report-viewer).
 
 ## Six-scenario evidence proof

@@ -10,6 +10,7 @@ import {
   DemoJobs,
   validateDemoRun,
   demoConfiguration,
+  liveInvestigationFromEnv,
 } from '../scripts/demo-web-jobs.ts';
 import { generateDemoReports } from '../scripts/demo-web.ts';
 import type { recordDecision } from '../src/investigation/follow-up.ts';
@@ -61,10 +62,80 @@ test('web execution validates opt-ins and rejects unapproved input', () => {
   ])
     assert.throws(() => validateDemoRun({ ...input, ...change }));
   assert.deepEqual(Object.keys(demoConfiguration()).sort(), [
+    'live_scope',
     'model',
     'zetaris',
     'zetaris_append',
   ]);
+});
+
+test('Live browser investigations bind validated server scope, model and read-only history', () => {
+  const request = {
+    request_id: 'live-config-test',
+    kind: 'investigate',
+    evidence: 'aws',
+    real_services: true,
+    allow_append: false,
+  };
+  const env = {
+    AWS_EXPECTED_ACCOUNT_ID: '123456789012',
+    AWS_REGION: 'eu-west-3',
+    CCI_MAX_CANDIDATES: '3',
+    ZETARIS_BASE_URL: 'https://history.example',
+    ZETARIS_HISTORY_TABLE: 'CCI_HISTORY.app.records',
+    ZETARIS_USERNAME: 'test-user',
+    ZETARIS_PASSWORD: 'test-password',
+    ZETARIS_HISTORY_ALLOW_APPEND: 'true',
+  };
+  assert.deepEqual(liveInvestigationFromEnv(request, env), {
+    ...request,
+    account: env.AWS_EXPECTED_ACCOUNT_ID,
+    region: env.AWS_REGION,
+    max_candidates: 3,
+    planner: 'model',
+    history: true,
+    scenario: 'A',
+  });
+  const minimal = {
+    AWS_EXPECTED_ACCOUNT_ID: env.AWS_EXPECTED_ACCOUNT_ID,
+    AWS_REGION: env.AWS_REGION,
+  };
+  const run = liveInvestigationFromEnv(request, minimal);
+  assert.ok(run.kind !== 'decision');
+  assert.equal(run.max_candidates, 1);
+  assert.equal(run.history, false);
+  for (const change of [
+    { AWS_EXPECTED_ACCOUNT_ID: undefined },
+    { AWS_EXPECTED_ACCOUNT_ID: 'invalid' },
+    { AWS_REGION: undefined },
+    { AWS_REGION: 'invalid' },
+    ...['', '0', '4', '1.5', 'NaN'].map((CCI_MAX_CANDIDATES) => ({
+      CCI_MAX_CANDIDATES,
+    })),
+  ]) {
+    const invalid = { ...env, ...change };
+    assert.throws(
+      () => liveInvestigationFromEnv(request, invalid),
+      /live_scope_not_configured/,
+    );
+    assert.equal(demoConfiguration(invalid).live_scope, null);
+  }
+  for (const change of [
+    { account: '999999999999' },
+    { region: 'us-east-1' },
+    { max_candidates: 2 },
+    { planner: 'scripted' },
+    { history: false },
+    { allow_append: true },
+    { real_services: false },
+    { evidence: 'mock' },
+  ])
+    assert.throws(() =>
+      liveInvestigationFromEnv({ ...request, ...change }, env),
+    );
+  const config = JSON.stringify(demoConfiguration(env));
+  assert.ok(!config.includes(env.ZETARIS_PASSWORD));
+  assert.ok(!config.includes(env.ZETARIS_BASE_URL));
 });
 
 test('isolated offline investigations and H-MEM learning return actual results with bounded progress', async () => {
