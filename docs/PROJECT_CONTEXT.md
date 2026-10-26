@@ -42,7 +42,7 @@ The local web UI has a top-center Mode select defaulting to **Demo**. All three
 tabs exist in both modes. Demo is preview-only: generated synthetic/scripted
 investigation reports, an illustrative learning flow and illustrative fictional
 follow-through. It has no run, owner-input, model/service or remote-write controls.
-Live owns AWS investigation controls, owner evidence, live report loading and
+Live owns AWS investigation controls, live report loading and
 explicitly acknowledged Zetaris decision recording. Live Learn displays the
 selected report's memory status; live H-MEM recall/storage are not enabled by
 this browser workflow. Separate CLI learning/follow-through demonstrations remain
@@ -174,10 +174,11 @@ Do not count a partially completed run as fully investigated. A `partial` run ma
 Operator-supplied owner statements are a separate optional `owner_evidence`
 report section, never direct current-evidence observations. They carry scope,
 instance, attribution, topic, reference, assertion time and applicable interval.
-The local UI does not authenticate ownership; statements cannot satisfy clearance,
-change verdicts, enter model prompts or teach/persist through H-MEM/Zetaris.
+The browser no longer collects owner statements; saved reports retain display
+and export support. Ownership is not authenticated; statements cannot satisfy
+clearance, change verdicts, enter model prompts or teach/persist through H-MEM/Zetaris.
 Retirement intent remains supporting context outside the scheduling decision.
-See [capture and retention behavior](HOW.md#open-the-web-demo).
+See [saved-report retention behavior](HOW.md#open-the-web-demo).
 
 ## 9. Test and release acceptance
 

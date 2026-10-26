@@ -932,13 +932,6 @@ dialog::backdrop {
   background: #43584a;
 }
 
-#owner-evidence-fields textarea {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  resize: vertical;
-}
-
 .decision-form {
   max-width: 660px;
   margin: 24px 0;

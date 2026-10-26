@@ -1,5 +1,16 @@
 # Project Memory
 
+## Remove browser owner-statement capture (2026-10-26)
+
+- User requested removal of the optional owner-evidence form to simplify the UI.
+  It only attached unverified notes to reports and never changed investigation
+  policy. Remove capture, submission handlers and unused styles together so
+  mode switches and investigation startup do not reference deleted elements.
+- This supersedes browser capture in the Oct 25 owner-statements decision.
+  Preserve the optional report contract and saved-report display/export for
+  compatibility; owner prose still cannot satisfy safety gates, enter planner
+  prompts, teach H-MEM or persist to Zetaris.
+
 ## Web startup without preview work (2026-10-26)
 
 - Serve the shared Demo/Live UI without generating or fetching synthetic

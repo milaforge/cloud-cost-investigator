@@ -200,12 +200,7 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   p.run('Object.assign(reports, previews)');
   assert.equal(p.get('mode').value, 'demo');
   assert.equal(p.run('active'), null);
-  for (const id of [
-    'run-investigate',
-    'live-services',
-    'live-owner-evidence',
-    'load',
-  ])
+  for (const id of ['run-investigate', 'live-services', 'load'])
     assert.equal(p.get(id).visible, false, id);
   for (const view of ['investigate', 'learn', 'followup']) {
     p.tab(view);
@@ -298,12 +293,7 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
 test('Live tabs expose operations and report context while excluding every demo control', async () => {
   const p = page();
   p.mode('live');
-  for (const id of [
-    'run-investigate',
-    'live-services',
-    'live-owner-evidence',
-    'load',
-  ])
+  for (const id of ['run-investigate', 'live-services', 'load'])
     assert.equal(p.get(id).visible, true, id);
   for (const view of ['investigate', 'learn', 'followup']) {
     p.tab(view);
@@ -325,6 +315,7 @@ test('Live tabs expose operations and report context while excluding every demo 
   await p.run("startRun('investigate')");
   assert.equal(p.requests.at(-1)?.body?.evidence, 'aws');
   assert.equal(p.requests.at(-1)?.body?.real_services, true);
+  assert.equal('owner_evidence' in (p.requests.at(-1)?.body ?? {}), false);
   const count = p.requests.length;
   await p.run("submitRun({kind:'learn'})");
   await p.run("submitRun({kind:'investigate',evidence:'mock'})");
@@ -341,9 +332,7 @@ test('Live tabs expose operations and report context while excluding every demo 
     'unchanged',
     'synthetic imports cannot replace a Live report',
   );
-  p.get('owner-evidence-enabled').checked = true;
   p.mode('demo');
-  assert.equal(p.get('owner-evidence-enabled').checked, false);
   assert.equal(p.get('real-investigate').checked, false);
   assert.equal(p.run('active'), null);
   assert.equal(p.get('scenario').value, '');

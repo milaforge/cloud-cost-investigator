@@ -179,7 +179,7 @@ defaults to **Demo**, with no scenario or report selected.
 
 | Tab | Demo — preview only | Live — operations |
 | --- | --- | --- |
-| **Investigate** | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Configure AWS account, region, candidate limit and planner; acknowledge real services, then **Run investigation**. Optionally supply owner evidence or read Zetaris history. Load a live report for inspection. |
+| **Investigate** | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Configure AWS account, region, candidate limit and planner; acknowledge real services, then **Run investigation**. Optionally read Zetaris history. Load a live report for inspection. |
 | **Learn** | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes. | Inspect the selected live report's H-MEM status and limitations. Live recall/lesson storage are not enabled by this browser workflow; no synthetic demonstration is offered here. |
 | **Follow through** | Read illustrative defer/review and accept/outcome paths. No forms, service calls or retained records. | Accept or defer a completed conditional recommendation, with attributed reason and explicit Zetaris storage acknowledgment. Readback verifies the stored decision and linked recommendation. |
 
@@ -238,17 +238,11 @@ files. Uploads go only to this local server for validation and are not saved to
 disk. Invalid files preserve the current display. Loaded files remain in the
 current page until replaced or refreshed; keep real-account reports private.
 
-In **Live**, **Owner evidence (optional)** captures one attributed statement for the next run:
-instance ID, owner/team, topic, statement, ticket/document reference, and an
-applicable UTC date range (exclusive end, at most 90 days). Account and region
-come from the selected scope; submission records the assertion time. Changing
-scope or scenario requires opting in again. The report and JSON export label it
-as **unverified supporting context**. Owner identity is not authenticated; the
-statement cannot satisfy safety gates, approve infrastructure changes or turn
-retirement intent into an off-hours recommendation. It is excluded from planner
-prompts, H-MEM lessons and Zetaris history writes. Keep secrets out of statements
-and references. A restart or page refresh can lose the unsaved form; export the
-report to retain it. Old reports without owner evidence remain valid.
+The browser no longer collects owner statements. Previously saved reports with
+`owner_evidence` still load, display the statements as **unverified supporting
+context**, and retain them in JSON exports. They cannot satisfy safety gates,
+affect verdicts or approve infrastructure changes; they stay out of planner
+prompts, H-MEM lessons and Zetaris history writes.
 
 The verdict and next human action lead the report. **How it got there** shows
 the key checks and proposal/rejection sequence. UTC timestamps label evidence

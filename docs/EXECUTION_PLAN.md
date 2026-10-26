@@ -11,6 +11,27 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Remove optional owner-evidence input — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. Removed the optional owner
+  statement form, its submission/reset handlers and unused textarea styles.
+  Saved reports still validate, display and export existing `owner_evidence`;
+  investigation policy and safety checks are unchanged. Usage, product context,
+  component documentation and decision rationale are aligned.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/demo-web-ui.test.ts tests/demo-web.test.ts tests/demo-web-jobs.test.ts
+  tests/evidence-diagnostics.test.ts` passed **19/19** with loopback access.
+  Coverage includes mode switches, validation/rejected starts, request omission
+  of owner statements, saved-report round-trip and exclusion from planning,
+  clearance, memory and history. `npm run typecheck`, `npm run lint`,
+  `npx --no-install biome format src/web/app.js src/web/style.css
+  tests/demo-web-ui.test.ts`, `node --check src/web/app.js` and
+  `git diff --check` passed. Lint retains one pre-existing probe style info.
+- **Mode/limits/next:** local fixtures and DOM-handler verification only; no AWS,
+  paid-model or remote Zetaris calls. The sandbox initially blocked four HTTP
+  fixtures with `listen EPERM`; the loopback-enabled rerun passed. Restart the
+  viewer to reload cached assets. Existing live/release gates remain open.
+
 ### Preview-only Demo across all tabs — 2026-10-26
 
 - **Gate/owner:** Days 3–4 demo usability, Milad. User clarified Demo is

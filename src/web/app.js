@@ -889,14 +889,8 @@ function setMode() {
   $('aws-scope').hidden = demo;
   $('live-services').open = !demo;
   $('live-evidence').hidden = demo;
-  for (const id of [
-    'real-investigate',
-    'investigate-history',
-    'decision-ack',
-    'owner-evidence-enabled',
-  ])
+  for (const id of ['real-investigate', 'investigate-history', 'decision-ack'])
     $(id).checked = false;
-  $('owner-evidence-fields').hidden = true;
   $('scenario').value = '';
   $('planner').value = 'scripted';
   $('loaded').hidden = true;
@@ -1211,41 +1205,8 @@ async function startRun(kind) {
     $('real-investigate').focus();
     return;
   }
-  let ownerEvidence;
-  if ($('owner-evidence-enabled').checked) {
-    for (const input of $('owner-evidence-fields').querySelectorAll(
-      'input, textarea',
-    )) {
-      if (!input.reportValidity()) return;
-    }
-    const from = `${$('owner-from').value}T00:00:00.000Z`;
-    const to = `${$('owner-to').value}T00:00:00.000Z`;
-    if (
-      Date.parse(to) <= Date.parse(from) ||
-      Date.parse(to) - Date.parse(from) > 90 * 86400000
-    ) {
-      showToast(
-        'Owner evidence needs an increasing UTC date range of at most 90 days.',
-      );
-      return;
-    }
-    ownerEvidence = [
-      {
-        account_id: $('account').value.trim(),
-        region: $('region').value.trim(),
-        instance_id: $('owner-instance').value.trim(),
-        owner: $('owner-name').value.trim(),
-        topic: $('owner-topic').value,
-        statement: $('owner-statement').value.trim(),
-        source_ref: $('owner-reference').value.trim(),
-        asserted_at: new Date().toISOString(),
-        valid_window: { from, to },
-      },
-    ];
-  }
   const body = {
     request_id: crypto.randomUUID(),
-    ...(ownerEvidence ? { owner_evidence: ownerEvidence } : {}),
     kind,
     planner: $('planner').value,
     evidence: 'aws',
@@ -1311,15 +1272,6 @@ async function submitRun(body) {
     });
   }
 }
-for (const id of ['account', 'region', 'scenario']) {
-  $(id).addEventListener('change', () => {
-    $('owner-evidence-enabled').checked = false;
-    $('owner-evidence-fields').hidden = true;
-  });
-}
-$('owner-evidence-enabled').addEventListener('change', () => {
-  $('owner-evidence-fields').hidden = !$('owner-evidence-enabled').checked;
-});
 $('run-investigate').addEventListener('click', () => startRun('investigate'));
 $('view-last-result').addEventListener('click', () => {
   if (currentJob?.status !== 'complete' || !jobMatchesMode(currentJob)) return;

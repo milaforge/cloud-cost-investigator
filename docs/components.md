@@ -28,7 +28,7 @@ report validation. Native negative scans never supply positive safety proof.
 synthetic A/B/C/missing/mixed previews. Startup only serves the UI. Explicit
 selection generates a preview; concurrent requests share its pending result,
 and failed generation can be retried. `src/web/` separates preview-only Demo
-content from Live investigation, owner input and decision recording across all
+content from Live investigation and decision recording across all
 three tabs. Demo handlers reject run, decision and upload submissions. Live Learn
 only displays the selected report's memory status; this web investigation path
 does not enable live H-MEM recall/storage. Setup and interactions live in [How](HOW.md#open-the-web-demo).
