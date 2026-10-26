@@ -1,0 +1,154 @@
+{
+  "measured_at": "2026-10-26T12:36:20.917Z",
+  "mode": "live_read_only",
+  "model_calls": 0,
+  "writes": 0,
+  "scope_verified": true,
+  "last_complete_utc_day": {
+    "from": "2026-10-25T00:00:00.000Z",
+    "to": "2026-10-26T00:00:00.000Z"
+  },
+  "inventory": {
+    "running_count": 1,
+    "launch_time": "2026-10-24T17:25:19.000Z",
+    "owner_tag_present": false,
+    "environment_tag_present": false
+  },
+  "metrics": {
+    "status": "ok",
+    "issues": [
+      {
+        "code": "MEMORY_NOT_COLLECTED",
+        "field": "memory",
+        "severity": "info"
+      }
+    ],
+    "series": [
+      {
+        "metric": "CPUUtilization",
+        "statistic": "Average",
+        "expected": 288,
+        "returned": 288,
+        "first": "2026-10-25T00:00:00.000Z",
+        "last": "2026-10-25T23:55:00.000Z"
+      },
+      {
+        "metric": "CPUUtilization",
+        "statistic": "Maximum",
+        "expected": 288,
+        "returned": 288,
+        "first": "2026-10-25T00:00:00.000Z",
+        "last": "2026-10-25T23:55:00.000Z"
+      },
+      {
+        "metric": "NetworkIn",
+        "statistic": "Sum",
+        "expected": 288,
+        "returned": 288,
+        "first": "2026-10-25T00:00:00.000Z",
+        "last": "2026-10-25T23:55:00.000Z"
+      },
+      {
+        "metric": "NetworkOut",
+        "statistic": "Sum",
+        "expected": 288,
+        "returned": 288,
+        "first": "2026-10-25T00:00:00.000Z",
+        "last": "2026-10-25T23:55:00.000Z"
+      }
+    ]
+  },
+  "billing": {
+    "status": "response_complete",
+    "requests": 1,
+    "requested_days": 14,
+    "returned_periods": 14,
+    "days_with_groups": 2,
+    "days": [
+      {
+        "from": "2026-10-12T00:00:00Z",
+        "to": "2026-10-13T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-13T00:00:00Z",
+        "to": "2026-10-14T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-14T00:00:00Z",
+        "to": "2026-10-15T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-15T00:00:00Z",
+        "to": "2026-10-16T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-16T00:00:00Z",
+        "to": "2026-10-17T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-17T00:00:00Z",
+        "to": "2026-10-18T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-18T00:00:00Z",
+        "to": "2026-10-19T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-19T00:00:00Z",
+        "to": "2026-10-20T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-20T00:00:00Z",
+        "to": "2026-10-21T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-21T00:00:00Z",
+        "to": "2026-10-22T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-22T00:00:00Z",
+        "to": "2026-10-23T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-23T00:00:00Z",
+        "to": "2026-10-24T00:00:00Z",
+        "group_count": 0,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-24T00:00:00Z",
+        "to": "2026-10-25T00:00:00Z",
+        "group_count": 1,
+        "estimated": true
+      },
+      {
+        "from": "2026-10-25T00:00:00Z",
+        "to": "2026-10-26T00:00:00Z",
+        "group_count": 1,
+        "estimated": true
+      }
+    ]
+  }
+}

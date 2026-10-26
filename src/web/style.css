@@ -404,12 +404,17 @@ time {
   line-height: 1.6;
 }
 .pending-checks {
-  display: flex;
-  align-items: center;
-  gap: 7px;
   font-size: 0.7rem;
   color: var(--amber);
   margin-top: 18px;
+}
+.pending-checks > span {
+  display: block;
+  font-weight: 600;
+}
+.pending-checks ul {
+  margin: 7px 0 0;
+  line-height: 1.5;
 }
 .journey {
   padding-top: 7px;

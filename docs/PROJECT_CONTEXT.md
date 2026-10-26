@@ -47,7 +47,7 @@ reads. It has no Live configuration section or service checkbox: Run investigati
 authorizes the run and validates loaded server configuration before worker startup.
 Configuration errors request `.env` fixes and restarting `npm start`.
 It owns investigation controls, live report loading and
-explicitly acknowledged Zetaris decision recording. Live Learn displays the
+Zetaris decision recording through the explicit Save decision action. Live Learn displays the
 selected report's memory status; live H-MEM recall/storage are not enabled by
 this browser workflow. Separate CLI learning/follow-through demonstrations remain
 available with their existing safeguards. [How](HOW.md#open-the-web-demo) owns

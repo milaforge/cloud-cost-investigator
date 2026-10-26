@@ -36,10 +36,11 @@ import {
 } from './planner.ts';
 import {
   assessScheduling,
+  conflictExplanation,
+  isExpectedAwsCoverageLimit,
   nextHumanActions,
   rankCandidates,
   sameSchedule,
-  conflictExplanation,
   supportsTentativeWindow,
 } from './policy.ts';
 import { ModelHttpError } from './provider-error.ts';
@@ -908,7 +909,11 @@ export async function runInvestigation(
         candidate.missing_checks.push(
           'Authorized human shutdown decision is not supplied by CCI. Review the retrieved evidence and obtain approval through the external change process.',
         );
-      candidate.explanation = `Decision deferred. ${candidate.missing_checks[0].slice(0, 200)} No shutdown recommendation is issued.`;
+      candidate.explanation = isExpectedAwsCoverageLimit(
+        candidate.missing_checks[0],
+      )
+        ? 'Decision deferred. AWS operational checks completed, but native AWS sources cannot establish all workload jobs, dependencies, or owner clearance. No shutdown recommendation is issued.'
+        : `Decision deferred. ${candidate.missing_checks[0].slice(0, 200)} No shutdown recommendation is issued.`;
       if (assessment.proof) {
         candidate.supporting_evidence_ids = assessment.proof.map(
           (o) => o.evidence_id,
@@ -927,10 +932,15 @@ export async function runInvestigation(
         ];
       }
       candidate.explanation = candidate.explanation.slice(0, 400);
-      candidate.next_human_actions = [
-        ...nextHumanActions(candidate.missing_checks),
-        'Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change.',
-      ];
+      const humanActions = nextHumanActions(candidate.missing_checks);
+      candidate.next_human_actions = humanActions.length
+        ? [
+            ...humanActions,
+            'Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change.',
+          ]
+        : [
+            'Obtain authorized human approval through the external change process before any infrastructure change.',
+          ];
       if (candidate.proposed_window)
         candidate.hypotheses.push({
           window: candidate.proposed_window,

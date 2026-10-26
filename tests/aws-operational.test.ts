@@ -1,23 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type {
-  Observation,
-  ToolAction,
-  OperationsData,
   DependenciesData,
+  Observation,
+  OperationsData,
+  ToolAction,
 } from '../src/contracts.ts';
-import {
-  createToolsWithTransport,
-  type AwsTransport,
-  type AwsToolConfig,
-} from '../src/tools/aws.ts';
-import { createAwsEvidenceProvider } from '../src/tools/aws-agent.ts';
+import { reasoningSummaryFromReport } from '../src/investigation/memory.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
-import { runInvestigation } from '../src/investigation/run.ts';
-import { renderReport, validateReport } from '../src/investigation/report.ts';
 import { estimatePeriod } from '../src/investigation/policy.ts';
-import { reasoningSummaryFromReport } from '../src/investigation/memory.ts';
+import { renderReport, validateReport } from '../src/investigation/report.ts';
+import { runInvestigation } from '../src/investigation/run.ts';
+import {
+  type AwsToolConfig,
+  type AwsTransport,
+  createToolsWithTransport,
+} from '../src/tools/aws.ts';
+import { createAwsEvidenceProvider } from '../src/tools/aws-agent.ts';
 
 const account_id = '000000000000';
 const region = 'us-east-1';
@@ -250,6 +250,20 @@ test('empty native reads stay partial and never assert a workload has no jobs or
   const report = await investigate(overrides);
   assert.equal(report.candidates[0].verdict, 'needs_verification');
   assert.equal(report.candidates[0].estimated_monthly_savings, null);
+  assert.ok(
+    report.candidates[0].missing_checks.some((check) =>
+      check.includes('JOBS_OUTSIDE_SSM_UNKNOWN'),
+    ),
+  );
+  assert.ok(
+    report.candidates[0].next_human_actions.every(
+      (action) => !action.startsWith('Ask the workload owner'),
+    ),
+  );
+  assert.doesNotMatch(
+    renderReport(report, { verbose: false }),
+    /JOBS_OUTSIDE_SSM_UNKNOWN|OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED/,
+  );
   validateReport(report);
 });
 

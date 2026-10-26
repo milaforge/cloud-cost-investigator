@@ -1,5 +1,21 @@
 # Project Memory
 
+## Follow-through save action (2026-10-26)
+
+- The operator's **Save decision to Zetaris** click is the browser's explicit authorization for a scoped historical append. Do not require a second checkbox; send `allow_append: true` only with that Live decision submission. Investigation runs keep `allow_append: false`.
+- Preserve server-side append configuration, report/decision validation, one-request handling and readback before claiming success. This supersedes earlier browser-checkbox acknowledgment guidance below; it does not change infrastructure approval or CLI write boundaries.
+
+## Expected native AWS coverage in reports (2026-10-26)
+
+- SSM maintenance and ELBv2 target reads have known, permanent coverage limits. Keep their partial status and exact codes in machine evidence so they cannot be mistaken for complete workload authority.
+- Present those expected limits as plain-language verdict uncertainty, not as a failed read or an operator repair task. Keep real retrieval errors, truncation and other actionable gaps visible. Human approval remains external.
+
+## AWS-only evidence gap closure (2026-10-26)
+
+- The user currently limits available evidence to AWS resources. Preserve that boundary; do not invent an external scheduler/catalog or treat unverified owner prose as authoritative telemetry.
+- Narrowing a diagnostic to a fully observed UTC day can prove metric/resource-billing retrieval, but cannot satisfy the seven-day recurring-schedule requirement. Keep collection completeness separate from history sufficiency and operational authority.
+- Empty Cost Explorer daily buckets are not fabricated zero-spend rows. Successful SSM/ELBv2 reads do not establish workload-wide absence of jobs/dependencies. Prefer an explicit deferral over weakening those coverage rules to close a release gate. Dated live findings belong in `docs/EXECUTION_PLAN.md`.
+
 ## Coherent conflict-first presentation (2026-10-26)
 
 - The user defined CCI's useful answer as a specific reason to reject a shutdown window, or exact missing evidence and a deferred decision. Lead README, diagrams, scenarios and slides with that purpose.
@@ -1165,7 +1181,6 @@
 - Name the five actual AWS adapters separately so fragmented evidence is visible;
   distinguish fresh reads, scoped lessons and historical decision follow-through.
   Number the main flow without implying a fixed check order or automatic writes.
-
 ## Zetaris save confirmation presentation (2026-10-26)
 
 - A verified readback is the point at which Follow through can claim a save. Reset the input and storage acknowledgment then, while keeping the scoped result selected so the engineer can still inspect its receipt. The success toast is green and the visible/downloadable receipt contains only record IDs and investigation ID; decision prose and the full historical records stay out of the success surface.

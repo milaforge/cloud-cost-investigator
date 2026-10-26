@@ -330,6 +330,47 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   );
 });
 
+test('expected AWS limits explain uncertainty without raw missing-evidence alarms', async () => {
+  const p = page();
+  const report = structuredClone((await generateDemoReports()).A);
+  const candidate = report.candidates[0];
+  candidate.missing_checks = [
+    'get_ec2_operations (partial; JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask the workload owner to supply an authoritative job schedule.',
+    'get_ec2_dependencies (partial; DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask service owners to verify consumers.',
+  ];
+  candidate.next_human_actions = [
+    'Obtain authorized human approval before any infrastructure change.',
+  ];
+  for (const observation of report.evidence) {
+    if (observation.tool === 'get_ec2_operations') {
+      observation.status = 'partial';
+      observation.missing_fields = [
+        'JOBS_OUTSIDE_SSM_UNKNOWN',
+        'OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED',
+      ];
+    }
+    if (observation.tool === 'get_ec2_dependencies') {
+      observation.status = 'partial';
+      observation.missing_fields = [
+        'DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN',
+        'OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED',
+      ];
+    }
+  }
+  p.context.coverageReport = report;
+  p.run("reports.coverage = coverageReport; active = 'coverage'; render()");
+  const visibleText = p
+    .get('report')
+    .querySelectorAll('p, span')
+    .map((el) => el.textContent)
+    .join(' ');
+  assert.match(visibleText, /AWS operational reads completed/);
+  assert.doesNotMatch(
+    visibleText,
+    /JOBS_OUTSIDE_SSM_UNKNOWN|OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED|open checks/,
+  );
+});
+
 test('Live tabs expose operations and report context while excluding every demo control', async () => {
   const p = page();
   p.mode('live');
@@ -575,7 +616,6 @@ test('confirmed Zetaris save clears the form and shows only a storage receipt', 
   p.get('decision-actor').value = 'engineer-42';
   p.get('decision-reason').value = 'Private review detail';
   p.get('decision-review').value = '2026-11-02T12:00';
-  p.get('decision-ack').checked = true;
   p.get('decision-review-field').hidden = false;
   p.get('decision-review').required = true;
   p.context.receipt = {
@@ -598,7 +638,6 @@ test('confirmed Zetaris save clears the form and shows only a storage receipt', 
     'decision-review',
   ])
     assert.equal(p.get(id).value, '', id);
-  assert.equal(p.get('decision-ack').checked, false);
   assert.equal(p.get('decision-review-field').hidden, true);
   assert.equal(p.get('decision-review').required, false);
   assert.equal(p.get('toast').className, 'toast success');
@@ -615,6 +654,28 @@ test('confirmed Zetaris save clears the form and shows only a storage receipt', 
     "paintJob({request_id:'saved-1',kind:'decision',source_mode:'live',status:'complete',events:[],result:receipt})",
   );
   assert.equal(p.get('decision-receipt').querySelectorAll('button').length, 1);
+});
+
+test('Live decision save requests Zetaris append without a checkbox', async () => {
+  const p = page();
+  assert.equal(
+    p.elements.some((el) => el.attributes.id === 'decision-ack'),
+    false,
+  );
+  const report = (await generateDemoReports()).A;
+  p.context.liveReport = { ...report, integration_mode: 'live' };
+  p.mode('live');
+  p.run("reports.loaded = liveReport; active = 'loaded'; render()");
+  p.get('decision-choice').value = 'deferred';
+  p.get('decision-actor').value = 'engineer-42';
+  p.get('decision-reason').value = 'Review current evidence';
+  p.get('decision-review').value = '2099-01-01T12:00';
+  await p.get('decision-form').listeners.submit({ preventDefault() {} });
+  const request = p.requests.find((entry) => entry.url === '/api/run');
+  assert.equal(request?.body?.kind, 'decision');
+  assert.equal(request?.body?.allow_append, true);
+  assert.equal(request?.body?.real_services, true);
+  assert.equal(request?.body?.instance_id, report.candidates[0].instance_id);
 });
 
 test('stop and report validation show loading only for their pending requests', async () => {

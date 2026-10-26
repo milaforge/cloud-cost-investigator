@@ -1,0 +1,174 @@
+{
+  "started_at": "2026-10-26T12:38:19.603Z",
+  "finished_at": "2026-10-26T12:38:28.185Z",
+  "cli_exit": 2,
+  "profile_region_selection": "project .env overrides inherited profile/region, matching npm start",
+  "lookback_days": 1,
+  "max_candidates": 1,
+  "billing_opt_in": true,
+  "remote_appends": false,
+  "hmem": false,
+  "report_payload_retained": false,
+  "decision_policy": "reject_or_defer",
+  "completion_status": "partial",
+  "planner": {
+    "mode": "scripted",
+    "model": null
+  },
+  "budget": {
+    "discovery_attempts": 2,
+    "candidate_attempts": 3,
+    "planner_calls": 6,
+    "elapsed_ms": 8580
+  },
+  "citations": {
+    "valid": 4,
+    "total": 4
+  },
+  "checks": {
+    "report_validated": true,
+    "reject_or_defer": true,
+    "live_evidence": true,
+    "scripted_planner": true,
+    "scope_matches": true,
+    "allowed_verdicts": true,
+    "null_savings": true,
+    "all_five_checks_attempted": true,
+    "no_planner_failure": true
+  },
+  "evidence": [
+    {
+      "tool": "list_ec2_instances",
+      "status": "ok",
+      "integration_mode": "live",
+      "source": "aws-list_ec2_instances",
+      "collected_at": "2026-10-26T12:38:21.149Z",
+      "missing_fields": [],
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_billing",
+      "status": "ok",
+      "integration_mode": "live",
+      "source": "aws-get_ec2_billing",
+      "collected_at": "2026-10-26T12:38:23.644Z",
+      "missing_fields": [],
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_metrics",
+      "status": "ok",
+      "integration_mode": "live",
+      "source": "aws-get_ec2_metrics",
+      "collected_at": "2026-10-26T12:38:25.532Z",
+      "missing_fields": [],
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "metric_coverage": [
+        {
+          "field": "cpu_avg",
+          "period_seconds": 300,
+          "expected_points": 288,
+          "returned_points": 288,
+          "first_sample_at": "2026-10-25T00:00:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        },
+        {
+          "field": "cpu_max",
+          "period_seconds": 300,
+          "expected_points": 288,
+          "returned_points": 288,
+          "first_sample_at": "2026-10-25T00:00:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        },
+        {
+          "field": "network_in",
+          "period_seconds": 300,
+          "expected_points": 288,
+          "returned_points": 288,
+          "first_sample_at": "2026-10-25T00:00:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        },
+        {
+          "field": "network_out",
+          "period_seconds": 300,
+          "expected_points": 288,
+          "returned_points": 288,
+          "first_sample_at": "2026-10-25T00:00:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        }
+      ],
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_operations",
+      "status": "partial",
+      "integration_mode": "live",
+      "source": "aws-ssm-maintenance-windows",
+      "collected_at": "2026-10-26T12:38:26.822Z",
+      "missing_fields": [
+        "JOBS_OUTSIDE_SSM_UNKNOWN",
+        "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+      ],
+      "coverage": {
+        "complete": false,
+        "authoritative": false
+      },
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_dependencies",
+      "status": "partial",
+      "integration_mode": "live",
+      "source": "aws-elbv2-target-health",
+      "collected_at": "2026-10-26T12:38:28.182Z",
+      "missing_fields": [
+        "DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN",
+        "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+      ],
+      "coverage": {
+        "complete": false,
+        "authoritative": false
+      },
+      "data_present": true
+    }
+  ],
+  "historical_context": {
+    "zetaris": "ok",
+    "hmem": "not_configured",
+    "context_count": 0,
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts.",
+      "Zetaris append disabled; no historical record written."
+    ]
+  },
+  "candidates": [
+    {
+      "verdict": "needs_verification",
+      "missing_checks": [
+        "get_ec2_operations (partial; JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.",
+        "get_ec2_dependencies (partial; DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance.",
+        "get_ec2_metrics: Insufficient history for a recurring schedule: at least seven days of utilization are required by policy. Shorter periods can describe observed activity only."
+      ],
+      "estimated_monthly_savings": null,
+      "savings_calculation": null,
+      "next_human_actions": [
+        "Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.",
+        "Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance.",
+        "Select a period with at least seven complete days of utilization history, or wait for enough observations, then rerun the investigation.",
+        "Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change."
+      ]
+    }
+  ],
+  "failure_codes": []
+}

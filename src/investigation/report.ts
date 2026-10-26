@@ -27,11 +27,12 @@ import {
 } from '../contracts.ts';
 import {
   calculateSavings,
+  isExpectedAwsCoverageLimit,
   rankCandidates,
   sameSchedule,
   schedulingConflict,
-  supportsTentativeWindow,
   schedulingProof,
+  supportsTentativeWindow,
 } from './policy.ts';
 
 const strings = (value: unknown) => array(value, 100).map((v) => textValue(v));
@@ -864,7 +865,15 @@ function renderSummary(r: InvestigationReport): string {
       );
     if (c.next_human_actions.length)
       summaryLine(lines, 'Next', c.next_human_actions[0]);
-    for (const check of c.missing_checks)
+    if (c.missing_checks.some(isExpectedAwsCoverageLimit))
+      summaryLine(
+        lines,
+        'Source coverage',
+        'AWS operational reads cover SSM maintenance and ELBv2 targets only; other workload jobs, consumers and owner clearance remain unverified.',
+      );
+    for (const check of c.missing_checks.filter(
+      (check) => !isExpectedAwsCoverageLimit(check),
+    ))
       summaryLine(lines, 'Missing / next check', check);
 
     if (!r.decision_policy)

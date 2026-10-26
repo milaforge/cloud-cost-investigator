@@ -10,7 +10,7 @@ Demo is preview-only; selecting B opens its generated report and citations
 by executing the local scripted investigator on explicit selection; it makes no live-service calls. The missing-evidence preview reuses a labeled recorded report. Learning/follow-through illustrations
 are not sponsor integration receipts. Use the separate CLI demonstrations below
 for actual execution proof. **Live** exposes AWS investigation and attributed
-Zetaris decision recording with explicit acknowledgments; it never offers the
+Zetaris decision recording through an explicit Save decision action; it never offers the
 synthetic learning or remote-write demonstration. Label each separately recorded
 run and preserve source/planner labels throughout.
 

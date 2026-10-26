@@ -14,7 +14,7 @@ reasons, actor IDs, outcome notes or evidence references.
 
 ## Schedule a review in the web UI
 
-Run `npm start`, choose Live, then run an investigation or load a valid live report. Select a rejected or deferred result and choose **Schedule a review in Zetaris**. Select **Schedule a review**, enter the engineer ID, reason and future UTC review time, acknowledge real storage, and save. Partial investigations can be reviewed; failed investigations cannot receive decisions. A review request is not shutdown approval.
+Run `npm start`, choose Live, then run an investigation or load a valid live report. Select a rejected or deferred result and choose **Schedule a review in Zetaris**. Select **Schedule a review**, enter the engineer ID, reason and future UTC review time, then click **Save decision to Zetaris**. The save action stores the request and linked investigation by default when server append access is configured. Partial investigations can be reviewed; failed investigations cannot receive decisions. A review request is not shutdown approval.
 
 The server validates the report, scope and event, appends the investigation and review request, and verifies exact readback before reporting success. Identifiers remain historically named `recommendation_record_id` for storage compatibility; they now link the investigated result, not a new recommendation. One immutable request is retained per investigation/candidate. An ambiguous write is never automatically retried. Engineer IDs are attribution, not authenticated authority.
 

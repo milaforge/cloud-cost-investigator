@@ -2,8 +2,8 @@ import type {
   BillingData,
   CandidateReport,
   DependenciesData,
-  InvestigationRequest,
   InventoryData,
+  InvestigationRequest,
   MetricsData,
   Observation,
   OperationsData,
@@ -342,9 +342,21 @@ export function assessScheduling(
   return { proof: [metrics, operations, dependencies], missing_checks };
 }
 /** Keep diagnostics in missing_checks; expose only operator tasks here. */
+export function isExpectedAwsCoverageLimit(check: string): boolean {
+  return (
+    /^get_ec2_operations \(partial; JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED\):/.test(
+      check,
+    ) ||
+    /^get_ec2_dependencies \(partial; DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED\):/.test(
+      check,
+    )
+  );
+}
+
 export function nextHumanActions(missingChecks: string[]): string[] {
   const actions = new Set<string>();
   for (const check of missingChecks) {
+    if (isExpectedAwsCoverageLimit(check)) continue;
     const action = check.replace(
       /^(?:get_ec2_\w+|list_ec2_instances)(?: \([^)]*\))?: /,
       '',

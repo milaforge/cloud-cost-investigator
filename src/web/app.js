@@ -23,6 +23,21 @@ const node = (tag, text, className) => {
   return el;
 };
 const human = (value) => value.replaceAll('_', ' ');
+const expectedAwsLimit = (check) =>
+  /^get_ec2_operations \(partial; JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED\):/.test(
+    check,
+  ) ||
+  /^get_ec2_dependencies \(partial; DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED\):/.test(
+    check,
+  );
+const expectedAwsObservation = (observed) =>
+  observed.status === 'partial' &&
+  ((observed.tool === 'get_ec2_operations' &&
+    observed.missing_fields.join(', ') ===
+      'JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED') ||
+    (observed.tool === 'get_ec2_dependencies' &&
+      observed.missing_fields.join(', ') ===
+        'DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED'));
 function enter(element, delay = 0) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   element.animate(
@@ -418,7 +433,15 @@ function render(focusCandidate = false) {
     root.append(
       node(
         'p',
-        `Investigation ${r.completion_status}: ${r.stop_reason === 'metrics_evidence_incomplete' ? 'Stopped at the utilization evidence gate. Incomplete metrics prevented a supported UTC window; targeted jobs and dependency checks were not reached.' : human(r.stop_reason)}`,
+        r.completion_status === 'partial' &&
+          r.candidates.length &&
+          r.candidates.every(
+            (candidate) =>
+              candidate.missing_checks.length &&
+              candidate.missing_checks.every(expectedAwsLimit),
+          )
+          ? 'Investigation completed its AWS checks. The decision remains deferred because native sources have limited workload coverage.'
+          : `Investigation ${r.completion_status}: ${r.stop_reason === 'metrics_evidence_incomplete' ? 'Stopped at the utilization evidence gate. Incomplete metrics prevented a supported UTC window; targeted jobs and dependency checks were not reached.' : human(r.stop_reason)}`,
         'notice',
       ),
     );
@@ -513,11 +536,25 @@ function render(focusCandidate = false) {
       });
       card.append(decide);
     }
-    if (c.missing_checks.length) {
+    const openChecks = c.missing_checks.filter(
+      (check) => !expectedAwsLimit(check),
+    );
+    if (c.missing_checks.some(expectedAwsLimit))
+      card.append(
+        node(
+          'p',
+          'AWS operational reads completed. Their coverage is limited to SSM maintenance and ELBv2 targets; the verdict remains uncertain about other jobs, consumers and owner clearance.',
+          'notice',
+        ),
+      );
+    if (openChecks.length) {
       const pending = node('div', undefined, 'pending-checks');
       pending.append(
-        node('span', `${c.missing_checks.length} open checks`),
-        list(c.missing_checks),
+        node(
+          'span',
+          `${openChecks.length} open ${openChecks.length === 1 ? 'check' : 'checks'}`,
+        ),
+        list(openChecks),
       );
       card.append(pending);
     }
@@ -655,7 +692,7 @@ function render(focusCandidate = false) {
     } else if (t.status)
       body.append(node('span', human(t.status), `step-status ${t.status}`));
     if (observed) body.append(...coverageDetails(observed));
-    if (observed?.missing_fields.length)
+    if (observed?.missing_fields.length && !expectedAwsObservation(observed))
       body.append(
         node(
           'p',
@@ -693,8 +730,14 @@ function render(focusCandidate = false) {
         node('h3', 'Candidate selection'),
         node('p', c.selection_reason),
         citations(c.selection_evidence_ids),
-        node('h3', 'Unverified checks'),
-        list(c.missing_checks),
+        ...(c.missing_checks.some((check) => !expectedAwsLimit(check))
+          ? [
+              node('h3', 'Unverified checks'),
+              list(
+                c.missing_checks.filter((check) => !expectedAwsLimit(check)),
+              ),
+            ]
+          : []),
         node('h3', 'Risks & assumptions'),
         list([...c.risks, ...c.assumptions]),
         ...c.hypotheses.map((h) => {
@@ -971,7 +1014,6 @@ function setMode() {
   for (const element of document.querySelectorAll('[data-live-only]'))
     element.hidden = demo;
   $('live-evidence').hidden = demo;
-  $('decision-ack').checked = false;
   $('scenario').value = '';
   $('loaded').hidden = true;
   if ($('evidence').open) $('evidence').close();
@@ -1102,7 +1144,7 @@ $('decision-form').addEventListener('submit', async (event) => {
     request_id: crypto.randomUUID(),
     kind: 'decision',
     real_services: true,
-    allow_append: $('decision-ack').checked,
+    allow_append: true,
     report: target.report,
     instance_id: target.candidate.instance_id,
     decision,

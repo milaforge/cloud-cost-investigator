@@ -63,8 +63,8 @@ Only validated scope and configuration status are returned, never credentials. E
 CLI/demo entry points and worker regression harnesses remain intact; optional
 progress callbacks feed
 bounded browser events. Offline investigations and learning never enable remote
-history or models. Follow-through requires both server append configuration and
-an explicit browser acknowledgment. The user-decision form reuses `recordDecision`
+history or models. Follow-through requires server append configuration and
+an explicit **Save decision to Zetaris** action. The user-decision form reuses `recordDecision`
 to validate and append a linked recommendation and attributed review request (legacy acceptance remains compatible),
 then verify exact readback. Its receipt exposes both record IDs. The separate
 scripted demonstration uses a unique synthetic account.

@@ -34,6 +34,21 @@ test('human actions combine history gaps and omit diagnostic-only statements', (
   assert.equal(checks.length, 5, 'diagnostic evidence stays intact');
 });
 
+test('expected native AWS coverage limits stay diagnostic, not operator tasks', () => {
+  const checks = [
+    'get_ec2_operations (partial; JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.',
+    'get_ec2_dependencies (partial; DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance.',
+  ];
+  assert.deepEqual(nextHumanActions(checks), []);
+  assert.equal(
+    nextHumanActions([
+      ...checks,
+      'get_ec2_operations (partial; JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED, TRUNCATED): Review truncated evidence.',
+    ])[0],
+    'Review truncated evidence.',
+  );
+});
+
 for (const tool of ['get_ec2_operations', 'get_ec2_dependencies'] as const) {
   for (const gap of [
     'no_clearance',
