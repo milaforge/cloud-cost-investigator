@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { SCENARIO_WINDOW, scenarioProof } from './helpers/scenario-proof.ts';
 import { runInvestigation, type RunOptions } from '../src/investigation/run.ts';
 import {
   MockProvider,
@@ -21,7 +22,7 @@ const request: InvestigationRequest = {
   account_id: 'demo',
   region: 'us-east-1',
   max_candidates: 1,
-  window: { from: '2026-09-01T00:00:00Z', to: '2026-09-29T00:00:00Z' },
+  window: SCENARIO_WINDOW,
 };
 const run = (options: Partial<RunOptions> = {}) =>
   runInvestigation(structuredClone(request), {
@@ -53,7 +54,7 @@ function planner(fn: (state: PlannerState, next: Action) => unknown): Planner {
   };
 }
 
-test('B discovers highest-cost running instance, proposes then rejects on a genuinely later conflict', async () => {
+test('EC2 2: critical job rejects the window after a genuinely later safety challenge', async (t) => {
   const r = await run();
   assert.equal(r.completion_status, 'complete');
   const c = r.candidates[0];
@@ -79,6 +80,21 @@ test('B discovers highest-cost running instance, proposes then rejects on a genu
   assert.equal(r.budget.candidate_attempts, 2);
   assert.equal(r.planner.mode, 'scripted');
   assert.deepEqual(r.historical_context.context_ids, []);
+  const operations = r.evidence.find((e) => e.tool === 'get_ec2_operations');
+  assert.ok(operations?.data && 'jobs' in operations.data && c.proposed_window);
+  const window = c.proposed_window;
+  assert.ok(
+    operations.data.jobs.some(
+      (job) =>
+        job.critical &&
+        job.window.start_hour_utc < window.end_hour_utc &&
+        job.window.end_hour_utc > window.start_hour_utc,
+    ),
+  );
+  assert.ok(
+    c.missing_checks.some((check) => check.includes('get_ec2_dependencies')),
+  );
+  scenarioProof(t, r);
 });
 
 test('different operational evidence changes verdict and next query rather than narrating a fixed rejection', async () => {
@@ -141,6 +157,62 @@ test('unavailable operational data is distinct from no_match and never becomes s
   );
 });
 
+for (const unavailableTool of [
+  'get_ec2_operations',
+  'get_ec2_dependencies',
+] as const) {
+  test(`EC2 3: unavailable ${unavailableTool} cannot become safety`, async (t) => {
+    const base = new MockProvider('A');
+    const r = await run({
+      provider: {
+        mode: 'mock',
+        async call(action, signal) {
+          const observation = (await base.call(action, signal)) as Observation;
+          if (action.tool === unavailableTool) {
+            observation.status = 'unavailable';
+            observation.data = null;
+            observation.coverage = { complete: false, authoritative: false };
+            observation.missing_fields = ['source_unavailable'];
+          }
+          return observation;
+        },
+      },
+    });
+    assert.equal(r.completion_status, 'partial');
+    assert.equal(r.candidates[0].verdict, 'needs_verification');
+    assert.equal(
+      r.evidence.find((e) => e.tool === unavailableTool)?.status,
+      'unavailable',
+    );
+    assert.ok(
+      r.candidates[0].missing_checks.some((s) => s.includes(unavailableTool)),
+    );
+    assert.deepEqual(r.candidates[0].contradicting_evidence_ids, []);
+    assert.deepEqual(r.candidates[0].supporting_evidence_ids, [
+      r.evidence.find((e) => e.tool === 'get_ec2_metrics')?.evidence_id,
+    ]); // Supports the initial hypothesis only, never the unavailable safety check.
+    assert.equal(r.candidates[0].estimated_monthly_savings, null);
+    assert.deepEqual(
+      r.candidates[0].hypotheses.map((h) => h.state),
+      ['proposed', 'unresolved'],
+    );
+    const availableTool =
+      unavailableTool === 'get_ec2_operations'
+        ? 'get_ec2_dependencies'
+        : 'get_ec2_operations';
+    assert.ok(
+      r.evidence.some(
+        (e) =>
+          e.tool === availableTool &&
+          e.data &&
+          'scheduling_clearance' in e.data &&
+          e.data.scheduling_clearance,
+      ),
+    );
+    scenarioProof(t, r);
+  });
+}
+
 for (const mutation of [
   'scope',
   'period',
@@ -192,7 +264,7 @@ test('partial operational observation retains status and a positive conflict, wh
   assert.equal(r.evidence.at(-1)?.status, 'partial');
 });
 
-test('low averages with high peaks never support an initial hypothesis', async () => {
+test('EC2 4: an unexplained high CPU peak defers without inventing a conflict', async (t) => {
   const r = await run({
     provider: modify((o) => {
       if (
@@ -206,6 +278,31 @@ test('low averages with high peaks never support an initial hypothesis', async (
   assert.equal(r.candidates[0].verdict, 'needs_verification');
   assert.equal(r.candidates[0].proposed_window, null);
   assert.ok(!r.evidence.some((e) => e.tool === 'get_ec2_operations'));
+  const metrics = r.evidence.find((e) => e.tool === 'get_ec2_metrics');
+  assert.ok(metrics?.data && 'peak_cpu_percent' in metrics.data);
+  assert.equal(metrics.data.average_cpu_percent, 2);
+  assert.equal(metrics.data.peak_cpu_percent, 95);
+  assert.deepEqual(r.candidates[0].contradicting_evidence_ids, []);
+  assert.deepEqual(r.candidates[0].supporting_evidence_ids, []);
+  assert.equal(r.candidates[0].estimated_monthly_savings, null);
+  assert.ok(
+    r.candidates[0].missing_checks.includes(
+      'get_ec2_metrics: Establish a potential UTC window from covered utilization data before requesting operational clearance.',
+    ),
+  );
+  assert.ok(
+    r.candidates[0].missing_checks.some((s) =>
+      s.includes('get_ec2_operations'),
+    ),
+  );
+  assert.ok(
+    r.trace.some(
+      (entry) =>
+        entry.phase === 'tool' &&
+        entry.evidence_ids.includes(metrics.evidence_id),
+    ),
+  );
+  scenarioProof(t, r);
 });
 
 test('a confirmed dependency can independently refute the window after no matching jobs', async () => {

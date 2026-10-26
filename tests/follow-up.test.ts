@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { demonstrateFollowUps } from '../scripts/demo-follow-up.ts';
 import { followUpMain } from '../scripts/follow-up.ts';
@@ -269,7 +271,7 @@ test('follow-up cannot be closed by a forged review link', async (t) => {
 test('manual CLI records and queries an acceptance and its attributed outcome', async (t) => {
   mockZetarisLedger(t);
   const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
-  const directory = await mkdtemp('/tmp/cci-followup-cli-');
+  const directory = await mkdtemp(join(tmpdir(), 'cci-followup-cli-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const report = await run();
   await writeFile(`${directory}/report.json`, JSON.stringify(report));

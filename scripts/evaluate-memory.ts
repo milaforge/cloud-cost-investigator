@@ -1,4 +1,6 @@
 import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { Action, InvestigationReport } from '../src/contracts.ts';
 import { MockProvider, type MockScenario } from '../src/investigation/mock.ts';
@@ -111,7 +113,7 @@ const metrics = (r: InvestigationReport) => ({
     .filter((t) => t === 'get_ec2_operations' || t === 'get_ec2_dependencies'),
 });
 export async function evaluateMemory() {
-  const directory = await mkdtemp('/tmp/cci-memory-eval-');
+  const directory = await mkdtemp(join(tmpdir(), 'cci-memory-eval-'));
   try {
     const rows: {
       name: string;

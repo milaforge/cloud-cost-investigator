@@ -50,6 +50,9 @@ tool arguments. Select a profile with `AWS_PROFILE` if needed and provide region
 through SDK configuration or `AWS_REGION`. Do not commit credentials or exports.
 `AWS_EXPECTED_ACCOUNT_ID` optionally guards the CLI against using the wrong account.
 
+Follow [Authenticate to AWS](HOW.md#authenticate-to-aws) for profile/environment
+setup, identity and region checks, permissions and common failures.
+
 ```sh
 npm run demo:aws -- --live
 # Also probe native operational facts for one retrieved running instance:

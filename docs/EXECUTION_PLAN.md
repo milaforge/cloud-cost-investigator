@@ -11,6 +11,56 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### PR #1 documentation review — 2026-10-26
+
+- **Gate/owner:** Task 2 review, Zayan. Restored the upstream AWS credential-chain
+  explanation verbatim, retained the added HOW authentication link and removed
+  formatting-only churn. All upstream documentation lines remain in order;
+  SSM/ELBv2 setup and capabilities are unchanged. No implementation or test edits.
+- **Verification:** the focused scenario/export command recorded below passed
+  **75/75**; both TypeScript checks, `biome lint .` (167 files) and
+  `git diff --check` passed. Full suite not repeated for this documentation-only
+  fix. Tests use synthetic evidence; no live service calls.
+- **Next action:** push the review fix on `task2-ec2-scenarios` for Milad to review
+  in PR #1. Both safety stashes remain retained; prior Windows suite failures
+  remain documented below.
+
+### Task 2 scenario integration on `4fa83ff` — 2026-10-25
+
+- **Gate/owner/mode:** six reproducible EC2 scenarios, Zayan; synthetic current
+  evidence and mocked Zetaris HTTP transport. Existing engine, policy, contracts,
+  planner, history schema and native SSM/ELBv2 implementation remain unchanged.
+  Upstream receipts below retain their original status and provenance.
+- **Coverage:** six cases / seven variants, including separate unavailable
+  operations/dependency cases and both historical verdict reversals. All use
+  14 complete UTC days; policy still enforces only a seven-day minimum.
+  [Runbook and test mapping](SCENARIOS.md) explain the scenario identifiers.
+- **Executed verification:** `node --import tsx --test --test-isolation=none tests/*.test.ts`
+  reported **271 passed, 3 failed, 1 skipped (275 total)** on Windows.
+  All three failures are in unchanged upstream `tests/model-request-timing.test.ts`:
+  its absolute Windows preload path is rejected with
+  `ERR_UNSUPPORTED_ESM_URL_SCHEME`. The suite is **not fully passing** here;
+  this does not supersede upstream platform-specific receipts.
+- **Task 2 proof:** the same test runner with `tests/investigation.test.ts`,
+  `tests/broader-scenarios.test.ts`, `tests/warm.test.ts` and
+  `tests/scenario-export.test.ts` passed **75/75**. The `demo:scenarios`
+  underlying command passed **7/7**. `node --import tsx scripts/export-scenarios.ts`
+  regenerated six valid JSONL rows / seven variants; replay, retained-fact drift,
+  actual reproduction-command execution and invalid-export rejection passed.
+- **Static checks:** both TypeScript projects passed (`tsc -p tsconfig.investigation.json --noEmit`
+  and `tsc -p tsconfig.aws.json`); `biome lint .` passed across 167 files.
+  Scoped formatting and `git diff --check` passed after reconciliation.
+- **Environment:** installed the unchanged upstream lockfile with
+  `pnpm dlx npm@11 ci --no-audit --no-fund` because npm is absent from PATH.
+  An old project demo server initially locked esbuild; after stopping that specific
+  process the install succeeded. No global install or dependency-file change.
+  Two existing Task 2 temporary-directory portability fixes remain included.
+- **Limits/next action:** synthetic results do not prove live AWS coverage or model
+  reliability. Native operations remain incomplete; no guest cron inspection is
+  claimed. No live model/AWS calls were made for this integration. Submit the
+  Task 2 branch for review; upstream request-timing Windows portability remains
+  a separate follow-up. Both Task 2 safety stashes remain retained locally.
+
 ### Native operational evidence collection — 2026-10-25
 
 - **Gate/owner/mode:** direct operational integration, Zayan source boundary /

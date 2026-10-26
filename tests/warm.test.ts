@@ -3,18 +3,24 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test, { type TestContext } from 'node:test';
+import type { Observation } from '../src/contracts.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
 import { renderReport, validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
 import { historyRecordFromReport } from '../src/tools/zetaris-history.ts';
+import {
+  SCENARIO_WINDOW,
+  PRIOR_SCENARIO_WINDOW,
+  scenarioProof,
+} from './helpers/scenario-proof.ts';
 
 const request = {
   account_id: 'warm-demo',
   region: 'us-east-1',
   max_candidates: 1 as const,
-  window: { from: '2026-09-01T00:00:00Z', to: '2026-09-29T00:00:00Z' },
+  window: SCENARIO_WINDOW,
 };
 async function directory(t: TestContext) {
   const dir = await mkdtemp(join(tmpdir(), 'cci-warm-'));
@@ -32,8 +38,9 @@ const run = (
   dir?: string,
   zetaris = false,
   scenario: 'A' | 'B' | 'C' | 'clear' | 'missing' = 'B',
+  input = request,
 ) =>
-  runInvestigation(request, {
+  runInvestigation(input, {
     planner: new ScriptedPlanner(),
     provider: new MockProvider(scenario),
     history: { hmem_directory: dir, zetaris },
@@ -263,16 +270,55 @@ test('model adapter receives bounded historical hints and binds fresh prioritize
   assert.equal(report.candidates[0].verdict, 'not_recommended');
 });
 
-for (const [prior, current, previousVerdict, currentVerdict] of [
-  ['A', 'B', 'conditional_recommendation', 'not_recommended'],
-  ['B', 'A', 'not_recommended', 'conditional_recommendation'],
+for (const [prior, current, previousVerdict, currentVerdict, name] of [
+  [
+    'A',
+    'B',
+    'conditional_recommendation',
+    'not_recommended',
+    'Zetaris A -> B: fresh batch overrides prior approval',
+  ],
+  [
+    'B',
+    'A',
+    'not_recommended',
+    'conditional_recommendation',
+    'EC2 6: resolved batch and fresh clearances overturn a Zetaris rejection',
+  ],
+  [
+    'A',
+    'C',
+    'conditional_recommendation',
+    'not_recommended',
+    'EC2 5: fresh continuous-operation dependency overturns a Zetaris recommendation',
+  ],
+  [
+    'C',
+    'A',
+    'not_recommended',
+    'conditional_recommendation',
+    'Zetaris C -> A: resolved dependency and fresh clearances overturn rejection',
+  ],
 ] as const) {
-  test(`Zetaris comparison forwards ${prior} history while fresh ${current} decides the verdict`, async (t) => {
+  test(name, async (t) => {
     const rows = await zetaris(t);
-    const previous = await run(undefined, true, prior);
-    process.env.ZETARIS_HISTORY_ALLOW_APPEND = 'false';
+    const previous = await run(undefined, true, prior, {
+      ...request,
+      window: PRIOR_SCENARIO_WINDOW,
+    });
+    assert.equal(previous.candidates[0].verdict, previousVerdict);
+    assert.equal(rows.length, 1);
     const report = validateReport(await run(undefined, true, current));
     const record = historyRecordFromReport(previous);
+    assert.equal(rows.length, 2); // Both append operations completed the existing exact readback.
+    assert.deepEqual(
+      rows.map((row) => row[Object.keys(record).indexOf('verdict')]),
+      [previousVerdict, currentVerdict],
+    );
+    assert.equal(report.historical_context.zetaris, 'ok');
+    assert.equal(report.historical_context.hmem, 'not_configured');
+    assert.deepEqual(report.request.window, SCENARIO_WINDOW);
+    assert.deepEqual(previous.request.window, PRIOR_SCENARIO_WINDOW);
     assert.deepEqual(report.historical_context.comparisons, [
       {
         historical: true,
@@ -295,10 +341,60 @@ for (const [prior, current, previousVerdict, currentVerdict] of [
     );
     assert.deepEqual(
       checks(report),
-      current === 'A'
+      current === 'A' || current === 'C'
         ? ['get_ec2_operations', 'get_ec2_dependencies']
         : ['get_ec2_operations'],
     );
+    const candidate = report.candidates[0];
+    const dependency = report.evidence.find(
+      (e) => e.tool === 'get_ec2_dependencies',
+    );
+    if (current === 'C') {
+      assert.ok(
+        dependency?.data && 'requires_continuous_operation' in dependency.data,
+      );
+      assert.equal(dependency.data.requires_continuous_operation, true);
+      assert.deepEqual(candidate.contradicting_evidence_ids, [
+        dependency.evidence_id,
+      ]);
+      assert.deepEqual(
+        candidate.hypotheses.map((h) => h.state),
+        ['proposed', 'contradicted'],
+      );
+      assert.deepEqual(candidate.missing_checks, [
+        'Other shutdown windows have not been evaluated.',
+      ]);
+      assert.equal(candidate.estimated_monthly_savings, null);
+    }
+    if (current === 'A') {
+      const operations = report.evidence.find(
+        (e) => e.tool === 'get_ec2_operations',
+      );
+      assert.ok(operations?.data && 'jobs' in operations.data);
+      assert.ok(
+        dependency?.data && 'requires_continuous_operation' in dependency.data,
+      );
+      assert.deepEqual(operations.data.jobs, []);
+      assert.equal(dependency.data.requires_continuous_operation, false);
+      assert.ok(operations.data.scheduling_clearance);
+      assert.deepEqual(
+        operations.data.scheduling_clearance,
+        dependency.data.scheduling_clearance,
+      );
+      assert.deepEqual(candidate.missing_checks, []);
+      assert.deepEqual(candidate.contradicting_evidence_ids, []);
+      assert.deepEqual(
+        candidate.hypotheses.map((h) => h.state),
+        ['proposed', 'supported'],
+      );
+      assert.ok(
+        candidate.supporting_evidence_ids.includes(operations.evidence_id),
+      );
+      assert.ok(
+        candidate.supporting_evidence_ids.includes(dependency.evidence_id),
+      );
+      assert.match(candidate.next_human_actions.join(' '), /human approval/);
+    }
     assert.ok(
       report.evidence.every(
         (e) =>
@@ -349,6 +445,54 @@ for (const [prior, current, previousVerdict, currentVerdict] of [
       `zetaris:${record.record_id}`,
     );
     assert.throws(() => validateReport(forgedCitation), /current citation/);
+    if (name.startsWith('EC2')) scenarioProof(t, report, previous);
+  });
+}
+
+for (const prior of ['A', 'B'] as const) {
+  test(`Zetaris ${prior} history cannot replace unavailable fresh dependency clearance`, async (t) => {
+    await zetaris(t);
+    const previous = await run(undefined, true, prior, {
+      ...request,
+      window: PRIOR_SCENARIO_WINDOW,
+    });
+    const base = new MockProvider('A');
+    const report = await runInvestigation(request, {
+      planner: new ScriptedPlanner(),
+      history: { zetaris: true },
+      provider: {
+        mode: 'mock',
+        async call(action, signal) {
+          const o = (await base.call(action, signal)) as Observation;
+          if (action.tool === 'get_ec2_dependencies') {
+            o.status = 'unavailable';
+            o.data = null;
+            o.coverage = { complete: false, authoritative: false };
+            o.missing_fields = ['dependency_source_unavailable'];
+          }
+          return o;
+        },
+      },
+    });
+    assert.equal(
+      report.historical_context.comparisons?.[0].verdict,
+      previous.candidates[0].verdict,
+    );
+    assert.equal(report.candidates[0].verdict, 'needs_verification');
+    assert.equal(report.completion_status, 'partial');
+    assert.equal(report.candidates[0].estimated_monthly_savings, null);
+    assert.deepEqual(report.candidates[0].contradicting_evidence_ids, []);
+    assert.ok(
+      report.candidates[0].missing_checks.some((s) =>
+        s.includes('get_ec2_dependencies'),
+      ),
+    );
+    assert.ok(
+      report.evidence.every(
+        (e) =>
+          !previous.evidence.some((old) => old.evidence_id === e.evidence_id),
+      ),
+    );
   });
 }
 

@@ -229,6 +229,23 @@
 - Fresh-machine instructions must link storage creation, lakehouse registration,
   table DDL, dedicated-user permissions and explicit retained-record write proof.
 
+## Six-scenario deadline slice (2026-10-24)
+
+- User set October 26 as the team submission target. Work toward that earlier
+  target; the locally recorded October 27 portal deadline still needs verification.
+- Reuse Milad's latest historical comparison fields, the existing MockProvider,
+  and the existing investigation/broader/warm tests. Most requested behavior
+  already existed; strengthen its evidence checks rather than add another engine,
+  provider schema or scenario-specific verdict logic.
+- Keep the six-case evidence periods fixed at 14 complete UTC days and prior
+  periods distinct. Do not silently tighten the existing seven-day safety minimum;
+  explicitly test/document the mismatch. Leave numeric history trends out.
+- Make the deterministic demo select the tested cases themselves. Its synthetic
+  current observations and mocked Zetaris transport are independent of external
+  availability; actual sponsor integration proof remains separately labeled.
+- Preserve live AWS as the CLI default. The scenario harness uses explicit mock
+  providers and cannot demonstrate live scheduling/dependency authority.
+
 ## Structured historical comparisons (2026-10-24)
 
 - Reuse validated version 1 Zetaris fields for previous verdict and proposed/

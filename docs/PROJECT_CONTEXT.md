@@ -142,6 +142,13 @@ Implemented conservative policy: complete authoritative discovery and both opera
 
 Example: fixture A uses 00:00–06:00 UTC, one excluded date, 30 minutes overhead, 60-minute billing units and a **synthetic** USD 0.50/hour rate. For October, `(31 − 1) × 5 × 0.50 = USD 75`. This is a conditional planning estimate, not measured savings.
 
+Task 2's six submission scenarios use 14 complete UTC days (September 15–29,
+with September 1–15 for prior synthetic investigations). This dataset choice
+does not change the seven-day policy minimum: tests explicitly distinguish
+6-day deferral from eligible 7-, 13- and 14-day windows. Existing contracts and
+Zetaris history fields are reused; numeric history trends remain out of scope.
+See [the scenario reproduction and demo runbook](SCENARIOS.md).
+
 ## 8. Detailed report and trace contract
 
 Output both readable CLI content and a runtime-validated JSON report (file export optional). Each report includes:

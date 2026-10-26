@@ -19,12 +19,13 @@ import {
 } from '../src/investigation/memory.ts';
 import { historyRecordFromReport } from '../src/tools/zetaris-history.ts';
 import { parseArgs } from '../cli.ts';
+import { SCENARIO_WINDOW, scenarioProof } from './helpers/scenario-proof.ts';
 
 const request: InvestigationRequest = {
   account_id: 'broader-demo',
   region: 'us-east-1',
   max_candidates: 1,
-  window: { from: '2026-09-01T00:00:00Z', to: '2026-09-29T00:00:00Z' },
+  window: SCENARIO_WINDOW,
 };
 function provider(
   scenario: MockScenario,
@@ -50,7 +51,7 @@ const run = (
     planner: new ScriptedPlanner(),
   });
 
-test('A supports conditional approval only after both challenges, with reproducible compute savings', async () => {
+test('EC2 1: matching clearances support conditional approval with reproducible compute savings', async (t) => {
   const r = await run('A');
   const c = r.candidates[0];
   assert.equal(r.completion_status, 'complete');
@@ -65,6 +66,29 @@ test('A supports conditional approval only after both challenges, with reproduci
   assert.equal(c.savings_calculation?.period.from, '2026-10-01T00:00:00.000Z');
   assert.match(c.next_human_actions.join(' '), /human approval/);
   assert.match(renderReport(r), /75 USD/);
+  assert.deepEqual(c.missing_checks, []);
+  assert.deepEqual(c.contradicting_evidence_ids, []);
+  assert.deepEqual(
+    c.supporting_evidence_ids.map(
+      (id) => r.evidence.find((e) => e.evidence_id === id)?.tool,
+    ),
+    ['get_ec2_metrics', 'get_ec2_operations', 'get_ec2_dependencies'],
+  );
+  const inventory = r.evidence.find((e) => e.tool === 'list_ec2_instances');
+  const billing = r.evidence.find((e) => e.tool === 'get_ec2_billing');
+  assert.ok(inventory?.data && 'instances' in inventory.data);
+  assert.ok(
+    inventory.data.instances.some(
+      (i) => i.instance_id === c.instance_id && i.state === 'running',
+    ),
+  );
+  assert.ok(billing?.data && 'costs' in billing.data);
+  assert.ok(
+    billing.data.costs.some(
+      (cost) => cost.instance_id === c.instance_id && cost.compute_cost > 0,
+    ),
+  );
+  scenarioProof(t, r);
 });
 
 test('C explains continuous operation from newly retrieved dependency evidence', async () => {
@@ -364,12 +388,23 @@ test('aggregate deadline does not restart for later candidates', async () => {
   assert.equal(r.stop_reason, 'total_runtime_exhausted');
 });
 
-test('positive safety requires at least a full week of utilization coverage', async () => {
-  const r = await run('A', undefined, {
-    ...request,
-    window: { from: '2026-09-28T00:00:00Z', to: '2026-09-29T00:00:00Z' },
-  });
-  assert.equal(r.candidates[0].verdict, 'needs_verification');
+test('policy boundary is seven days, not the agreed fourteen-day scenario window', async () => {
+  for (const days of [6, 7, 13, 14]) {
+    const r = await run('A', undefined, {
+      ...request,
+      window: {
+        from: new Date(
+          Date.parse(request.window.to) - days * 86400000,
+        ).toISOString(),
+        to: request.window.to,
+      },
+    });
+    assert.equal(
+      r.candidates[0].verdict,
+      days < 7 ? 'needs_verification' : 'conditional_recommendation',
+      `${days}-day boundary`,
+    );
+  }
 });
 
 test('model transport uses candidate-specific choices and observations across all three candidates', async (t) => {
