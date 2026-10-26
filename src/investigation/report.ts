@@ -727,11 +727,18 @@ export function validateReport(value: unknown): InvestigationReport {
     budget.candidate_attempts !== toolAttempts.length - discoveryAttempts
   )
     throw new Error('Tool attempt count mismatch');
+  // New runs bootstrap inventory in trusted code. Legacy reports still carry
+  // a planner selection for it and retain their original call-count checks.
+  const automaticInventory =
+    trace[0]?.phase === 'evaluator' &&
+    trace[0].action?.type === 'tool' &&
+    trace[0].action.tool === 'list_ec2_instances';
   if (
     budget.planner_calls < trace.filter((t) => t.phase === 'planner').length ||
     budget.planner_calls <
       toolAttempts.filter((t) => t.retry_count === null || t.retry_count === 0)
-        .length
+        .length -
+        (automaticInventory ? 1 : 0)
   )
     throw new Error('Planner call count mismatch');
   const completion_status = member(r.completion_status, [

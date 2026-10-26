@@ -377,7 +377,7 @@ test('explicit model control preserves a provider failure without scripted fallb
     );
     assert.ok(jobs.current?.activity);
     assert.equal(result.planner.mode, 'live');
-    assert.equal(result.completion_status, 'failed');
+    assert.equal(result.completion_status, 'partial');
     assert.ok(result.trace.some((t) => t.failure_code === 'model_http_500'));
     assert.equal(
       JSON.stringify(jobs.current).includes('fixture-model-key'),
@@ -398,12 +398,18 @@ test('model exchanges reach web execution events through worker IPC using a loca
   let sentMessages: { role: string; content: string }[] = [];
   const output = JSON.stringify({
     action: 'finish',
-    reason: 'Fixture stops before evidence collection.',
+    reason: 'Fixture stops after inventory discovery.',
   });
   const fixture = createServer(async (req, res) => {
     let body = '';
     for await (const chunk of req) body += chunk;
     sentMessages = JSON.parse(body).messages;
+    const state = JSON.parse(
+      sentMessages[1].content.split('\n').slice(1).join('\n'),
+    );
+    assert.equal(state.observations[0].tool, 'list_ec2_instances');
+    assert.equal(state.observations[0].status, 'ok');
+    assert.deepEqual(state.available_actions, ['get_ec2_billing', 'finish']);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({

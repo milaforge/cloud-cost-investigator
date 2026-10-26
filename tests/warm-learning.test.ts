@@ -203,7 +203,11 @@ test('demo retains a failed model phase and never reports a speedup or falls bac
   assert.equal(result.passed, false);
   assert.equal(result.runs.length, 1);
   assert.equal(result.runs[0].report.planner.mode, 'live');
-  assert.equal(result.runs[0].report.trace[0].failure_code, 'model_http_500');
+  assert.equal(
+    result.runs[0].report.trace.find((entry) => entry.failure_code)
+      ?.failure_code,
+    'model_http_500',
+  );
   assert.equal(result.comparison, null);
   assert.ok(!JSON.stringify(result).includes('PRIVATE'));
 });

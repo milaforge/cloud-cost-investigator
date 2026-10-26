@@ -141,14 +141,18 @@ for (const fixture of cases) {
       fixture.code,
     );
     assert.equal(report.stop_reason, 'planner_unavailable_or_invalid');
-    assert.equal(report.budget.discovery_attempts, 0);
+    assert.equal(report.budget.discovery_attempts, 1);
     assert.equal(
       mocked.mock.callCount(),
       /model_http_(429|500|503)|model_transport_unavailable/.test(fixture.code)
         ? 3
         : 1,
     );
-    assert.equal(validateReport(report).trace[0].failure_code, fixture.code);
+    assert.equal(
+      validateReport(report).trace.find((entry) => entry.failure_code)
+        ?.failure_code,
+      fixture.code,
+    );
     assert.ok(renderReport(report).includes(`[${fixture.code}]`));
     assert.ok(!JSON.stringify(report).includes('PRIVATE'));
     assert.ok(!renderReport(report).includes('PRIVATE'));
@@ -171,7 +175,10 @@ test('unknown exceptions and invalid executor actions have distinct public codes
         },
       },
     });
-    assert.equal(report.trace[0].failure_code, code);
+    assert.equal(
+      report.trace.find((entry) => entry.failure_code)?.failure_code,
+      code,
+    );
     assert.ok(!JSON.stringify(report).includes('PRIVATE'));
   }
 });
@@ -187,23 +194,24 @@ test('report validator rejects arbitrary codes and failure codes attached to suc
       },
     },
   });
+  const failureIndex = report.trace.findIndex((entry) => entry.failure_code);
   for (const code of ['PRIVATE', 'model_http_403 PRIVATE', 'model_http_999']) {
     const forged = structuredClone(report);
-    Object.assign(forged.trace[0], { failure_code: code });
+    Object.assign(forged.trace[failureIndex], { failure_code: code });
     assert.throws(() => validateReport(forged));
   }
   const wrongPhase = structuredClone(report);
-  wrongPhase.trace[0].phase = 'finish';
+  wrongPhase.trace[failureIndex].phase = 'finish';
   assert.throws(() => validateReport(wrongPhase));
   const action = structuredClone(report);
-  action.trace[0].action = {
+  action.trace[failureIndex].action = {
     type: 'finish',
     reason: 'Cannot attach a failure to a successful action',
   };
   assert.throws(() => validateReport(action));
   // Historical reports without the new optional field still validate.
-  delete report.trace[0].failure_code;
-  delete report.trace[0].provider_error;
+  delete report.trace[failureIndex].failure_code;
+  delete report.trace[failureIndex].provider_error;
   const legacy = JSON.parse(JSON.stringify(report));
   for (const step of legacy.trace) {
     delete step.trace_id;

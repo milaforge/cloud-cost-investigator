@@ -14,7 +14,7 @@ documents component authority, runtime boundaries and integration details.
 | **Safety evaluator** | Trusted deterministic code can block a positive recommendation, reject a contradicted window, or defer unknown safety. It is not another model agent. | Requires targeted checks after a proposal; remaining gaps feed the next planner turn. B ends when fresh evidence disproves the proposal. |
 | **Report validator and renderer** | Revalidates citations, chronological hypotheses, positive safety proof and savings before emitting human-readable or JSON output. | Shows the proposed → supported/contradicted/unresolved transition, limitations and next human actions. |
 
-The runner owns shared state; roles do not exchange unrestricted messages. A later planner turn sees validated observations and attempt history, so its next check depends on what happened. This supports critique, shared state, branching and evaluator authority within one loop. It does not claim several autonomous model agents. Trace capture and a real scripted B excerpt are in the [CLI walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace); bounds and failure policy are below and in the [CLI failure reference](CLI_GUIDE.md#failure-behavior).
+The runner owns shared state; roles do not exchange unrestricted messages. Before the first planner call it initiates required inventory discovery through the same executor, with the same validation, retry and deadline handling. The first turn receives that observation and attempt history; later turns receive the subsequent validated evidence. Empty inventory or failed discovery needs no model call. The automatic prerequisite is recorded as an evaluator action and executor attempts, rather than a model decision. This supports critique, shared state, branching and evaluator authority within one loop. It does not claim several autonomous model agents. Trace capture and a real scripted B excerpt are in the [CLI walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace); bounds and failure policy are below and in the [CLI failure reference](CLI_GUIDE.md#failure-behavior).
 
 `aws-operational.ts` owns bounded SSM and ELBv2 fact collection beneath the
 existing AWS adapter. Shared contracts validate dated maintenance and target
@@ -112,8 +112,12 @@ These sponsor proofs use **synthetic operational evidence**. Real persistence an
 - `src/investigation/mock.ts` owns synthetic direct evidence and A/B/C/mixed/clear/missing scenarios. Metrics summarize the suggested daily UTC window across the observed lookback. These are application contracts, not claims about available AWS endpoints.
 - `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → supported/contradicted/unresolved transition; it renders the detailed CLI trace.
 
-Hard bounds: two logical discovery actions, up to four attempts each (eight total); twelve tool attempts per candidate; two
-discovery plus seven planner calls per candidate (23 maximum); 5s per mock tool, 25s per AWS tool (around the collector’s 20s deadline).
+Hard bounds: two logical discovery actions, up to four attempts each (eight total);
+twelve tool attempts per candidate; the existing aggregate planner cap of
+`2 + 7 * max_candidates` (23 maximum), including recovery attempts, remains.
+Automatic inventory consumes tool attempts but no planner call, so a successful
+run uses one fewer planner call. Per-candidate planning still allows seven calls.
+Tools allow 5s per mock call and 25s per AWS call (around the collector’s 20s deadline).
 Scripted planning defaults to 15s per call and 120s overall. Live planning allows
 60s per call and 15 minutes overall; explicit total limits above 15 minutes are
 rejected. All model calls, evidence calls, pacing and history recall/persistence

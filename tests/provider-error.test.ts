@@ -122,20 +122,21 @@ test('HTTP diagnostic survives runner and rendering; cannot attach to a non-HTTP
       }),
     },
   );
+  const failureIndex = report.trace.findIndex((entry) => entry.failure_code);
   assert.match(
-    report.trace[0].provider_error?.body ?? '',
+    report.trace[failureIndex].provider_error?.body ?? '',
     /CUDA allocation failed/,
   );
   assert.match(renderReport(report), /CUDA allocation failed/);
-  assert.equal(report.trace[0].failure_code, 'model_http_500');
+  assert.equal(report.trace[failureIndex].failure_code, 'model_http_500');
   assert.equal(report.budget.planner_calls, 3);
   const forged = structuredClone(report);
-  forged.trace[0].failure_code = 'planner_timeout';
+  forged.trace[failureIndex].failure_code = 'planner_timeout';
   assert.throws(() => validateReport(forged));
   const tooLarge = structuredClone(report);
-  assert.ok(tooLarge.trace[0].provider_error);
-  tooLarge.trace[0].provider_error.body = 'x'.repeat(2049);
+  assert.ok(tooLarge.trace[failureIndex].provider_error);
+  tooLarge.trace[failureIndex].provider_error.body = 'x'.repeat(2049);
   assert.throws(() => validateReport(tooLarge));
-  delete report.trace[0].provider_error;
+  delete report.trace[failureIndex].provider_error;
   assert.doesNotThrow(() => validateReport(report));
 });

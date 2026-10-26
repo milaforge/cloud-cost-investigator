@@ -35,9 +35,16 @@ test('JSONL measures prefix evidence coverage and summarizes retrieved facts', a
   assert.equal(events[0].confidence, 0); // Never count evidence fetched later.
   assert.equal(
     events[0].output_summary,
-    'Selected list_ec2_instances for execution.',
+    'Required scoped EC2 discovery before the first planner call.',
   );
-  assert.notEqual(events[0].reasoning, events[0].output_summary);
+  assert.equal(events[0].agent_name, 'Evaluator');
+  const firstPlanner = events.find((event) => event.agent_name === 'Planner');
+  assert.ok(firstPlanner);
+  assert.equal(
+    firstPlanner.output_summary,
+    'Selected get_ec2_billing for execution.',
+  );
+  assert.notEqual(firstPlanner.reasoning, firstPlanner.output_summary);
   for (const e of events) {
     assert.ok(e.timestamp);
     assert.ok(Date.parse(e.timestamp) >= Date.parse(report.started_at));

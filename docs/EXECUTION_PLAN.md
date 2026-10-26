@@ -11,6 +11,45 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Automatic inventory before model planning — 2026-10-26
+
+- **Gate/owner:** Days 3–4 investigation efficiency, Milad. User removed the
+  initial inventory-or-finish model turn. The runner binds inventory discovery
+  and reuses the executor's scope/data validation, retries, cancellation,
+  deadlines and evidence registry. The first planner prompt receives validated
+  inventory and its attempt trace. Empty/failed inventory invokes no planner;
+  partial inventory keeps its gaps. Automatic discovery is an evaluator action,
+  not a model decision. Actual planner calls are counted; old reports retain
+  their call-count validation. Later model failure retains inventory as partial
+  evidence. Documentation, README flow and agent rules align; rationale is in
+  `memory.md`.
+- **Executed focused proof:** `node --import tsx --test --test-isolation=none
+  tests/planner-diagnostics.test.ts tests/planner-retry.test.ts
+  tests/trace-retry.test.ts tests/runtime-budget.test.ts tests/config.test.ts
+  tests/provider-error.test.ts tests/model-messages.test.ts` passed **71/71**.
+  Discovery/empty/partial/retry/repetition cases in `tests/investigation.test.ts`
+  passed **9/9** using `--test-name-pattern='repeated identical|required
+  inventory|initial inventory|empty inventory|partial inventory|list_ec2_instances'`.
+  Updated evaluation and failed warm-model expectations passed **2/2** using
+  `--test-name-pattern='real-model failure remains|demo retains a failed model phase'`
+  on `tests/evaluation.test.ts tests/warm-learning.test.ts`.
+- **Broader proof:** `npm test` completed **356 tests: 352 passed, 4 failed**
+  on old first-turn expectations (evaluation tool count/completion, repeated-action
+  target, first JSONL summary, and warm-demo failure index). All four expectations
+  were corrected and their focused reruns passed: the 9-case discovery/repetition
+  run and 2-case evaluation/warm run above, plus `node --import tsx --test
+  --test-isolation=none tests/trace-jsonl.test.ts` (**4/4**). The newly added initial
+  inventory recovery case ran separately after the full suite had loaded. No
+  implementation failures remain from that run; the entire slow suite was not
+  repeated after test-only corrections. The worker fixture confirms inventory
+  is already in the first model request. `npm run typecheck`, targeted Biome
+  lint/format and `git diff --check` passed.
+- **Mode/limits:** fixture/synthetic evidence, mocked model transport and local
+  HTTP worker/UI proof only; no live AWS, paid inference or remote Zetaris calls.
+  Restart `npm start` for a new Live run. Broader release gates remain open.
+
+
+
 ### Inspectable model prompts and outputs — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web investigation transparency, Milad. Execution

@@ -33,8 +33,8 @@ test('transient planner failure after metrics recovers with evidence retained an
       model: 'fixture',
       async next(state, signal) {
         calls++;
-        if (calls === 4 || calls === 5) throw new Error('model_http_500');
-        if (calls === 6) assert.equal(state.observations.length, 3);
+        if (calls === 3 || calls === 4) throw new Error('model_http_500');
+        if (calls === 5) assert.equal(state.observations.length, 3);
         return scripted.next(state, signal);
       },
     },
@@ -112,7 +112,7 @@ for (const code of [
     assert.ok(delays[1] >= 4000 && delays[1] <= 5000);
     assert.equal(report.stop_reason, 'planner_unavailable_or_invalid');
     assert.equal(report.budget.planner_calls, 3);
-    assert.equal(report.budget.discovery_attempts, 0);
+    assert.equal(report.budget.discovery_attempts, 1);
     assert.ok(report.trace.some((e) => e.reason.includes('budget exhausted')));
   });
 }

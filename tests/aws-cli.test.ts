@@ -285,7 +285,7 @@ test('AWS CLI routes through collector and evaluator: empty, denied, missing bil
         assert.doesNotMatch(concise, /INVESTIGATION FAILED/);
         assert.equal(code, 0);
         assert.equal(costCalls, 0);
-        assert.equal(report.budget.planner_calls, 1);
+        assert.equal(report.budget.planner_calls, 0);
         assert.equal(report.candidates.length, 0);
         assert.equal(report.evidence[0].status, 'no_match');
       } else {

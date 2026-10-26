@@ -235,7 +235,7 @@ test('denied inventory explains the blocked investigation without assessing shut
   );
   assert.equal(report.completion_status, 'failed');
   assert.equal(report.stop_reason, 'required_tool_failed:list_ec2_instances');
-  assert.equal(report.budget.planner_calls, 1);
+  assert.equal(report.budget.planner_calls, 0);
   assert.equal(report.budget.discovery_attempts, 4);
   assert.equal(report.evidence.length, 1);
   assert.deepEqual(report.candidates, []);

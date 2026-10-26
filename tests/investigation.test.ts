@@ -307,7 +307,7 @@ for (const tool of ['list_ec2_instances', 'get_ec2_billing'] as const) {
       assert.deepEqual(calls, expected);
       assert.equal(
         r.budget.planner_calls,
-        tool === 'list_ec2_instances' ? 1 : 2,
+        tool === 'list_ec2_instances' ? 0 : 1,
       );
       assert.equal(r.completion_status, 'failed');
       assert.equal(r.stop_reason, `required_tool_failed:${tool}`);
@@ -333,27 +333,85 @@ test('authenticated empty inventory finishes without billing or another planner 
   });
   assert.equal(r.completion_status, 'complete');
   assert.equal(r.stop_reason, 'no_eligible_candidates');
-  assert.equal(r.budget.planner_calls, 1);
+  assert.equal(r.budget.planner_calls, 0);
   assert.equal(r.evidence.length, 1);
 });
 
-test('billing cannot execute before inventory establishes access', async () => {
+test('required inventory precedes the first planner turn and cannot be skipped by finish', async () => {
   let calls = 0;
   const r = await run({
-    planner: planner((_state, next) =>
-      next.type === 'tool' ? { ...next, tool: 'get_ec2_billing' } : next,
-    ),
-    provider: {
-      mode: 'mock',
-      async call() {
+    planner: {
+      mode: 'scripted',
+      model: null,
+      async next(state) {
         calls++;
-        throw new Error('unexpected');
+        assert.equal(state.observations.length, 1);
+        assert.equal(state.observations[0].tool, 'list_ec2_instances');
+        assert.equal(state.observations[0].status, 'ok');
+        assert.ok(
+          state.trace.some(
+            (entry) =>
+              entry.phase === 'tool' &&
+              entry.evidence_ids.includes(state.observations[0].evidence_id),
+          ),
+        );
+        return { type: 'finish', reason: 'No further checks requested.' };
       },
     },
   });
-  assert.equal(calls, 0);
-  assert.equal(r.completion_status, 'failed');
-  assert.equal(r.stop_reason, 'inventory_required');
+  assert.equal(calls, 1);
+  assert.equal(r.budget.discovery_attempts, 1);
+  assert.equal(r.budget.planner_calls, 1);
+  assert.equal(r.completion_status, 'partial');
+  assert.equal(r.stop_reason, 'planner_finished');
+  assert.equal(r.trace[0].phase, 'evaluator');
+  assert.ok(
+    !r.trace.some(
+      (entry) =>
+        entry.phase === 'planner' &&
+        entry.action?.type === 'tool' &&
+        entry.action.tool === 'list_ec2_instances',
+    ),
+  );
+});
+
+test('initial inventory retries stay in the executor and recovered evidence reaches the first planner', async (t) => {
+  const base = new MockProvider();
+  let attempts = 0;
+  let plannerCalls = 0;
+  const r = await run({
+    onProgress: toolRetryClock(t),
+    provider: {
+      mode: 'mock',
+      async call(action, signal) {
+        assert.equal(action.tool, 'list_ec2_instances');
+        attempts++;
+        if (attempts < 3) throw new Error('private source failure');
+        return base.call(action, signal);
+      },
+    },
+    planner: {
+      mode: 'scripted',
+      model: null,
+      async next(state) {
+        plannerCalls++;
+        assert.equal(attempts, 3);
+        assert.equal(state.observations.length, 1);
+        assert.equal(state.observations[0].status, 'ok');
+        assert.deepEqual(
+          state.trace
+            .filter((entry) => entry.phase === 'tool')
+            .map((entry) => entry.retry_count),
+          [0, 1, 2],
+        );
+        return { type: 'finish', reason: 'Inspect recovered inventory only.' };
+      },
+    },
+  });
+  assert.equal(plannerCalls, 1);
+  assert.equal(r.budget.planner_calls, 1);
+  assert.equal(r.budget.discovery_attempts, 3);
+  assert.ok(!JSON.stringify(r).includes('private source failure'));
 });
 
 test('usable partial inventory continues and retains long missing-fields lists without overflowing trace validation', async () => {
@@ -361,7 +419,17 @@ test('usable partial inventory continues and retains long missing-fields lists w
     { length: 30 },
     (_, i) => `${i}-${'x'.repeat(97)}`,
   );
+  let firstTurn = true;
   const r = await run({
+    planner: planner((state, next) => {
+      if (firstTurn) {
+        firstTurn = false;
+        assert.equal(state.observations.length, 1);
+        assert.equal(state.observations[0].status, 'partial');
+        assert.deepEqual(state.observations[0].missing_fields, missing);
+      }
+      return next;
+    }),
     provider: modify((o) => {
       if (o.tool === 'list_ec2_instances') {
         o.status = 'partial';
@@ -447,9 +515,8 @@ test('repeated identical actions terminate without another provider attempt', as
   const r = await run({
     planner: planner(
       (state, next) =>
-        state.trace.find(
-          (t) => t.phase === 'planner' && t.action?.type === 'tool',
-        )?.action ?? next,
+        state.trace.find((t) => t.phase === 'tool' && t.action?.type === 'tool')
+          ?.action ?? next,
     ),
   });
   assert.equal(r.stop_reason, 'repeated_action');
@@ -469,10 +536,10 @@ test('planner budget stops before first call when exhausted after finite calls',
   const r = await run({ limits: { planner_calls: 1 } });
   assert.equal(r.stop_reason, 'planner_budget_exhausted');
   assert.equal(r.budget.planner_calls, 1);
-  assert.equal(r.budget.discovery_attempts, 1);
+  assert.equal(r.budget.discovery_attempts, 2);
 });
 
-test('model failure emits explicit failed model-dependent result without scripted fallback', async () => {
+test('model failure retains discovered inventory with an explicit partial result and no fallback', async () => {
   const r = await run({
     planner: {
       mode: 'live',
@@ -482,10 +549,10 @@ test('model failure emits explicit failed model-dependent result without scripte
       },
     },
   });
-  assert.equal(r.completion_status, 'failed');
+  assert.equal(r.completion_status, 'partial');
   assert.equal(r.stop_reason, 'planner_unavailable_or_invalid');
   assert.equal(r.planner.mode, 'live');
-  assert.equal(r.budget.discovery_attempts, 0);
+  assert.equal(r.budget.discovery_attempts, 1);
   assert.ok(!JSON.stringify(r).includes('secret-marker'));
   assert.equal(
     r.trace.find((t) => t.failure_code)?.failure_code,
@@ -541,7 +608,7 @@ test('tool timeout cancels signal and terminates a noncooperative provider in bo
   assert.ok(signal?.aborted);
   assert.ok(Date.now() - start < 1000);
   assert.equal(r.budget.discovery_attempts, 1);
-  assert.equal(r.budget.planner_calls, 1);
+  assert.equal(r.budget.planner_calls, 0);
   assert.equal(r.stop_reason, 'total_runtime_exhausted');
 });
 
@@ -578,7 +645,7 @@ test('aggregate planner deadline has a distinct sanitized failure code', async (
     r.trace.find((t) => t.failure_code)?.failure_code,
     'investigation_deadline_exceeded',
   );
-  assert.equal(r.budget.discovery_attempts, 0);
+  assert.equal(r.budget.discovery_attempts, 1);
 });
 
 test('total runtime bound applies across individual calls', async () => {

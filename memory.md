@@ -1090,3 +1090,19 @@
   reports/history. Redact credentials/endpoints before worker IPC, bound text,
   use literal text disclosures and isolate observer failures from planner retries.
   Scripted previews have no model exchange to display.
+
+## Automatic initial inventory (2026-10-26)
+
+- Supersedes the first-turn behavior described in Inspectable planner messages:
+  the user removed the model's initial inventory-or-finish decision. Inventory
+  is an unconditional prerequisite; asking the model to request it spends time
+  and inference without choosing a useful investigation direction.
+- The runner constructs the scoped inventory action and reuses the existing
+  executor branch. Do not duplicate retrieval/validation/retry logic or bypass
+  evidence registration. The first planner state includes validated inventory
+  and the attempt trace, with partial coverage preserved as unknown.
+- Empty or failed discovery invokes no planner. Successful runs use one fewer
+  planner call; later model failures retain inventory as partial evidence. Keep
+  the aggregate recovery cap and old report compatibility. Record the prerequisite
+  as an evaluator action, never a model-authored decision; only actual planner
+  calls count toward the planner budget.

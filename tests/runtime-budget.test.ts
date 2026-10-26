@@ -41,12 +41,14 @@ test('shared deadline preserves completed candidates and defers the rest before 
   const base = new MockProvider('mixed');
   const scripted = new ScriptedPlanner();
   let plannerDeadline = 0;
+  let toolDeadline = 0;
   const deadlines: number[] = [];
   const report = await runInvestigation(request, {
     provider: {
       mode: 'mock',
       async call(action, signal) {
-        t.mock.timers.tick(20_000);
+        t.mock.timers.tick(Math.min(20_000, toolDeadline));
+        if (signal.aborted) return new Promise(() => {});
         return base.call(action, signal);
       },
     },
@@ -61,6 +63,11 @@ test('shared deadline preserves completed candidates and defers the rest before 
     },
     limits: { tool_timeout_ms: 25_000 },
     onProgress(event) {
+      if (
+        event.event === 'activity' &&
+        event.message.startsWith('Collecting current evidence')
+      )
+        toolDeadline = event.remaining_ms;
       if (event.event === 'planner_start') {
         plannerDeadline = event.timeout_ms;
         deadlines.push(plannerDeadline);
@@ -77,7 +84,7 @@ test('shared deadline preserves completed candidates and defers the rest before 
   assert.ok(deadlines.every((ms) => ms <= 60_000));
   assert.ok(
     report.trace.some(
-      (entry) => entry.failure_code === 'investigation_deadline_exceeded',
+      (entry) => entry.phase === 'tool' && entry.status === 'error',
     ),
   );
   assert.ok(

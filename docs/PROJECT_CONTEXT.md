@@ -118,6 +118,12 @@ H-MEM owns historical check-order advice. Raw Zetaris rows cannot directly order
 
 ## 5. Shared runtime contract
 
+The runner automatically requests scoped EC2 inventory through the existing
+executor before invoking either planner. The first planner turn receives the
+validated inventory observation and tool-attempt trace. Authenticated empty
+inventory finishes without a planner call; discovery failure or cancellation
+stops before planning. Valid partial inventory retains its evidence gaps.
+
 Every tool response is runtime-validated (TypeScript types alone are insufficient) and includes:
 
 ```text

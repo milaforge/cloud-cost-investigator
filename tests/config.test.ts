@@ -105,7 +105,6 @@ test('arbitrary compatible provider completes B through the same validated loop'
     else process.env.NODE_TLS_REJECT_UNAUTHORIZED = oldTls;
   });
   const actions = [
-    'list_ec2_instances',
     'get_ec2_billing',
     'get_ec2_metrics',
     'propose',
@@ -156,7 +155,7 @@ test('arbitrary compatible provider completes B through the same validated loop'
   assert.equal(report.completion_status, 'complete');
   assert.equal(report.candidates[0].verdict, 'not_recommended');
   assert.equal(report.planner.model, 'custom/model');
-  assert.ok(fetchMock.mock.callCount() >= 5);
+  assert.ok(fetchMock.mock.callCount() >= 4);
 });
 
 for (const { name, baseUrl, extraBody, expected } of [

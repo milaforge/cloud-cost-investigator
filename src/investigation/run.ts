@@ -203,7 +203,7 @@ export async function runInvestigation(
     options.limits?.planner_calls,
     2 + 7 * request.max_candidates,
     2 + 7 * request.max_candidates,
-  ); // 2 discovery + 7 per candidate
+  ); // Retain the existing aggregate cap, including planner recovery attempts.
   const total = limit(
     options.limits?.total_timeout_ms,
     options.planner.mode === 'live' ? INVESTIGATION_TIMEOUT_MS : 120_000,
@@ -385,141 +385,159 @@ export async function runInvestigation(
         stopReason = 'planner_budget_exhausted';
         break;
       }
-      if (plannerInterval) {
-        const delay = remaining(plannerInterval);
-        options.onProgress?.({ event: 'planner_pause', delay_ms: delay });
-        await pause('Waiting for planner pacing', delay);
-        if (Date.now() >= workDeadline) {
-          runtimeExhausted = true;
-          stopReason = 'total_runtime_exhausted';
-          break;
-        }
-      }
-      plannerCalls++;
-      if (candidate) candidatePlannerCalls++;
+      const automaticInventory = discoveryAttempts === 0;
       let action: Action;
-      const plannerUsesRuntimeDeadline =
-        workDeadline - Date.now() <= plannerTimeout;
-      const plannerDeadline = remaining(plannerTimeout);
-      options.onProgress?.({
-        event: 'planner_start',
-        call: plannerCalls,
-        timeout_ms: plannerDeadline,
-      });
-      const plannerRetryCount = plannerFailures;
-      let validatingAction = false;
-      try {
-        const value = await working(
-          `Waiting for planner call ${plannerCalls}`,
-          (signal) =>
-            options.planner.next(
-              {
-                request: structuredClone(request),
-                candidate_id: candidate?.instance_id ?? null,
-                proposed_window: structuredClone(
-                  candidate?.proposed_window ?? null,
-                ),
-                historical_hints: structuredClone(historicalHints),
-                observations: structuredClone(
-                  evidence.filter(
-                    (o) =>
-                      o.scope.instance_id === undefined ||
-                      o.scope.instance_id === candidate?.instance_id,
-                  ),
-                ),
-                trace: structuredClone(
-                  trace.filter(
-                    (t) =>
-                      t.action?.type !== 'tool' ||
-                      t.action.args.instance_id === undefined ||
-                      t.action.args.instance_id === candidate?.instance_id,
-                  ),
-                ),
-              },
-              signal,
-            ),
-          plannerDeadline,
-        );
-        validatingAction = true;
-        action = validateAction(value);
-        if (plannerFailures)
-          add(
-            'evaluator',
-            'Planner recovered after a transient failure; continuing with the retained evidence.',
-          );
-        plannerFailures = 0;
-      } catch (error) {
-        runtimeExhausted =
-          Date.now() >= workDeadline ||
-          (error instanceof BoundedTimeout && plannerUsesRuntimeDeadline);
-        stopReason = runtimeExhausted
-          ? 'total_runtime_exhausted'
-          : 'planner_unavailable_or_invalid';
-        const failureCode =
-          error instanceof BoundedTimeout
-            ? runtimeExhausted
-              ? 'investigation_deadline_exceeded'
-              : 'planner_timeout'
-            : validatingAction
-              ? 'planner_invalid_action'
-              : sanitizedPlannerFailure(error);
-        add(
-          'planner',
-          'Planner failed, timed out, or returned an invalid action.',
-          [],
-          {
-            retry_count: plannerRetryCount,
-            failure_code: failureCode,
-            ...(error instanceof ModelHttpError
-              ? { provider_error: error.provider_error }
-              : {}),
+      let plannerRetryCount = 0;
+      if (automaticInventory) {
+        // Inventory is a prerequisite, not a model decision. Reuse the executor
+        // below so validation, retries, cancellation and deadlines stay identical.
+        action = {
+          type: 'tool',
+          tool: 'list_ec2_instances',
+          args: {
+            account_id: request.account_id,
+            region: request.region,
+            window: structuredClone(request.window),
           },
-        );
-        plannerFailures++;
-        const transient =
-          /^(model_http_(408|429|5\d\d)|model_transport_unavailable|model_timeout|planner_timeout)$/.test(
-            failureCode,
-          );
-        if (
-          options.planner.mode === 'live' &&
-          transient &&
-          !runtimeExhausted &&
-          plannerFailures < 3 &&
-          plannerCalls < maxPlanner &&
-          (!candidate || candidatePlannerCalls < 7)
-        ) {
-          const backoff = 2000 * 2 ** (plannerFailures - 1);
-          const delay = Math.max(
-            Math.round(backoff * (1 + Math.random() * 0.25)),
-            error instanceof ModelHttpError ? (error.retry_after_ms ?? 0) : 0,
-          );
-          if (delay >= workDeadline - Date.now()) {
+          reason:
+            'Required scoped EC2 discovery before the first planner call.',
+        };
+      } else {
+        if (plannerInterval) {
+          const delay = remaining(plannerInterval);
+          options.onProgress?.({ event: 'planner_pause', delay_ms: delay });
+          await pause('Waiting for planner pacing', delay);
+          if (Date.now() >= workDeadline) {
             runtimeExhausted = true;
             stopReason = 'total_runtime_exhausted';
-            add(
-              'evaluator',
-              'Insufficient investigation time for the required planner retry delay; unresolved work deferred.',
-            );
             break;
           }
-          options.onProgress?.({
-            event: 'planner_retry',
-            call: plannerCalls,
-            attempt: plannerFailures + 1,
-            delay_ms: delay,
-            failure_code: failureCode,
-          });
-          await pause(
-            `Planner retry ${plannerFailures + 1}/3 after ${failureCode}; waiting before next call`,
-            delay,
-          );
-          continue;
         }
-        add(
-          'evaluator',
-          `Planner stopped: ${runtimeExhausted ? 'investigation deadline exhausted' : transient ? 'retry or call budget exhausted' : 'failure is not retryable'}. Retaining completed evidence; unresolved safety remains unknown.`,
-        );
-        break;
+        plannerCalls++;
+        if (candidate) candidatePlannerCalls++;
+        const plannerUsesRuntimeDeadline =
+          workDeadline - Date.now() <= plannerTimeout;
+        const plannerDeadline = remaining(plannerTimeout);
+        options.onProgress?.({
+          event: 'planner_start',
+          call: plannerCalls,
+          timeout_ms: plannerDeadline,
+        });
+        plannerRetryCount = plannerFailures;
+        let validatingAction = false;
+        try {
+          const value = await working(
+            `Waiting for planner call ${plannerCalls}`,
+            (signal) =>
+              options.planner.next(
+                {
+                  request: structuredClone(request),
+                  candidate_id: candidate?.instance_id ?? null,
+                  proposed_window: structuredClone(
+                    candidate?.proposed_window ?? null,
+                  ),
+                  historical_hints: structuredClone(historicalHints),
+                  observations: structuredClone(
+                    evidence.filter(
+                      (o) =>
+                        o.scope.instance_id === undefined ||
+                        o.scope.instance_id === candidate?.instance_id,
+                    ),
+                  ),
+                  trace: structuredClone(
+                    trace.filter(
+                      (t) =>
+                        t.action?.type !== 'tool' ||
+                        t.action.args.instance_id === undefined ||
+                        t.action.args.instance_id === candidate?.instance_id,
+                    ),
+                  ),
+                },
+                signal,
+              ),
+            plannerDeadline,
+          );
+          validatingAction = true;
+          action = validateAction(value);
+          if (plannerFailures)
+            add(
+              'evaluator',
+              'Planner recovered after a transient failure; continuing with the retained evidence.',
+            );
+          plannerFailures = 0;
+        } catch (error) {
+          runtimeExhausted =
+            Date.now() >= workDeadline ||
+            (error instanceof BoundedTimeout && plannerUsesRuntimeDeadline);
+          stopReason = runtimeExhausted
+            ? 'total_runtime_exhausted'
+            : 'planner_unavailable_or_invalid';
+          const failureCode =
+            error instanceof BoundedTimeout
+              ? runtimeExhausted
+                ? 'investigation_deadline_exceeded'
+                : 'planner_timeout'
+              : validatingAction
+                ? 'planner_invalid_action'
+                : sanitizedPlannerFailure(error);
+          add(
+            'planner',
+            'Planner failed, timed out, or returned an invalid action.',
+            [],
+            {
+              retry_count: plannerRetryCount,
+              failure_code: failureCode,
+              ...(error instanceof ModelHttpError
+                ? { provider_error: error.provider_error }
+                : {}),
+            },
+          );
+          plannerFailures++;
+          const transient =
+            /^(model_http_(408|429|5\d\d)|model_transport_unavailable|model_timeout|planner_timeout)$/.test(
+              failureCode,
+            );
+          if (
+            options.planner.mode === 'live' &&
+            transient &&
+            !runtimeExhausted &&
+            plannerFailures < 3 &&
+            plannerCalls < maxPlanner &&
+            (!candidate || candidatePlannerCalls < 7)
+          ) {
+            const backoff = 2000 * 2 ** (plannerFailures - 1);
+            const delay = Math.max(
+              Math.round(backoff * (1 + Math.random() * 0.25)),
+              error instanceof ModelHttpError ? (error.retry_after_ms ?? 0) : 0,
+            );
+            if (delay >= workDeadline - Date.now()) {
+              runtimeExhausted = true;
+              stopReason = 'total_runtime_exhausted';
+              add(
+                'evaluator',
+                'Insufficient investigation time for the required planner retry delay; unresolved work deferred.',
+              );
+              break;
+            }
+            options.onProgress?.({
+              event: 'planner_retry',
+              call: plannerCalls,
+              attempt: plannerFailures + 1,
+              delay_ms: delay,
+              failure_code: failureCode,
+            });
+            await pause(
+              `Planner retry ${plannerFailures + 1}/3 after ${failureCode}; waiting before next call`,
+              delay,
+            );
+            continue;
+          }
+          add(
+            'evaluator',
+            `Planner stopped: ${runtimeExhausted ? 'investigation deadline exhausted' : transient ? 'retry or call budget exhausted' : 'failure is not retryable'}. Retaining completed evidence; unresolved safety remains unknown.`,
+          );
+          break;
+        }
       }
       // Planner text is explanatory, never a verdict or authority to execute a write.
       if (action.type === 'finish') {
@@ -653,7 +671,7 @@ export async function runInvestigation(
         stopReason = 'tool_budget_exhausted';
         break;
       }
-      add('planner', action.reason, [], {
+      add(automaticInventory ? 'evaluator' : 'planner', action.reason, [], {
         action,
         retry_count: plannerRetryCount,
       });

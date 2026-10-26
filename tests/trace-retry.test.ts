@@ -121,7 +121,7 @@ for (const failure of ['error', 'unavailable', 'throw', 'timeout'] as const) {
       ['insufficient', 'insufficient', 'insufficient', 'supported'],
     );
     assert.equal(report.budget.candidate_attempts, 5);
-    assert.equal(report.budget.planner_calls, 5);
+    assert.equal(report.budget.planner_calls, 4);
     assert.equal(report.candidates[0].verdict, 'not_recommended');
     assert.equal(report.completion_status, 'complete');
     assert.ok(!JSON.stringify(report).includes('secret-provider-detail'));
@@ -155,7 +155,7 @@ test('inventory exhaustion records four calls and stops before billing or anothe
   });
   assert.equal(calls, 4);
   assert.equal(report.budget.discovery_attempts, 4);
-  assert.equal(report.budget.planner_calls, 1);
+  assert.equal(report.budget.planner_calls, 0);
   assert.equal(report.stop_reason, 'required_tool_failed:list_ec2_instances');
   assert.equal(report.completion_status, 'failed');
 });

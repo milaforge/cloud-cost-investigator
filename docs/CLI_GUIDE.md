@@ -101,6 +101,13 @@ For three reproducible input/output cases, run the same JSON command with `--sce
 
 ## Failure behavior
 
+Inventory discovery runs automatically before the first planner call, using the
+same scoped, validated read-only executor. The model receives its actual result.
+Empty inventory ends successfully with zero model calls; failed inventory ends
+with a named tool failure and zero model calls. A subsequent model failure retains
+the discovered inventory as a partial report. Existing saved reports retain their
+original trace and call counts.
+
 For `needs_verification`, `missing_checks` identifies the evidence or clearance
 that failed policy, and `next_human_actions` names the owner review, source
 retrieval or recovery check needed before a fresh investigation. Source statuses

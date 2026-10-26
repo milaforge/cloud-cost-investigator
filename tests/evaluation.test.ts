@@ -125,7 +125,7 @@ test('real-model failure remains in every denominator without scripted fallback 
       (r) =>
         r.investigation.verdict === null &&
         r.investigation.planner.mode === 'live' &&
-        r.investigation.tool_attempts === 0,
+        r.investigation.tool_attempts === 1,
     ),
   );
   assert.ok(!JSON.stringify(result).includes('PRIVATE'));
@@ -138,13 +138,13 @@ test('real-model failure remains in every denominator without scripted fallback 
   assert.ok(
     progress.some((line) => line.includes('case 8/8 unknown_commitments')),
   );
-  assert.ok(progress.some((line) => line.includes('failed; verdict=none')));
+  assert.ok(progress.some((line) => line.includes('partial; verdict=none')));
   assert.ok(!progress.join('\n').match(/PRIVATE|test-key|model\.example/));
   assert.deepEqual(result.execution, {
     cases: 8,
     complete: 0,
-    partial: 0,
-    failed: 8,
+    partial: 8,
+    failed: 0,
     planner_failure_cases: 8,
     matching_dispositions_with_planner_failure: 0,
     failure_code_counts: { model_http_403: 8 },

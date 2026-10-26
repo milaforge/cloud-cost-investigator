@@ -13,7 +13,7 @@ CCI finds **AWS EC2 off-hours scheduling opportunities** within an account and r
 
 ## 2. Agents and responsibilities
 
-One bounded planner → executor → evaluator loop shares validated run state. These roles are responsibilities within that engine, not separate autonomous model agents.
+Required EC2 discovery runs first. Its validated result feeds one bounded planner → executor → evaluator loop. These roles are responsibilities within that engine, not separate autonomous model agents.
 
 | Role                          | Responsibility                                                                                                         | Can block or retry?                                                 |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -32,7 +32,9 @@ One bounded planner → executor → evaluator loop shares validated run state. 
 
 ```mermaid
 flowchart TD
-    U[Engineer: account and region] --> P{Which check next?}
+    U[Engineer: account and region] --> D[Executor: required EC2 discovery]
+    D -->|Validated inventory| P{Which check next?}
+    D -->|Empty or failed discovery| R
     M[(Meterless H-MEM: scoped lessons)] -->|Prioritize fresh checks| P
     P --> X[Executor: read-only AWS evidence]
     X --> E{Does evidence support the window?}
