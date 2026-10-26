@@ -23,6 +23,27 @@ const node = (tag, text, className) => {
   return el;
 };
 const human = (value) => value.replaceAll('_', ' ');
+function enter(element, delay = 0) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  element.animate(
+    [
+      { opacity: 0, transform: 'translateY(6px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ],
+    {
+      duration: 280,
+      delay,
+      fill: 'backwards',
+      easing: 'cubic-bezier(.2,.8,.2,1)',
+    },
+  );
+}
+function updateText(id, text) {
+  const element = $(id);
+  if (element.textContent === text) return;
+  element.textContent = text;
+  if (text) enter(element);
+}
 function buttonBusy(button, busy, label) {
   if (button.getAttribute('aria-busy') === String(busy)) return;
   if (busy) {
@@ -318,6 +339,7 @@ function render(focusCandidate = false) {
           'hint',
         ),
   );
+  enter($('live-learning-result'));
   for (const button of document.querySelectorAll('[data-report]'))
     button.setAttribute(
       'aria-pressed',
@@ -350,6 +372,7 @@ function render(focusCandidate = false) {
       ),
     );
     root.append(empty);
+    enter(empty);
     return;
   }
   const meta = node('div', undefined, 'report-meta');
@@ -761,35 +784,26 @@ function render(focusCandidate = false) {
     ]),
   );
   root.append(details);
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    for (const [index, el] of [
-      ...root.querySelectorAll('.decision, .journey-step'),
-    ].entries())
-      el.animate(
-        [
-          { opacity: 0, transform: 'translateY(10px)' },
-          { opacity: 1, transform: 'translateY(0)' },
-        ],
-        {
-          duration: 360,
-          delay: Math.min(index * 55, 440),
-          fill: 'backwards',
-          easing: 'cubic-bezier(.2,.8,.2,1)',
-        },
-      );
-  }
+  enter(meta);
+  enter(layout);
+  enter(details, 80);
+  for (const [index, step] of root.querySelectorAll('.journey-step').entries())
+    enter(step, Math.min(index * 30, 180));
 }
 async function loadReport(file) {
   if (isDemo() || !file || loading) return;
   if (file.size > 2 * 1024 * 1024) {
-    $('message').textContent =
-      'Report exceeds 2 MiB. Your current report is unchanged.';
+    updateText(
+      'message',
+      'Report exceeds 2 MiB. Your current report is unchanged.',
+    );
     return;
   }
   loading = true;
   $('mode').disabled = true;
   $('load').disabled = true;
-  $('message').textContent = 'Validating report…';
+  buttonBusy($('load'), true, 'Validating…');
+  updateText('message', 'Validating report…');
   try {
     const response = await fetch('/api/validate', {
       method: 'POST',
@@ -800,8 +814,10 @@ async function loadReport(file) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
     if ((result.integration_mode === 'live') === isDemo()) {
-      $('message').textContent =
-        `Switch to ${result.integration_mode === 'live' ? 'Live' : 'Demo'} mode to load this report. Your current report is unchanged.`;
+      updateText(
+        'message',
+        `Switch to ${result.integration_mode === 'live' ? 'Live' : 'Demo'} mode to load this report. Your current report is unchanged.`,
+      );
       return;
     }
     reports.loaded = result;
@@ -811,15 +827,20 @@ async function loadReport(file) {
     candidateIndex = 0;
     $('loaded').hidden = false;
     render();
-    $('message').textContent =
-      'Report loaded. Validation checks consistency, not authenticity of the supplied evidence.';
+    updateText(
+      'message',
+      'Report loaded. Validation checks consistency, not authenticity of the supplied evidence.',
+    );
   } catch {
-    $('message').textContent =
-      'Could not load report. Choose a valid single investigation JSON report. Your current report is unchanged.';
+    updateText(
+      'message',
+      'Could not load report. Choose a valid single investigation JSON report. Your current report is unchanged.',
+    );
   } finally {
     loading = false;
     $('mode').disabled = submitted || currentJob?.status === 'running';
     $('load').disabled = false;
+    buttonBusy($('load'), false);
     $('file').value = '';
   }
 }
@@ -830,7 +851,7 @@ for (const button of document.querySelectorAll('[data-report]'))
     dismissToast();
     active = button.dataset.report;
     if (['A', 'B'].includes(active)) $('scenario').value = active;
-    $('message').textContent = '';
+    updateText('message', '');
     candidateIndex = 0;
     render();
   });
@@ -843,7 +864,7 @@ document.addEventListener('drop', (e) => {
   e.preventDefault();
   if (isDemo()) return;
   if (e.dataTransfer.files.length !== 1) {
-    $('message').textContent = 'Choose one report at a time.';
+    updateText('message', 'Choose one report at a time.');
     return;
   }
   loadReport(e.dataTransfer.files[0]);
@@ -868,17 +889,27 @@ function syncRunButtonLoading() {
       : 'Investigating…';
   buttonBusy($('save-decision'), kind === 'decision', 'Saving decision…');
 }
+function previewButtonsBusy(scenario = null) {
+  for (const button of document.querySelectorAll('[data-report]')) {
+    if (button.dataset.report === 'loaded') continue;
+    const busy = button.dataset.report === scenario;
+    buttonBusy(button, busy, 'Loading preview…');
+    button.disabled = busy;
+  }
+}
 async function selectScenario(scenario) {
   dismissToast();
   if (!isDemo()) return;
   $('scenario').value = scenario;
+  previewButtonsBusy();
   active = reports[scenario] ? scenario : null;
   candidateIndex = 0;
-  $('message').textContent = '';
+  updateText('message', '');
   render();
   if (!scenario || active) return;
+  previewButtonsBusy(scenario);
   $('report').setAttribute('aria-busy', 'true');
-  $('message').textContent = 'Preparing synthetic preview…';
+  updateText('message', 'Preparing synthetic preview…');
   try {
     const response = await fetch(
       `/api/demos?scenario=${encodeURIComponent(scenario)}`,
@@ -890,13 +921,17 @@ async function selectScenario(scenario) {
     Object.assign(reports, await response.json());
     if (!isDemo() || $('scenario').value !== scenario) return;
     active = scenario;
-    $('message').textContent = '';
+    updateText('message', '');
     render();
   } catch {
     if (!isDemo() || $('scenario').value !== scenario) return;
     $('report').setAttribute('aria-busy', 'false');
-    $('message').textContent =
-      'Could not load preview. Select the scenario again to retry.';
+    updateText(
+      'message',
+      'Could not load preview. Select the scenario again to retry.',
+    );
+  } finally {
+    if (isDemo() && $('scenario').value === scenario) previewButtonsBusy();
   }
 }
 $('scenario').addEventListener('change', () =>
@@ -921,6 +956,7 @@ for (const button of document.querySelectorAll('[data-view]'))
   button.addEventListener('click', () => showView(button.dataset.view));
 function setMode() {
   const demo = isDemo();
+  previewButtonsBusy();
   for (const element of document.querySelectorAll('[data-demo-only]'))
     element.hidden = !demo;
   for (const element of document.querySelectorAll('[data-live-only]'))
@@ -930,7 +966,7 @@ function setMode() {
   $('scenario').value = '';
   $('loaded').hidden = true;
   if ($('evidence').open) $('evidence').close();
-  $('message').textContent = '';
+  updateText('message', '');
   dismissToast();
   active = null;
   candidateIndex = 0;
@@ -951,8 +987,10 @@ function showReport(report) {
   $('loaded').hidden = false;
   showView('investigate');
   render();
-  $('message').textContent =
-    'Investigation result. Inspect evidence and trace below.';
+  updateText(
+    'message',
+    'Investigation result. Inspect evidence and trace below.',
+  );
   $('report').scrollIntoView({ block: 'start' });
 }
 function downloadButton(value, filename) {
@@ -993,9 +1031,12 @@ function syncDecisionForm() {
     !target || submitted || currentJob?.status === 'running';
   $('save-decision').disabled = $('decision-fields').disabled;
   $('decision-receipt').replaceChildren();
-  $('decision-context').textContent = target
-    ? `${modes[target.report.integration_mode]} · Account ${target.report.request.account_id} · ${target.report.request.region} · ${target.candidate.instance_id} · Daily ${schedule(target.candidate.proposed_window)} UTC. Investigation ${target.report.investigation_id}.`
-    : 'Run an investigation or load a report, then select a completed conditional recommendation in Investigate.';
+  updateText(
+    'decision-context',
+    target
+      ? `${modes[target.report.integration_mode]} · Account ${target.report.request.account_id} · ${target.report.request.region} · ${target.candidate.instance_id} · Daily ${schedule(target.candidate.proposed_window)} UTC. Investigation ${target.report.investigation_id}.`
+      : 'Run an investigation or load a report, then select a completed conditional recommendation in Investigate.',
+  );
 }
 function renderDecisionReceipt(receipt) {
   const record = receipt.decision.record;
@@ -1025,6 +1066,7 @@ function renderDecisionReceipt(receipt) {
       downloadButton(receipt, 'zetaris-decision-receipt.json'),
     ]),
   );
+  enter($('decision-receipt'));
 }
 $('decision-choice').addEventListener('change', () => {
   const deferred = $('decision-choice').value === 'deferred';
@@ -1067,6 +1109,12 @@ $('decision-form').addEventListener('submit', async (event) => {
 });
 function renderEvents(events) {
   const root = $('run-events');
+  const previous = JSON.parse(root.dataset.events || '[]');
+  let eventIndex = 0;
+  const enterNewEvent = (element) => {
+    if (previous[eventIndex] !== events[eventIndex]) enter(element);
+    eventIndex++;
+  };
   root.closest('.event-panel').hidden = events.length === 0;
   const statuses = {
     ok: ['✓', 'event-ok', 'Complete'],
@@ -1099,9 +1147,13 @@ function renderEvents(events) {
     if (!group.key) {
       const line = node('div', group.events[0], 'event-leaf event-context');
       tree.append(line);
+      enterNewEvent(line);
       continue;
     }
     const branch = node('div', undefined, 'event-branch');
+    if (previous[eventIndex] !== events[eventIndex]) enter(branch);
+    // Planner headings consume an event; phase headings retain it as a leaf.
+    if (group.key.startsWith('planner-')) eventIndex++;
     const heading = node('div', undefined, 'event-branch-heading');
     heading.append(node('span', group.title, 'event-title'));
     const children = node('div', undefined, 'event-children');
@@ -1129,11 +1181,13 @@ function renderEvents(events) {
           info('Trace metadata', metadata.join(' · ')),
         );
       children.append(line);
+      enterNewEvent(line);
     }
     branch.append(heading, children);
     tree.append(branch);
   }
   root.replaceChildren(tree);
+  root.dataset.events = JSON.stringify(events);
 }
 function jobMatchesMode(job) {
   return (
@@ -1153,7 +1207,6 @@ function paintJob(job) {
     $('cancel-run').hidden = true;
     $('view-last-result').hidden = true;
     renderEvents([]);
-    $('run-events').dataset.events = '[]';
     runButtons.forEach((id) => {
       $(id).disabled =
         submitted || (id === 'save-decision' && !decisionTarget());
@@ -1173,12 +1226,9 @@ function paintJob(job) {
   $('view-last-result').hidden =
     job.status !== 'complete' || !job.result || !jobMatchesMode(job);
   const status = `${human(job.kind)} · ${job.status}${job.error ? ` — ${job.error}` : ''}${running ? ` · ${job.activity || job.events.at(-1) || 'Starting worker…'}` : ''}`;
-  if ($('run-status').textContent !== status)
-    $('run-status').textContent = status;
-  if (JSON.stringify(job.events) !== $('run-events').dataset.events) {
+  updateText('run-status', status);
+  if (JSON.stringify(job.events) !== $('run-events').dataset.events)
     renderEvents(job.events);
-    $('run-events').dataset.events = JSON.stringify(job.events);
-  }
   if (
     job.status === 'complete' &&
     job.result &&
@@ -1195,12 +1245,14 @@ function paintJob(job) {
       job.kind === 'investigate'
         ? job.result.completion_status === 'complete'
         : job.kind === 'decision' || job.result.passed;
-    $('run-status').textContent =
+    updateText(
+      'run-status',
       job.kind === 'investigate' && job.result.completion_status === 'failed'
         ? `Investigate · Failed — ${human(job.result.stop_reason)}; inspect discovery gaps`
         : job.kind === 'decision'
           ? 'Saved to Zetaris — recommendation and decision readback verified'
-          : `${human(job.kind)} · ${complete ? 'Finished' : 'Finished with incomplete or failed checks — inspect the result'}`;
+          : `${human(job.kind)} · ${complete ? 'Finished' : 'Finished with incomplete or failed checks — inspect the result'}`,
+    );
   }
 }
 async function pollJob() {
@@ -1218,8 +1270,10 @@ async function pollJob() {
     if (job?.status === 'running') polling = setTimeout(pollJob, 500);
   } catch {
     $('run-state').hidden = isDemo();
-    $('run-status').textContent =
-      'Connection lost. The run may still be active. Reconnecting without restarting it…';
+    updateText(
+      'run-status',
+      'Connection lost. The run may still be active. Reconnecting without restarting it…',
+    );
     runButtons.forEach((id) => {
       $(id).disabled = true;
     });
@@ -1279,8 +1333,10 @@ async function submitRun(body) {
     polling = setTimeout(pollJob, 100);
   } catch {
     $('run-state').hidden = false;
-    $('run-status').textContent =
-      'Start could not be confirmed. Checking server state; the action will not be resubmitted.';
+    updateText(
+      'run-status',
+      'Start could not be confirmed. Checking server state; the action will not be resubmitted.',
+    );
     polling = setTimeout(pollJob, 500);
   } finally {
     submitted = false;
@@ -1305,7 +1361,7 @@ $('view-last-result').addEventListener('click', () => {
 $('cancel-run').addEventListener('click', async () => {
   if (currentJob?.status !== 'running' || !jobMatchesMode(currentJob)) return;
   $('cancel-run').disabled = true;
-  $('cancel-run').textContent = 'Stopping…';
+  buttonBusy($('cancel-run'), true, 'Stopping…');
   try {
     const response = await fetch('/api/cancel', {
       method: 'POST',
@@ -1316,11 +1372,13 @@ $('cancel-run').addEventListener('click', async () => {
     if (!response.ok) throw new Error();
     paintJob(await response.json());
   } catch {
-    $('run-status').textContent =
-      'Stop could not be confirmed. Reconnecting; no new action was submitted.';
+    updateText(
+      'run-status',
+      'Stop could not be confirmed. Reconnecting; no new action was submitted.',
+    );
   } finally {
     $('cancel-run').disabled = false;
-    $('cancel-run').textContent = 'Stop run';
+    buttonBusy($('cancel-run'), false);
   }
   polling = setTimeout(pollJob, 500);
 });
@@ -1328,13 +1386,15 @@ async function loadConfiguration() {
   return fetch('/api/config')
     .then((r) => r.json())
     .then((config) => {
-      $('followup-config').textContent =
+      updateText(
+        'followup-config',
         config.zetaris && config.zetaris_append
           ? 'Zetaris is configured for saving decisions. Connectivity is verified when you save.'
-          : 'Zetaris saving is unavailable: configure history credentials, history table and append opt-in in server .env, then restart.';
+          : 'Zetaris saving is unavailable: configure history credentials, history table and append opt-in in server .env, then restart.',
+      );
     })
     .catch(() => {
-      $('followup-config').textContent = 'Configuration status unavailable.';
+      updateText('followup-config', 'Configuration status unavailable.');
     });
 }
 $('mode').value = 'demo';

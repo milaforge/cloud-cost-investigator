@@ -11,6 +11,29 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Dynamic UI entrance motion and CTA loading — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. `src/web/app.js` and
+  `src/web/style.css` add short entrances for report sections, changed status,
+  evidence details, disclosures and newly received execution events. Previously
+  received events do not replay on polling. Reduced motion disables entrances
+  and spinner rotation. Pending investigation, decision, stop, upload validation
+  and preview buttons expose loading labels, spinners and `aria-busy`; completion,
+  failure, cancellation and mode changes restore the applicable button state.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/demo-web-ui.test.ts tests/demo-web.test.ts tests/demo-web-jobs.test.ts`
+  passed **14/14** with loopback access, including validation-without-start,
+  pending/recovered/terminal action states, failed requests, mode isolation and
+  new-event-only/reduced-motion behavior. `npm run typecheck`, `npm run lint`,
+  scoped Biome format, `node --check src/web/app.js` and `git diff --check`
+  passed; existing unrelated CSS warning and probe style info remain.
+- **Mode/limits/next:** DOM-handler and local HTTP fixture verification only;
+  no paid model, AWS or remote Zetaris calls. The initial sandbox run hit four
+  loopback `listen EPERM` failures; the permitted rerun passed. Local startup
+  succeeded, then the test server was stopped. Browser inspection was attempted,
+  but no browser surface is available; rendered motion still needs visual review.
+  Restart the viewer to reload its cached assets. Live/release gates stay open.
+
 ### Run-click configuration validation without a Live settings section — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web usability, Milad. User correction removes the entire

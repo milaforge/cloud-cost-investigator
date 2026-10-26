@@ -258,7 +258,9 @@ the key checks and proposal/rejection sequence. UTC timestamps label evidence
 collection; reasoning steps without recorded times say so. Hover, focus or tap
 an **i** control for supporting details. Select evidence links for observations
 and coverage. Expand **Window, assumptions & remaining checks** or **Full
-investigation trace** for the complete detail. Motion respects the system reduced-motion preference. Architecture and
+investigation trace** for the complete detail. Dynamic results and new execution events enter smoothly; pending
+action buttons show a spinner and loading label until that action finishes.
+Motion respects the system reduced-motion preference. Architecture and
 execution bounds live in [components](components.md#local-report-viewer).
 
 ## Six-scenario evidence proof

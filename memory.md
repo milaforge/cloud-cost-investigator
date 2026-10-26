@@ -1063,3 +1063,16 @@
   lessons, and direct NVIDIA model planning. Do not copy the illustrative model
   routing, multi-agent or Cursor claims. Real sponsor calls with synthetic AWS
   evidence do not prove live scheduling safety or a general memory speedup.
+
+## Dynamic UI motion and action loading (2026-10-26)
+
+- Extend the existing native Web Animations and CSS rather than add a dependency
+  for entrance motion. Use brief opacity/vertical movement for changing data,
+  report sections, disclosures and evidence details; respect reduced motion.
+  Event polling animates only newly received entries so old evidence stays still.
+- Loading belongs to the pending action: investigation, decision saving, report
+  validation, preview selection or stopping. Preserve and restore button labels,
+  expose `aria-busy`, and keep the spinner visible throughout a confirmed running
+  job, including recovery after refresh. Disabled unrelated actions are not busy.
+  Validation failure must not imply a job started; stop remains available only
+  after running is confirmed. Motion timing never represents evidence timing.

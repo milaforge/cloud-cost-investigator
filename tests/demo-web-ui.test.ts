@@ -10,6 +10,7 @@ function page(
   previewFetch?: (
     url: string,
   ) => Promise<{ ok: boolean; json: () => Promise<unknown> }>,
+  reducedMotion = true,
 ) {
   const elements: Element[] = [];
   let focused: Element | undefined;
@@ -28,6 +29,7 @@ function page(
     open = false;
     required = false;
     style = {};
+    animations: unknown[][] = [];
     classList = {
       add: (value: string) => {
         this.className += ` ${value}`;
@@ -81,7 +83,8 @@ function page(
       return true;
     }
     scrollIntoView() {}
-    animate() {
+    animate(...args: unknown[]) {
+      this.animations.push(args);
       return { cancel() {} };
     }
     matches(selector: string) {
@@ -160,7 +163,7 @@ function page(
       createTextNode: (text: string) =>
         Object.assign(new Element(), { textContent: text }),
     },
-    window: { matchMedia: () => ({ matches: true }) },
+    window: { matchMedia: () => ({ matches: reducedMotion }) },
     setTimeout: () => 1,
     clearTimeout() {},
     AbortSignal,
@@ -259,7 +262,12 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   const selection = lazy.get('scenario').listeners.change();
   assert.equal(lazy.requests.at(-1)?.url, '/api/demos?scenario=B');
   assert.equal(lazy.get('report').attributes['aria-busy'], 'true');
+  const previewButton = lazy.elements.find((el) => el.dataset.report === 'B');
+  assert.equal(previewButton?.attributes['aria-busy'], 'true');
+  assert.equal(previewButton?.disabled, true);
   lazy.mode('live');
+  assert.equal(previewButton?.attributes['aria-busy'], 'false');
+  assert.equal(previewButton?.disabled, false);
   finishPreview();
   await selection;
   assert.equal(
@@ -528,4 +536,56 @@ test('action loading follows pending and resumed jobs, restores labels on termin
   p.run('paintJob(null)');
   assert.equal(p.get('save-decision').textContent, 'Save decision to Zetaris');
   assert.equal(p.get('save-decision').attributes['aria-busy'], 'false');
+});
+
+test('stop and report validation show loading only for their pending requests', async () => {
+  const p = page();
+  p.get('cancel-run').textContent = 'Stop run';
+  p.get('load').textContent = 'Load report';
+  p.mode('live');
+  p.run(
+    "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:[]})",
+  );
+  let rejectRequest!: (error: Error) => void;
+  p.context.fetch = () =>
+    new Promise((_resolve, reject) => {
+      rejectRequest = reject;
+    });
+  const stopping = p.get('cancel-run').listeners.click();
+  assert.equal(p.get('cancel-run').attributes['aria-busy'], 'true');
+  assert.equal(p.get('cancel-run').textContent, 'Stopping…');
+  rejectRequest(new Error('Network failure'));
+  await stopping;
+  assert.equal(p.get('cancel-run').attributes['aria-busy'], 'false');
+  assert.equal(p.get('cancel-run').textContent, 'Stop run');
+  assert.equal(p.get('run-investigate').attributes['aria-busy'], 'true');
+  const validating = p.run("loadReport({size:2,text:async ()=>'{}'})");
+  assert.equal(p.get('load').attributes['aria-busy'], 'true');
+  // Allow the async file read to reach the pending validation request.
+  await Promise.resolve();
+  rejectRequest(new Error('Invalid report'));
+  await validating;
+  assert.equal(p.get('load').attributes['aria-busy'], 'false');
+  assert.equal(p.get('load').textContent, 'Load report');
+});
+
+test('motion enters changed status and new events without replaying prior events; reduced motion skips it', () => {
+  for (const reducedMotion of [false, true]) {
+    const p = page(undefined, reducedMotion);
+    p.mode('live');
+    p.run(
+      "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:['Planner call 1 started','1. Discover instances · ok']})",
+    );
+    const statusAnimations = p.get('run-status').animations.length;
+    assert.equal(statusAnimations > 0, !reducedMotion);
+    p.run('paintJob(currentJob)');
+    assert.equal(p.get('run-status').animations.length, statusAnimations);
+    p.run(
+      "paintJob({...currentJob,events:[...currentJob.events,'2. Check billing · partial']})",
+    );
+    const leaves = p.get('run-events').querySelectorAll('.event-leaf');
+    assert.equal(leaves[0].animations.length, 0, 'old event stays still');
+    assert.equal(leaves[1].animations.length, reducedMotion ? 0 : 1);
+    assert.equal(p.get('run-events').closest('.event-panel')?.visible, true);
+  }
 });
