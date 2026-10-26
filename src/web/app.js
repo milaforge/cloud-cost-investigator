@@ -1171,8 +1171,8 @@ $('decision-form').addEventListener('submit', async (event) => {
 function renderEvents(events) {
   const root = $('run-events');
   const previous = JSON.parse(root.dataset.events || '[]');
-  const openMessages = new Set(
-    [...root.querySelectorAll('.model-message')]
+  const openDetails = new Set(
+    [...root.querySelectorAll('.event-disclosure')]
       .filter((element) => element.open)
       .map((element) => Number(element.dataset.eventIndex)),
   );
@@ -1208,12 +1208,16 @@ function renderEvents(events) {
     else groups.push({ events: [text] });
   }
   $('event-count').textContent = `${events.length}`;
-  const eventLine = (entry, context = false) => {
+  const eventLine = (entry, context = false, tag = 'div') => {
     const step = /^(\d+)\. (.*)$/.exec(entry);
     const line = node(
-      'div',
+      tag,
       undefined,
-      context ? 'event-leaf event-context' : 'event-leaf',
+      tag === 'span'
+        ? 'event-summary-line'
+        : context
+          ? 'event-leaf event-context'
+          : 'event-leaf',
     );
     if (step) line.append(node('span', `${step[1]}. `, 'event-step'));
     const parts = (step ? step[2] : entry).split(' · ');
@@ -1237,10 +1241,74 @@ function renderEvents(events) {
       );
     return line;
   };
+  const eventDisclosure = (summary, content, className = '') => {
+    const details = node(
+      'details',
+      undefined,
+      `event-leaf event-disclosure ${className}`.trim(),
+    );
+    details.dataset.eventIndex = String(eventIndex);
+    details.open =
+      previous[eventIndex] === events[eventIndex] &&
+      openDetails.has(eventIndex);
+    const heading = node('summary');
+    if (typeof summary === 'string')
+      heading.append(document.createTextNode(summary));
+    else heading.append(summary);
+    details.append(heading, ...content);
+    return details;
+  };
+  const eventNode = (entry, context = false) => {
+    const modelMessage = /^Model (prompt|output): ([\s\S]*)$/.exec(entry);
+    if (modelMessage)
+      return eventDisclosure(
+        modelMessage[1] === 'prompt' ? 'Model prompt' : 'Model output',
+        [
+          node('p', 'Credentials and private endpoints are redacted.', 'muted'),
+          node('pre', modelMessage[2], 'model-message-text'),
+        ],
+        'model-message',
+      );
+    const plannerContext = /^Planner context: (\d+) applicable/.exec(entry);
+    if (plannerContext)
+      return eventDisclosure(
+        `Planner context · ${plannerContext[1]} H-MEM hints`,
+        [node('p', entry, 'event-detail-text')],
+      );
+    const history = /^(Zetaris|Meterless H-MEM) (read|store) · (.*)$/.exec(
+      entry,
+    );
+    if (history) {
+      const [, source, operation, rest] = history;
+      const [status, description = ''] = rest.split(' · ', 2);
+      const count = /^(\d+) (?:matching|eligible)/.exec(description)?.[1];
+      const result = Object.hasOwn(statuses, status) ? status : null;
+      const item = source === 'Zetaris' ? 'record' : 'summary';
+      const label = result
+        ? `${source} ${operation} · ${result}${count === undefined ? '' : ` · ${count} ${item}${count === '1' ? '' : 's'}`}`
+        : `${source} ${operation} · ${status.includes('disabled') ? 'disabled' : status}`;
+      return eventDisclosure(eventLine(label, false, 'span'), [
+        node('p', entry, 'event-detail-text'),
+      ]);
+    }
+    const plannerRetry =
+      /^Planner call \d+ unavailable \([^)]+\); retry (\d+\/\d+) in ([\d.]+) seconds$/.exec(
+        entry,
+      );
+    const toolRetry =
+      /^Tool (\S+) failed; retry (\d+\/\d+) in ([\d.]+) seconds$/.exec(entry);
+    if (plannerRetry || toolRetry) {
+      const label = plannerRetry
+        ? `Planner retry · ${plannerRetry[1]} · ${plannerRetry[2]}s`
+        : `Tool retry · ${toolRetry[1]} · ${toolRetry[2]} · ${toolRetry[3]}s`;
+      return eventDisclosure(label, [node('p', entry, 'event-detail-text')]);
+    }
+    return eventLine(entry, context);
+  };
   const tree = document.createDocumentFragment();
   for (const group of groups) {
     if (!group.key) {
-      const line = eventLine(group.events[0], true);
+      const line = eventNode(group.events[0], true);
       tree.append(line);
       enterNewEvent(line);
       continue;
@@ -1253,25 +1321,7 @@ function renderEvents(events) {
     heading.append(node('span', group.title, 'event-title'));
     const children = node('div', undefined, 'event-children');
     for (const entry of group.events) {
-      const modelMessage = /^Model (prompt|output): ([\s\S]*)$/.exec(entry);
-      if (modelMessage) {
-        const details = node('details', undefined, 'event-leaf model-message');
-        details.dataset.eventIndex = String(eventIndex);
-        details.open =
-          previous[eventIndex] === entry && openMessages.has(eventIndex);
-        details.append(
-          node(
-            'summary',
-            modelMessage[1] === 'prompt' ? 'Model prompt' : 'Model output',
-          ),
-          node('p', 'Credentials and private endpoints are redacted.', 'muted'),
-          node('pre', modelMessage[2], 'model-message-text'),
-        );
-        children.append(details);
-        enterNewEvent(details);
-        continue;
-      }
-      const line = eventLine(entry);
+      const line = eventNode(entry);
       children.append(line);
       enterNewEvent(line);
     }

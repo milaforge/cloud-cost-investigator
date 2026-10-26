@@ -4,6 +4,16 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { generateDemoReports } from '../scripts/demo-web.ts';
 
+function treeText(element: {
+  textContent: string;
+  children: unknown[];
+}): string {
+  return (
+    element.textContent +
+    element.children.map((child) => treeText(child as typeof element)).join('')
+  );
+}
+
 // Execute the shipped browser script against its actual HTML. This DOM stub
 // checks handlers and ancestor visibility; it does not prove browser layout.
 function page(
@@ -800,21 +810,37 @@ test('planner exchanges use literal text disclosures and retain open state acros
     'Model prompt: {"content":"<img src=x onerror=alert(1)>"}\nChoose the next read-only evidence check.';
   const output =
     'Model output: {"action":"discover_instances","reason":"Inventory first"}';
-  p.context.exchangeEvents = ['Planner call 1 started', prompt, output];
+  const context =
+    'Planner context: 1 applicable Meterless H-MEM historical hints for get_ec2_dependencies; Zetaris audit records excluded; fresh evidence required';
+  p.context.exchangeEvents = [
+    'Planner call 1 started',
+    context,
+    prompt,
+    output,
+  ];
   p.run(
     "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:exchangeEvents})",
   );
   const messages = () => p.get('run-events').querySelectorAll('.model-message');
+  const details = () =>
+    p.get('run-events').querySelectorAll('.event-disclosure');
+  assert.equal(details().length, 3);
+  assert.equal(
+    treeText(details()[0].querySelectorAll('summary')[0]),
+    'Planner context · 1 H-MEM hints',
+  );
+  assert.equal(details()[0].open, false);
+  assert.equal(details()[0].querySelectorAll('p')[0].textContent, context);
   assert.equal(messages().length, 2);
   assert.ok(messages()[0].closest('.event-branch'));
   assert.equal(messages()[0].tag, 'details');
   assert.equal(messages()[0].open, false);
   assert.equal(
-    messages()[0].querySelectorAll('summary')[0].textContent,
+    treeText(messages()[0].querySelectorAll('summary')[0]),
     'Model prompt',
   );
   assert.equal(
-    messages()[1].querySelectorAll('summary')[0].textContent,
+    treeText(messages()[1].querySelectorAll('summary')[0]),
     'Model output',
   );
   assert.equal(
@@ -827,18 +853,58 @@ test('planner exchanges use literal text disclosures and retain open state acros
   );
   assert.equal(messages()[0].querySelectorAll('img').length, 0);
   messages()[0].open = true;
+  details()[0].open = true;
   p.run('paintJob(currentJob)');
   assert.equal(messages()[0].open, true);
+  assert.equal(details()[0].open, true);
   assert.equal(messages()[1].open, false);
   p.run(
     "paintJob({...currentJob,events:[...currentJob.events,'1. Discover instances · ok']})",
   );
   assert.equal(messages()[0].open, true);
+  assert.equal(details()[0].open, true);
   messages()[0].open = false;
   p.run('paintJob(currentJob)');
   assert.equal(messages()[0].open, false);
   p.run('paintJob(null)');
   assert.equal(messages().length, 0);
+});
+
+test('history and retry events show short summaries with full details folded', () => {
+  const p = page();
+  p.mode('live');
+  const events = [
+    'Zetaris read · ok · 2 matching prior recommendation records for this instance and source mode (needs_verification, needs_verification); audit comparison only: prior verdicts are not current evidence or validated lessons, so none passed to Planner',
+    'Meterless H-MEM read · ok · 1 eligible reasoning summaries selected; no learned check; fresh evidence still required',
+    'Planner call 1 started',
+    'Planner call 1 unavailable (model_http_500); retry 2/3 in 2.3 seconds',
+    'Zetaris store · append disabled; no historical record written',
+    'Meterless H-MEM store · ok · historical reasoning summary saved (verdict needs_verification; no reusable lesson); includes hypothesis, unresolved risks and evidence provenance, not current telemetry',
+  ];
+  p.context.historyEvents = events;
+  p.run(
+    "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:historyEvents})",
+  );
+  const details = p.get('run-events').querySelectorAll('.event-disclosure');
+  assert.equal(details.length, 5);
+  assert.ok(details.every((item) => !item.open));
+  const labels = details.map((item) =>
+    treeText(item.querySelectorAll('summary')[0]),
+  );
+  assert.match(labels[0], /Zetaris read.*2 records/);
+  assert.match(labels[1], /Meterless H-MEM read.*1 summary/);
+  assert.match(labels[2], /Planner retry · 2\/3 · 2.3s/);
+  assert.match(labels[3], /Zetaris store.*disabled/);
+  assert.match(labels[4], /Meterless H-MEM store/);
+  assert.equal(details[0].querySelectorAll('p')[0].textContent, events[0]);
+  assert.equal(details[2].querySelectorAll('p')[0].textContent, events[3]);
+  assert.deepEqual(
+    p
+      .get('run-events')
+      .querySelectorAll('.event-result')
+      .map((item) => item.attributes['aria-label']),
+    ['Complete', 'Complete', 'Complete'],
+  );
 });
 
 test('Live lookback is bounded before submission and included in the request', async () => {

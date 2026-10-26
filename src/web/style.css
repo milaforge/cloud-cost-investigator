@@ -705,8 +705,22 @@ input[type="checkbox"] {
   padding: 4px 0;
   color: #526859;
 }
-.model-message > summary {
+.event-disclosure > summary {
   cursor: pointer;
+  width: fit-content;
+  max-width: 100%;
+}
+.event-disclosure > summary:hover,
+.event-disclosure > summary:focus-visible {
+  color: var(--green);
+}
+.event-disclosure > summary::marker {
+  color: #78917e;
+}
+.event-detail-text {
+  margin: 5px 0 7px 16px;
+  color: #526859;
+  font-size: 0.72rem;
 }
 .model-message-text {
   max-height: 320px;

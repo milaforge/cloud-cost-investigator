@@ -1,5 +1,10 @@
 # Cloud Cost Investigator — Execution Plan (Milad + Zayan)
 
+## Compact Live execution events — 2026-10-26
+
+- **Gate/owner/slice:** Days 3–4 Live explanation surface, Milad. Event rows retain short action, status and history-count summaries. Planner context, model prompt/output, sponsor read/store explanations and retry reasons start in closed disclosures; opening one survives event polling. Raw event strings and status meanings remain available without changing the investigation or provider calls.
+- **Verified:** `node --import tsx --test --test-isolation=none tests/demo-web-ui.test.ts` passed **15/15**, including disclosure state and accessible status-icon checks. `npm run typecheck`, `node --check src/web/app.js`, scoped Biome check and `git diff --check` passed. This is local DOM and static proof, not a rendered-browser layout or new live-service run. Refresh the page to load the changed browser script; a running Docker image needs a rebuild and container recreation after preserving any in-memory result.
+
 ## Demo sponsor flow notation — 2026-10-26
 
 - **Gate/owner/slice:** Days 3–4 demo explanation, Milad. Each selected synthetic preview now includes a collapsed Zetaris/Meterless flow note: Live history read, H-MEM recall, H-MEM summary store, and separate explicit Zetaris decision save. The preview report and execution trace remain untouched and label no synthetic operation as a real sponsor call.
