@@ -270,7 +270,7 @@ if (
 ) {
   const args = process.argv.slice(2);
   if (args.some((arg) => arg !== '--no-open') || args.length > 1) {
-    console.error('Usage: npm run demo:web -- [--no-open]');
+    console.error('Usage: npm start -- [--no-open]');
     process.exitCode = 1;
   } else {
     try {

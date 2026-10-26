@@ -112,7 +112,7 @@ Zetaris or real-model proof.
 ### 5. Check the local web entry point and finish
 
 ```bash
-npm run demo:web -- --no-open
+npm start -- --no-open
 ```
 
 Expect a printed loopback URL. Check that it serves the page; do not enable real
@@ -170,7 +170,7 @@ The intended user is an infrastructure/platform engineer deciding which proposed
 ## Open the web demo
 
 ```bash
-npm run demo:web
+npm start
 ```
 
 Starts the shared Demo/Live web UI on a loopback-only server and opens the
@@ -224,7 +224,7 @@ An already completed job opens only when you select **View last result**.
 The server keeps only its latest job result in memory; a server restart loses
 that display state. Server shutdown stops the active worker.
 
-Use `npm run demo:web -- --no-open` on a headless machine and open the printed
+Use `npm start -- --no-open` on a headless machine and open the printed
 URL from a browser on that computer. If automatic opening fails, the server
 keeps running and prints the URL. Ctrl+C stops it.
 

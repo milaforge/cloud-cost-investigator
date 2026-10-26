@@ -34,7 +34,7 @@
     "demo:followup": "node --import tsx scripts/demo-follow-up.ts",
     "evaluate:memory": "node --import tsx scripts/evaluate-memory.ts",
     "evaluate": "node --import tsx scripts/evaluate.ts",
-    "demo:web": "node --import tsx scripts/demo-web.ts"
+    "start": "node --import tsx scripts/demo-web.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",

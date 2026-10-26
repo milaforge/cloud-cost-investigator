@@ -14,7 +14,7 @@ reasons, actor IDs, outcome notes or evidence references.
 
 ## Record a decision in the web UI
 
-Run `npm run demo:web`. After an investigation completes, select a conditional
+Run `npm start`. After an investigation completes, select a conditional
 recommendation and choose **Record your decision in Zetaris**. In **Follow through**,
 choose **Accept** for a separate change process or **Defer** with a future UTC review
 date. Enter your engineer ID and reason, acknowledge real storage, then choose

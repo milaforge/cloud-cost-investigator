@@ -36,6 +36,89 @@
   Restart the web server to reload its cached assets. The earlier mixed-mode
   browser receipt below is superseded; live integration/release gates stay open.
 
+### Web startup without preview investigations — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. Startup now serves the UI
+  without generating reports or fetching previews. Explicit selection loads only
+  that synthetic scenario, sharing pending requests and caching successful
+  reports until restart. Preview shortcuts use the same loader; loading/error
+  feedback and late responses cannot overwrite a different scenario or Live mode.
+- **Executed proof:** a real `npm start -- --no-open` smoke served HTTP **200**
+  in **0.159 seconds** from process launch; selecting B returned its correctly
+  rejected synthetic report in **0.022 seconds**. The local combined command
+  `node --import tsx --test --test-isolation=none tests/demo-web.test.ts
+  tests/demo-web-jobs.test.ts tests/demo-web-ui.test.ts` passed **12/12** at
+  execution time, including fast startup, scenario allowlisting, shared requests,
+  cached reports, late-response isolation and preview failure/retry handling.
+  `npm run typecheck`, `npm run lint`, scoped Biome formatting, `node --check
+  src/web/app.js` and `git diff --check` passed. Existing unrelated lint warning
+  and style information remain.
+- **Mode/limits/next:** loopback HTTP fixtures, synthetic/scripted reports and
+  DOM-handler checks only; no external-service calls or rendered-browser proof.
+  Missing-evidence preview retries remain intact and can delay that selected
+  preview, never startup. Concurrent Demo/Live work preserved. Combined live and
+  release gates remain open.
+
+### Shared web startup command — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web entry point and release documentation, Milad.
+  Replaced `demo:web` with `start` in `package.json`; current README, HOW,
+  follow-through instructions and runtime usage now use `npm start`. Internal
+  filenames and historical command receipts remain unchanged.
+- **Executed proof:** `npm start -- --no-open` served HTTP **200**, with Demo
+  and Live present in the page; `npm start -- --invalid` exited **1** with the
+  updated usage. `node --import tsx --test --test-isolation=none
+  tests/demo-web.test.ts tests/demo-web-jobs.test.ts` passed **8/8** with loopback
+  access after four sandbox `listen EPERM` failures. `npm run typecheck` and
+  `npm run lint` passed. Existing lint CSS specificity warning and
+  historical-probe style info remain. `git diff --check` passed.
+- **Mode/limits:** local startup and synthetic previews only; no live AWS,
+  paid inference or remote history access. Initial sandbox listening failed;
+  the startup smoke passed with loopback access. Startup policy and service
+  acknowledgments are unchanged. Combined live and release gates remain open.
+
+### Practical submission README — 2026-10-26
+
+- **Gate/owner:** release documentation, Milad. Reworked the root README using
+  the user's eleven-section template: actual role authority, one decision/feedback
+  diagram, sponsor contributions, setup, CLI input/output, sample scenarios,
+  failure handling, licensing, limitations and starter attribution. Reconciled
+  `AGENTS.md` and recorded the superseded ten-line policy in `memory.md`.
+- **Executed proof:** `npm run test:scenarios` passed **84/84**. Inline Python
+  assertions verified all eleven numbered sections and **18 local links/anchors**.
+  Fresh `npm run --silent investigate` runs with `--evidence mock --planner
+  scripted --account demo --region us-east-1 --scenario A|B|C|missing|mixed --json`
+  (three candidates for mixed, historical stores explicitly disabled) matched
+  every documented verdict and exit: A/B/C/mixed **0**, missing **2**. A fresh
+  text B run matched every abridged README output line in order.
+- **Mode/limits:** synthetic evidence and scripted planning; local memory and
+  history fixtures in the scenario suite. No live AWS, paid model, remote
+  Zetaris, new installation or clean-clone validation. Concurrent UI and other
+  documentation edits preserved. Whitespace checked with `git diff --check`.
+- **Remaining/next:** final documentation review and the existing independent
+  reproduction, live-evidence, permission, Cursor attribution and submission
+  artifact gates remain open. README policy reconciliation is complete; this
+  receipt does not close the combined release checklist item.
+
+### Eight-slide Markdown deck — 2026-10-26
+
+- **Gate/owner:** release presentation, Milad. [Deck](../slides.md) covers all
+  eight required topics with horizontal slide separators, an editable Mermaid
+  workflow, actual CLI output, a synthetic evidence table and sourced speaker
+  notes. [Demo preparation](DEMO.md) links to the deck as canonical slide content.
+- **Verification:** the documented offline B command in slide 7 exited **0**,
+  rejecting the proposed window with explicit mock/scripted labels, unknown
+  savings and human approval. Histories were disabled; no service calls.
+  Local Python assertions passed: eight ordered slides, balanced speaker-note
+  blocks and code fences, local source links/anchors and exact quoted scenario,
+  evaluation and memory-comparison figures. Final JSONL coverage was checked
+  against the recorded B trace. `git diff --check` passed.
+- **Limits/next:** Markdown content only; no slide renderer/export, browser
+  screenshot, video recording, live-service probe or submission performed.
+  The CLI excerpt and recorded NVIDIA evidence panel are explicitly separate
+  synthetic runs. Cursor attribution, final exported presentation/video review
+  and existing live-evidence/portal gates remain open. Concurrent UI and related
+  documentation changes were preserved.
 
 ### Browser Demo / Live separation — 2026-10-26
 
@@ -58,7 +141,6 @@
   AWS, paid model or remote Zetaris access. No available browser (`iab` unavailable)
   blocks rendered desktop/mobile inspection; perform that visual check before
   the recording. This change does not close combined live or submission gates.
-
 
 ### Concise CLI and integrated result verification — 2026-10-26
 
@@ -1123,7 +1205,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 | Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Owner confirms the existing Zetaris identity is non-admin/limited API; detailed effective table/overwrite policy evidence remains separate ([permission review](#zetaris-deployment-permission-review--2026-10-25)). No replacement account is required on the previous admin assumption. Live evidence and event eligibility remain separate. |
 | Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
 | Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
-| Release | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**. | Independent reproducer/visual review, README policy reconciliation, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
+| Release | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**. | Independent reproducer/visual review, final README review, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
 
 **Next slice:** CloudWatch access and populated retrieval are verified, with incomplete history. Zayan/team obtains adequate metric coverage, verifies opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. The repeated OpenAI A/B/C gate is closed; retain prior failures and complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
 

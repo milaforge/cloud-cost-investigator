@@ -11,6 +11,28 @@
 - Late preview responses must not replace another scenario or Live state.
   Scenario selection and preview shortcut buttons use the same loader.
 
+## Shared web entry point (2026-10-26)
+
+- Use `npm start` for the local web UI because it handles both Demo and Live.
+  This supersedes the earlier `demo:web` npm command; preserve internal script
+  filenames to avoid unnecessary import and test churn. Headless startup uses
+  `npm start -- --no-open`.
+- Startup still requires an explicit browser action and existing acknowledgments
+  before real-service access. The command rename grants no additional authority.
+
+## Practical submission README (2026-10-26)
+
+- The user supplied an eleven-section README template and requested complete,
+  specific, practical coverage. This supersedes the earlier ten-line cap and
+  root-link restriction. Keep the problem and useful decision first, provide a
+  credential-free runnable example, then link to canonical detailed references.
+- Adapt the template to the existing bounded loop and actual sponsor roles;
+  do not invent autonomous agents, automatic mock fallback, Cursor use or a
+  claim that all starter code was authored during the event. Preserve the
+  requested collapsed sponsor explanation and synthetic/live proof distinctions.
+- Keep current verification and release status in the execution plan. README
+  examples illustrate behavior without implying live clearance or submission
+  completion. Align contributor guidance so future edits preserve this decision.
 
 ## Preview-only Demo and Live operations (2026-10-26)
 
@@ -32,6 +54,16 @@
   tab and ancestor visibility, plus negative calls to run/save/upload handlers;
   testing only named demo controls missed entire unclassified live sections.
 
+## Submission slide narrative (2026-10-26)
+
+- `slides.md` owns the eight required slide topics; `docs/DEMO.md` links to it
+  and retains the recording storyboard instead of duplicating slide content.
+- Center the narrative on a proposed EC2 window disproved by fresh job evidence.
+  Keep actual model traces, scripted-policy measurements and live AWS retrieval
+  labeled separately. H-MEM's fixed-order tie and teaching cost remain visible.
+- Use actual concise CLI output as the product visual in the Markdown deck;
+  source links and speaker context sit in expandable notes. Never invent Cursor
+  attribution, realized savings or live safety from synthetic demonstrations.
 
 ## Concise CLI and explicit detail (2026-10-26)
 

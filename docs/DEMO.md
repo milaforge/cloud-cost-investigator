@@ -2,7 +2,7 @@
 
 [What](../README.md) · [How](HOW.md)
 
-Use the [adopted quality bar](../the_bar.md) to show working behavior and useful decisions. This is a recording storyboard and slide outline; actual artifacts and completion evidence belong in the [release checklist](EXECUTION_PLAN.md).
+Use the [adopted quality bar](../the_bar.md) to show working behavior and useful decisions. This page owns the recording storyboard; the [eight-slide Markdown deck](../slides.md) owns slide content. Completion evidence belongs in the [release checklist](EXECUTION_PLAN.md).
 
 Use the [browser preview](HOW.md#open-the-web-demo) to walk through labeled
 synthetic reports and illustrative learning/follow-through paths in **Demo**.
@@ -27,17 +27,11 @@ run and preserve source/planner labels throughout.
 
 Pre-run slower service-dependent demonstrations and retain their full reports; label excerpts as recorded evidence, not a single uninterrupted run. A failed real-model run stays a failure; a scripted rerun must be identified. Never show `.env`, provider keys, private endpoints or sensitive resource exports. Capture synthetic operational data for the public video. Verify the final exported duration is **1–4 minutes** and inspect the full recording for readable commands, citations, source labels and secrets before release.
 
-## Eight-slide outline
+## Slide deck
 
-| Slide | Content and source |
-| --- | --- |
-| 1. Problem and user | Infrastructure/platform engineer; unsafe off-hours advice; |
-| 2. Solution | Scoped EC2 investigation; conditional/rejected/deferred decision and human approval boundary; [product context](PROJECT_CONTEXT.md#1-product-and-user-decision). |
-| 3. Agent workflow | Architecture with shared state, evaluator authority, feedback edge and bounds; [components](components.md). |
-| 4. Technical stack | Node.js/TypeScript CLI, AWS read-only adapters, optional Chat Completions model, local vendored H-MEM and remote Zetaris history. Name actual development tools and provide verified attribution. |
-| 5. Sponsor roles | Specific operations, value and separately labeled proof for Zetaris, Meterless and NVIDIA; [sponsor explanation](components.md#sponsor-technology-explanation). |
-| 6. Distinctive behavior | Contradiction-first B trace; learned-check reuse followed by changed-evidence correction. Include measured fixed-baseline tie and teaching cost, not an unsupported speedup claim; [evaluation](evaluation/README.md). |
-| 7. Product output | A readable report with verdict, proposed/rejected window, current citations, missing checks, qualified/null savings and next human action; [CLI walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace). |
-| 8. Future work | Populated live operational coverage and reliable real-model completion before broader optimization. Separate aspirations from [release gates](EXECUTION_PLAN.md). |
+The [eight-slide Markdown deck](../slides.md) follows the required sequence:
+problem/users, solution, agent workflow, technical stack, sponsor roles,
+distinctive behavior, product output and future enhancements. Horizontal rules
+separate slides; expandable speaker notes contain sources and presentation context.
 
 Credit the inherited notebook and vendored H-MEM in the [reused-component declaration](components.md#reused-components). Confirm build-window attribution, actual Cursor activity and portal requirements with the team. Illustrative examples do not establish these facts. Store final deck/video links and their verified checks in the execution plan rather than maintaining another status list here.
