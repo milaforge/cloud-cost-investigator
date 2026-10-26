@@ -11,6 +11,42 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Task 3 final evidence and slide review — 2026-10-26
+
+- **Gate/owner/mode:** Days 3–4 direct-evidence review, Zayan; offline code,
+  retained live receipts and read-only slide review. Fast-forwarded the clean
+  `task2-ec2-scenarios` checkout from `50fcd13` to `74a644c`; all three existing
+  safety stashes retained. No commit/push, AWS/model calls or remote writes.
+- **Small fix:** empty CloudWatch results now report the provider's default
+  300-second requested period rather than 3600 seconds. Seven missing days mean
+  2016 expected samples per metric, not 168. The unavailable source status and null
+  data remain unchanged. Extended the intercepted-SDK coverage test for this path.
+- **Verification:** `node --import tsx --test --test-isolation=none
+  tests/aws-collector.test.ts tests/aws-agent.test.ts tests/aws-operational.test.ts
+  tests/aws-cli.test.ts tests/evidence-diagnostics.test.ts
+  tests/report.test.ts tests/trace-retry.test.ts`
+  covered the seven existing files and passed **104/104**. The original invocation
+  also included nonexistent `tests/recommendation-policy.test.ts`, which the
+  runner ignored; no separate recommendation-policy file was tested.
+  The changed test separately passed **1/1** with
+  `--test-name-pattern='investigation requests five-minute'`. Both TypeScript
+  projects passed (`node node_modules/typescript/bin/tsc -p
+  tsconfig.investigation.json --noEmit` and `-p tsconfig.aws.json`); scoped Biome
+  lint and `git diff --check` passed. All transports were local fixtures/mocks.
+- **Live proof boundary:** the retained Oct 26 integrated CLI receipt used seven
+  days and a scripted planner: 367/2016 samples per metric, partial billing,
+  `needs_verification`, null savings, operational checks not reached. Separate
+  fourteen-day source-access checks do not establish complete workload authority.
+- **Slide handoff:** Downloads Markdown matches repository `slides.md`; all ten
+  PDF pages rendered and inspected without editing either attachment. Milad:
+  correct cover `Mila` to `Milad`, restore the CLI identifier `i-mock-primary`
+  (or explicitly label an alias), separate overlapping stack rows on PDF page 5,
+  preserve the decision-loop diagram and add factual development-tool attribution.
+  Date the historical call-count benchmark; retain synthetic/live distinctions.
+- **Blockers/next:** full live coverage/authority, effective Zetaris permission
+  evidence and final release checks remain open. Finish the reviewed video,
+  artifact/privacy review and portal reconciliation; no release gate advanced.
+
 ### Automatic inventory before model planning — 2026-10-26
 
 - **Gate/owner:** Days 3–4 investigation efficiency, Milad. User removed the
