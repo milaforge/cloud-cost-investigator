@@ -7,12 +7,16 @@ import type { Observation } from '../src/contracts.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
+import { progressText } from '../src/investigation/progress.ts';
 import { renderReport, validateReport } from '../src/investigation/report.ts';
-import { runInvestigation } from '../src/investigation/run.ts';
+import {
+  type InvestigationProgress,
+  runInvestigation,
+} from '../src/investigation/run.ts';
 import { historyRecordFromReport } from '../src/tools/zetaris-history.ts';
 import {
-  SCENARIO_WINDOW,
   PRIOR_SCENARIO_WINDOW,
+  SCENARIO_WINDOW,
   scenarioProof,
 } from './helpers/scenario-proof.ts';
 
@@ -39,11 +43,13 @@ const run = (
   zetaris = false,
   scenario: 'A' | 'B' | 'C' | 'clear' | 'missing' = 'B',
   input = request,
+  onProgress?: (event: InvestigationProgress) => void,
 ) =>
   runInvestigation(input, {
     planner: new ScriptedPlanner(),
     provider: new MockProvider(scenario),
     history: { hmem_directory: dir, zetaris },
+    onProgress,
   });
 
 async function zetaris(t: TestContext) {
@@ -163,7 +169,10 @@ test('history services fail independently and disclose no provider errors', asyn
   t.mock.method(globalThis, 'fetch', async () => {
     throw new Error('PRIVATE provider secret');
   });
-  const memoryOnly = await run(dir, true);
+  const events: InvestigationProgress[] = [];
+  const memoryOnly = await run(dir, true, 'B', request, (event) =>
+    events.push(event),
+  );
   assert.equal(memoryOnly.historical_context.zetaris, 'unavailable');
   assert.equal(memoryOnly.historical_context.hmem, 'ok');
   assert.deepEqual(checks(memoryOnly), [
@@ -177,6 +186,83 @@ test('history services fail independently and disclose no provider errors', asyn
   assert.deepEqual(neither.historical_context.comparisons, []);
   assert.equal(neither.candidates[0].verdict, 'not_recommended');
   assert.ok(!JSON.stringify(neither).includes('PRIVATE'));
+  assert.ok(!JSON.stringify(events).includes('PRIVATE'));
+  assert.ok(
+    events.some(
+      (event) =>
+        event.event === 'history' &&
+        event.source === 'zetaris' &&
+        event.status === 'unavailable' &&
+        event.failure_code === 'zetaris_transport_unavailable',
+    ),
+  );
+});
+
+test('disabled TLS verification explains unavailable Zetaris history without using prior records', async (t) => {
+  await zetaris(t);
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  const report = await run(undefined, true);
+  assert.equal(report.historical_context.zetaris, 'unavailable');
+  assert.deepEqual(report.historical_context.comparisons, []);
+  assert.ok(
+    report.historical_context.limitations.some((message) =>
+      message.includes('zetaris_tls_verification_required'),
+    ),
+  );
+});
+
+test('history progress shows exact source roles, matched reads and verified stores', async (t) => {
+  const dir = await directory(t);
+  await zetaris(t);
+  const events: InvestigationProgress[] = [];
+  await run(dir, true, 'B', request, (event) => events.push(event));
+  const cold = events
+    .filter((event) => event.event === 'history')
+    .map(progressText);
+  assert.ok(
+    cold.some((line) => line.includes('Zetaris read · no_match · 0 matching')),
+  );
+  assert.ok(
+    cold.some((line) =>
+      line.includes('Meterless H-MEM read · no_match · 0 eligible'),
+    ),
+  );
+  assert.ok(
+    cold.some((line) =>
+      line.includes('Zetaris store · ok · historical recommendation'),
+    ),
+  );
+  assert.ok(
+    cold.some((line) =>
+      line.includes(
+        'Meterless H-MEM store · ok · historical reasoning summary',
+      ),
+    ),
+  );
+
+  events.length = 0;
+  await run(dir, true, 'B', request, (event) => events.push(event));
+  const warm = events
+    .filter((event) => event.event === 'history')
+    .map(progressText);
+  assert.ok(
+    warm.some((line) => line.includes('Zetaris read · ok · 1 matching')),
+  );
+  assert.ok(warm.some((line) => line.includes('none passed to Planner')));
+  assert.ok(
+    warm.some((line) =>
+      line.includes('Meterless H-MEM read · ok · 1 eligible'),
+    ),
+  );
+  assert.ok(
+    warm.some((line) => line.includes('requires a matching proposed window')),
+  );
+  assert.ok(
+    events.some(
+      (event) =>
+        event.event === 'planner_context' && event.history_hint_count > 0,
+    ),
+  );
 });
 
 test('Zetaris audit history does not dictate query order when H-MEM is unavailable', async (t) => {

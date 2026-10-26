@@ -184,7 +184,7 @@ defaults to **Demo**, with no scenario or report selected.
 | Tab                | Demo — preview only                                                                                                                                                                                   | Live — operations                                                                                                                                                                                                                                                      |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Investigate**    | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Click **Run investigation** to validate server configuration and start. Missing or invalid settings prompt `.env` fixes and a restart of `npm start`. Uses the configured model and reads configured Zetaris history automatically. Load a live report for inspection. |
-| **Learn**          | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes.                                                                                           | Inspect the selected live report's H-MEM status and limitations. Live recall/lesson storage are not enabled by this browser workflow; no synthetic demonstration is offered here.                                                                                      |
+| **Learn**          | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes.                                                                                           | Inspect the selected live report's H-MEM status and limitations. The investigation reads and stores local memory; this tab does not launch a separate learning run.                                                                                      |
 | **Follow through** | Read illustrative defer/review and accept/outcome paths. No forms, service calls or retained records.                                                                                                 | Schedule a review of a rejected or deferred investigation result; **Save decision to Zetaris** stores it with the linked investigation. Readback verifies both records.                                                                 |
 
 Demo previews use synthetic evidence and a scripted planner generated locally
@@ -192,6 +192,10 @@ on explicit scenario selection, then cached until server restart. **Missing evid
 loads the recorded unavailable-operations example from `docs/ec2-scenarios.jsonl`,
 retaining its original timestamps instead of replaying retry delays. A visible,
 accessible loading indicator covers pending preview requests.
+Each selected preview has a collapsed Zetaris/Meterless flow note showing where
+Live reads history, reads and stores H-MEM summaries, and separately saves
+Zetaris decisions. The note is illustrative; preview reports have no history
+store activity or sponsor service calls.
 Learn and Follow through illustrations are not executed proof.
 Selecting a scenario loads its preview without starting a worker. Demo cannot
 submit runs, owner statements or decisions, contact a model or write to Zetaris.

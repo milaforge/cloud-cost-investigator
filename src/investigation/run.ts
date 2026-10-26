@@ -19,8 +19,10 @@ import {
   validateRequest,
 } from '../contracts.ts';
 import {
+  applicableHistoryHints,
   type HistoryHint,
   type HistoryOptions,
+  type HistoryProgress,
   InvestigationHistory,
 } from './history.ts';
 import {
@@ -72,6 +74,12 @@ export interface RunOptions {
 }
 
 export type InvestigationProgress =
+  | ({ event: 'history' } & HistoryProgress)
+  | {
+      event: 'planner_context';
+      history_hint_count: number;
+      checks: HistoryHint['priority'][];
+    }
   | { event: 'planner_start'; call: number; timeout_ms: number }
   | { event: 'planner_pause'; delay_ms: number }
   | {
@@ -214,10 +222,14 @@ export async function runInvestigation(
     start +
     total -
     Math.min(REPORT_FINALIZATION_RESERVE_MS, Math.floor(total / 10));
-  const history = new InvestigationHistory(options.history ?? {}, {
-    account_id: request.account_id,
-    region: request.region,
-  });
+  const history = new InvestigationHistory(
+    options.history ?? {},
+    {
+      account_id: request.account_id,
+      region: request.region,
+    },
+    (event) => options.onProgress?.({ event: 'history', ...event }),
+  );
   let historicalHints: HistoryHint[] = [];
   const evidence: Observation[] = [];
   const trace: TraceEntry[] = [];
@@ -426,6 +438,15 @@ export async function runInvestigation(
           event: 'planner_start',
           call: plannerCalls,
           timeout_ms: plannerDeadline,
+        });
+        const applicableHints = applicableHistoryHints(
+          historicalHints,
+          candidate?.proposed_window,
+        );
+        options.onProgress?.({
+          event: 'planner_context',
+          history_hint_count: applicableHints.length,
+          checks: applicableHints.map((hint) => hint.priority),
         });
         plannerRetryCount = plannerFailures;
         let validatingAction = false;

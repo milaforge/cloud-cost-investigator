@@ -10,15 +10,15 @@ import type {
 } from '../src/contracts.ts';
 import { InvestigationHistory } from '../src/investigation/history.ts';
 import {
-  HmemReasoningMemory,
   type HistoricalReasoningContext,
+  HmemReasoningMemory,
 } from '../src/investigation/memory.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
+import { progressText } from '../src/investigation/progress.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
-import { progressText } from '../src/investigation/progress.ts';
 
 const operationalChecks = (report: InvestigationReport) =>
   report.evidence
@@ -74,6 +74,8 @@ export async function demonstrateWarmLearning(
               log(`[warm-demo] ${phase}: ${event.failure_code}`);
             if (event.event === 'trace' && event.phase === 'tool')
               log(`[warm-demo] ${phase}: ${event.tool} ${event.status}`);
+            if (event.event === 'history' || event.event === 'planner_context')
+              log(`[warm-demo] ${phase}: ${progressText(event)}`);
           },
         }),
       );

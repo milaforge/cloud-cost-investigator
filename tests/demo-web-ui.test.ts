@@ -243,6 +243,19 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
     p.get('scenario').listeners.change();
     assert.equal(p.run('active'), scenario);
     assert.ok(p.get('report').children.length);
+    const flow = p
+      .get('report')
+      .querySelectorAll('summary')
+      .find((summary) =>
+        summary.textContent.includes('flow · preview only'),
+      )?.parent;
+    assert.ok(flow, `${scenario} has an illustrative sponsor flow`);
+    const steps = flow.querySelectorAll('li').map((item) => item.textContent);
+    assert.equal(steps.length, 4);
+    assert.match(steps[0], /Zetaris read/);
+    assert.match(steps[1], /Meterless H-MEM read/);
+    assert.match(steps[2], /Meterless H-MEM store/);
+    assert.match(steps[3], /Zetaris store.*Investigation append is disabled/);
   }
   await p.run("startRun('investigate')");
   await p.run("submitRun({kind:'decision',report:{integration_mode:'live'}})");
@@ -328,6 +341,27 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
     requests,
     'loaded previews need no repeat fetch',
   );
+});
+
+test('history status explains blocked TLS verification and same-instance matching', async () => {
+  const p = page();
+  const report = structuredClone((await generateDemoReports()).A);
+  report.historical_context.zetaris = 'unavailable';
+  report.historical_context.limitations.push(
+    'A candidate Zetaris recall failed (zetaris_tls_verification_required); no historical evidence used for that candidate.',
+  );
+  p.context.historyReport = report;
+  p.run("reports.history = historyReport; active = 'history'; render()");
+  const text = p
+    .get('report')
+    .querySelectorAll('span')
+    .map((el) => el.textContent);
+  assert.ok(
+    text.some((item) =>
+      item.includes('Zetaris history: unavailable (TLS verification disabled)'),
+    ),
+  );
+  assert.ok(text.some((item) => item.includes('discovered instance ID')));
 });
 
 test('expected AWS limits explain uncertainty without raw missing-evidence alarms', async () => {
@@ -743,6 +777,20 @@ test('motion enters changed status and new events without replaying prior events
     assert.equal(leaves[1].animations.length, reducedMotion ? 0 : 1);
     assert.equal(p.get('run-events').closest('.event-panel')?.visible, true);
   }
+});
+
+test('history events use accessible status icons for empty and unavailable reads', () => {
+  const p = page();
+  p.mode('live');
+  p.run(
+    "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:['Zetaris read · no_match · 0 matching prior recommendation records for this instance and source mode','Meterless H-MEM read · unavailable · no historical claim made']})",
+  );
+  const icons = p.get('run-events').querySelectorAll('.event-result');
+  assert.deepEqual(
+    icons.map((icon) => icon.attributes['aria-label']),
+    ['No match', 'Unavailable'],
+  );
+  assert.equal(p.get('run-events').closest('.event-panel')?.visible, true);
 });
 
 test('planner exchanges use literal text disclosures and retain open state across polling', () => {

@@ -33,6 +33,18 @@ export interface HistoryHint {
   lesson?: Pick<OperationalLesson, 'check' | 'window'>;
 }
 
+/** Bounded history metadata for progress UI; no record prose, scope or credentials. */
+export interface HistoryProgress {
+  source: 'zetaris' | 'hmem';
+  operation: 'read' | 'store';
+  status: 'ok' | 'no_match' | 'unavailable' | 'disabled';
+  count?: number;
+  verdicts?: InvestigationReport['candidates'][number]['verdict'][];
+  verdict?: InvestigationReport['candidates'][number]['verdict'];
+  lesson?: OperationalLesson['check'];
+  failure_code?: string;
+}
+
 /** History is advisory data only. No prior evidence IDs or free-form text reach the planner. */
 export class InvestigationHistory {
   readonly result: InvestigationReport['historical_context'] = {
@@ -48,9 +60,18 @@ export class InvestigationHistory {
   constructor(
     private readonly options: HistoryOptions,
     private readonly scope: Scope,
+    private readonly onProgress?: (event: HistoryProgress) => void,
   ) {
     if (options.zetaris) this.result.zetaris = 'not_queried';
     if (options.hmem_directory) this.result.hmem = 'not_queried';
+  }
+
+  private emit(event: HistoryProgress) {
+    try {
+      this.onProgress?.(event);
+    } catch {
+      // Observability cannot change history reads, writes or investigation policy.
+    }
   }
 
   async recall(
@@ -84,6 +105,8 @@ export class InvestigationHistory {
     };
     if (this.options.zetaris) {
       try {
+        let matched = 0;
+        const verdicts: NonNullable<HistoryProgress['verdicts']> = [];
         for (const item of await readZetarisHistory(
           this.scope,
           10,
@@ -94,6 +117,8 @@ export class InvestigationHistory {
           if (Date.parse(r.recorded_at_utc) > Date.parse(startedAt)) continue;
           if (r.instance_id !== instance || (mode && r.source_mode !== mode))
             continue;
+          matched++;
+          verdicts.push(r.verdict);
           const summary = JSON.parse(r.summary_json);
           // The adapter has validated the version-1 summary and scoped record.
           this.result.comparisons?.push({
@@ -116,13 +141,34 @@ export class InvestigationHistory {
           );
         }
         this.result.zetaris = 'ok';
-      } catch {
+        this.emit({
+          source: 'zetaris',
+          operation: 'read',
+          status: matched ? 'ok' : 'no_match',
+          count: matched,
+          verdicts,
+        });
+      } catch (error) {
         if (this.result.zetaris !== 'ok') this.result.zetaris = 'unavailable';
+        const code =
+          error instanceof Error &&
+          /^zetaris_(?:tls_verification_required|auth_unavailable|transport_unavailable|configuration_required|configuration_invalid|login_configuration_required|org_mismatch|auth_invalid_response|invalid_response|history_schema_mismatch|history_table_invalid|history_result_invalid|history_scope_mismatch|http_\d{3}|auth_http_\d{3})$/.test(
+            error.message,
+          )
+            ? error.message
+            : 'zetaris_history_read_failed';
         this.result.limitations.push(
-          'A candidate Zetaris recall failed; no historical evidence used for that candidate.',
+          `A candidate Zetaris recall failed (${code}); no historical evidence used for that candidate.`,
         );
+        this.emit({
+          source: 'zetaris',
+          operation: 'read',
+          status: 'unavailable',
+          failure_code: code,
+        });
       }
-    }
+    } else
+      this.emit({ source: 'zetaris', operation: 'read', status: 'disabled' });
     if (this.options.hmem_directory) {
       try {
         signal.throwIfAborted();
@@ -163,6 +209,14 @@ export class InvestigationHistory {
         ) {
           // Let a failed disk write reach the outer handler; never use an unpersisted lesson.
           latest = this.memory.store(learned);
+          this.emit({
+            source: 'hmem',
+            operation: 'store',
+            status: 'ok',
+            verdict: learned.verdict,
+            lesson:
+              learned.lesson?.check ?? learned.outcome?.investigation_check,
+          });
         }
         if (latest) {
           const item = latest;
@@ -194,13 +248,23 @@ export class InvestigationHistory {
           );
         }
         this.result.hmem = 'ok';
+        this.emit({
+          source: 'hmem',
+          operation: 'read',
+          status: latest ? 'ok' : 'no_match',
+          count: latest ? 1 : 0,
+          lesson:
+            latest?.summary.lesson?.check ??
+            latest?.summary.outcome?.investigation_check,
+        });
       } catch {
         if (this.result.hmem !== 'ok') this.result.hmem = 'unavailable';
         this.result.limitations.push(
           'A candidate H-MEM recall failed; no memory hints used for that candidate.',
         );
+        this.emit({ source: 'hmem', operation: 'read', status: 'unavailable' });
       }
-    }
+    } else this.emit({ source: 'hmem', operation: 'read', status: 'disabled' });
     hints.sort(
       (a, b) =>
         Number(!!b.lesson) - Number(!!a.lesson) ||
@@ -243,15 +307,31 @@ export class InvestigationHistory {
           this.result.limitations.push(
             `Zetaris append verified by exact readback: ${saved.context_id} (new history, not recalled context).`,
           );
+          this.emit({
+            source: 'zetaris',
+            operation: 'store',
+            status: 'ok',
+            verdict: saved.record.verdict,
+          });
         } catch {
           this.result.limitations.push(
             'Zetaris append failed or is unverified; no retry was attempted.',
           );
+          this.emit({
+            source: 'zetaris',
+            operation: 'store',
+            status: 'unavailable',
+          });
         }
       } else if (this.options.zetaris) {
         this.result.limitations.push(
           'Zetaris append disabled; no historical record written.',
         );
+        this.emit({
+          source: 'zetaris',
+          operation: 'store',
+          status: 'disabled',
+        });
       }
       if (this.memory) {
         try {
@@ -262,12 +342,29 @@ export class InvestigationHistory {
           this.result.limitations.push(
             `H-MEM summary stored: ${saved.context_id} (new history, not recalled context).`,
           );
+          this.emit({
+            source: 'hmem',
+            operation: 'store',
+            status: 'ok',
+            verdict: saved.summary.verdict,
+            lesson: saved.summary.lesson?.check,
+          });
         } catch {
           this.result.limitations.push(
             'H-MEM store failed; reopen before further use.',
           );
+          this.emit({
+            source: 'hmem',
+            operation: 'store',
+            status: 'unavailable',
+          });
         }
-      }
+      } else
+        this.emit({
+          source: 'hmem',
+          operation: 'store',
+          status: this.options.hmem_directory ? 'unavailable' : 'disabled',
+        });
     }
   }
 }

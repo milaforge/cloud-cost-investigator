@@ -13,8 +13,8 @@ import {
   validateObservation,
 } from '../src/contracts.ts';
 import {
-  MockProvider,
   type CurrentEvidenceProvider,
+  MockProvider,
   type MockScenario,
 } from '../src/investigation/mock.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
@@ -23,9 +23,9 @@ import {
   ScriptedPlanner,
 } from '../src/investigation/planner.ts';
 import { rankCandidates } from '../src/investigation/policy.ts';
+import { progressText } from '../src/investigation/progress.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
-import { progressText } from '../src/investigation/progress.ts';
 
 type Verdict = CandidateReport['verdict'];
 export const evaluationCases: {
@@ -278,6 +278,11 @@ export async function evaluate(
                 event.event === 'activity' ||
                 event.event === 'planner_retry' ||
                 event.event === 'tool_retry'
+              ) {
+                progress(`${label}: ${progressText(event)}`);
+              } else if (
+                event.event === 'history' ||
+                event.event === 'planner_context'
               ) {
                 progress(`${label}: ${progressText(event)}`);
               } else {

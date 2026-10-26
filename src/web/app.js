@@ -416,15 +416,18 @@ function render(focusCandidate = false) {
     clockTime(r.finished_at),
   );
   const zetaris = r.historical_context.zetaris;
+  const tlsBlocked = r.historical_context.limitations.some((item) =>
+    item.includes('zetaris_tls_verification_required'),
+  );
   const historyStatus = node(
     'span',
-    `Zetaris history: ${human(zetaris)}`,
+    `Zetaris history: ${human(zetaris)}${tlsBlocked ? ' (TLS verification disabled)' : ''}`,
     'mode',
   );
   historyStatus.append(
     info(
       'Zetaris history status',
-      'Historical decision records are queried only for discovered instances when selected. They do not replace current evidence. Browser investigations do not append records.',
+      `Historical decision records are queried by account, region and discovered instance ID, then filtered to the same source mode. No matching records is a successful read. Prior verdicts are audit comparisons; only validated H-MEM lessons may prioritize fresh checks. Neither source replaces current evidence. Browser investigations do not append records.${tlsBlocked ? ' Enable TLS verification in the server environment and restart npm start.' : ''}`,
     ),
   );
   meta.append(mode, historyStatus, runTime);
@@ -721,6 +724,21 @@ function render(focusCandidate = false) {
   journey.append(steps);
   layout.append(journey);
   root.append(layout);
+  if (isDemo())
+    root.append(
+      disclosure('Zetaris and Meterless flow · preview only', [
+        node(
+          'p',
+          'This synthetic preview made no Zetaris or H-MEM calls and stored no records. These steps show where Live investigations use them.',
+        ),
+        list([
+          'Zetaris read · Compare prior recommendations for the selected instance and source mode; past verdicts stay audit context.',
+          'Meterless H-MEM read · Recall scoped summaries and eligible check hints; verify every hint with fresh evidence.',
+          'Meterless H-MEM store · After evaluation, attempt to save a validated reasoning summary for a later run.',
+          'Zetaris store · Investigation append is disabled. A separate Live Follow through Save action records a decision with readback.',
+        ]),
+      ]),
+    );
 
   const details = node('section', undefined, 'report-details');
   if (c) {
@@ -1190,10 +1208,39 @@ function renderEvents(events) {
     else groups.push({ events: [text] });
   }
   $('event-count').textContent = `${events.length}`;
+  const eventLine = (entry, context = false) => {
+    const step = /^(\d+)\. (.*)$/.exec(entry);
+    const line = node(
+      'div',
+      undefined,
+      context ? 'event-leaf event-context' : 'event-leaf',
+    );
+    if (step) line.append(node('span', `${step[1]}. `, 'event-step'));
+    const parts = (step ? step[2] : entry).split(' · ');
+    const metadata = parts.filter((part) =>
+      /^(trace_id|confidence|retry_count)=/.test(part),
+    );
+    const visible = parts.filter((part) => !metadata.includes(part));
+    for (const [index, part] of visible.entries()) {
+      if (index) line.append(document.createTextNode(' · '));
+      if (Object.hasOwn(statuses, part)) {
+        const status = statuses[part];
+        line.append(
+          info(status[2], status[2], status[0], `event-result ${status[1]}`),
+        );
+      } else line.append(document.createTextNode(part));
+    }
+    if (metadata.length)
+      line.append(
+        document.createTextNode(' '),
+        info('Trace metadata', metadata.join(' · ')),
+      );
+    return line;
+  };
   const tree = document.createDocumentFragment();
   for (const group of groups) {
     if (!group.key) {
-      const line = node('div', group.events[0], 'event-leaf event-context');
+      const line = eventLine(group.events[0], true);
       tree.append(line);
       enterNewEvent(line);
       continue;
@@ -1224,28 +1271,7 @@ function renderEvents(events) {
         enterNewEvent(details);
         continue;
       }
-      const step = /^(\d+)\. (.*)$/.exec(entry);
-      const line = node('div', undefined, 'event-leaf');
-      if (step) line.append(node('span', `${step[1]}. `, 'event-step'));
-      const parts = (step ? step[2] : entry).split(' · ');
-      const metadata = parts.filter((part) =>
-        /^(trace_id|confidence|retry_count)=/.test(part),
-      );
-      const visible = parts.filter((part) => !metadata.includes(part));
-      for (const [index, part] of visible.entries()) {
-        if (index) line.append(document.createTextNode(' · '));
-        if (Object.hasOwn(statuses, part)) {
-          const status = statuses[part];
-          line.append(
-            info(status[2], status[2], status[0], `event-result ${status[1]}`),
-          );
-        } else line.append(document.createTextNode(part));
-      }
-      if (metadata.length)
-        line.append(
-          document.createTextNode(' '),
-          info('Trace metadata', metadata.join(' · ')),
-        );
+      const line = eventLine(entry);
       children.append(line);
       enterNewEvent(line);
     }

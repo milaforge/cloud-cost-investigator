@@ -1,18 +1,19 @@
-import type { InvestigationReport } from '../src/contracts.ts';
-import type { demonstrateWarmLearning } from '../scripts/demo-warm.ts';
-import type { demonstrateFollowUps } from '../scripts/demo-follow-up.ts';
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { setTimeout } from 'node:timers/promises';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import test from 'node:test';
+import { setTimeout } from 'node:timers/promises';
+import type { demonstrateFollowUps } from '../scripts/demo-follow-up.ts';
+import type { demonstrateWarmLearning } from '../scripts/demo-warm.ts';
+import { generateDemoReports } from '../scripts/demo-web.ts';
 import {
   DemoJobs,
-  validateDemoRun,
   demoConfiguration,
+  investigationHistoryOptions,
   liveInvestigationFromEnv,
+  validateDemoRun,
 } from '../scripts/demo-web-jobs.ts';
-import { generateDemoReports } from '../scripts/demo-web.ts';
+import type { InvestigationReport } from '../src/contracts.ts';
 import type { recordDecision } from '../src/investigation/follow-up.ts';
 import { mockZetarisLedger } from './helpers/zetaris-ledger.ts';
 
@@ -96,6 +97,25 @@ test('Live browser investigations bind validated server scope, model and read-on
     history: true,
     scenario: 'A',
   });
+  const live = liveInvestigationFromEnv(request, env);
+  assert.deepEqual(investigationHistoryOptions(live, {}), {
+    zetaris: true,
+    zetaris_append: false,
+    hmem_directory: '.cci-memory',
+  });
+  assert.deepEqual(
+    investigationHistoryOptions(live, {
+      HMEM_PERSIST_DIR: '/tmp/cci-test-memory',
+    }),
+    {
+      zetaris: true,
+      zetaris_append: false,
+      hmem_directory: '/tmp/cci-test-memory',
+    },
+  );
+  assert.deepEqual(investigationHistoryOptions(validateDemoRun(input), {}), {
+    zetaris_append: false,
+  });
   const minimal = {
     AWS_EXPECTED_ACCOUNT_ID: env.AWS_EXPECTED_ACCOUNT_ID,
     AWS_REGION: env.AWS_REGION,
@@ -166,12 +186,27 @@ test('isolated offline investigations and H-MEM learning return actual results w
     assert.equal(result.candidates[0].verdict, 'not_recommended');
     assert.equal(result.planner.mode, 'scripted');
     assert.equal(result.historical_context.zetaris, 'not_configured');
+    assert.ok(
+      jobs.current?.events.some((event) =>
+        event.includes('Zetaris: disabled · Meterless H-MEM: disabled'),
+      ),
+    );
     assert.ok(jobs.current?.events.some((e) => e.includes('evaluator')));
     assert.ok((jobs.current?.events.length ?? 0) <= 160);
     jobs.start({ ...input, request_id: 'learning', kind: 'learn' });
     const learned =
       await finish<Awaited<ReturnType<typeof demonstrateWarmLearning>>>(jobs);
     assert.equal(learned.passed, true);
+    assert.ok(
+      jobs.current?.events.some((event) =>
+        event.includes('Meterless H-MEM read ·'),
+      ),
+    );
+    assert.ok(
+      jobs.current?.events.some((event) =>
+        event.includes('Meterless H-MEM store ·'),
+      ),
+    );
     assert.deepEqual(
       learned.runs.map((r: { phase: string }) => r.phase),
       ['cold', 'warm', 'changed'],
@@ -253,6 +288,9 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     });
     const historyReport = await finish(jobs);
     assert.equal(historyReport.historical_context.zetaris, 'ok');
+    assert.ok(
+      jobs.current?.events.some((event) => event.includes('Zetaris read ·')),
+    );
     assert.equal(records.length, 6);
     assert.ok(jobs.current?.events.some((e) => e.includes('append disabled')));
     const report = (await generateDemoReports()).A;

@@ -1,5 +1,15 @@
 # Project Memory
 
+## Demo sponsor flow notation (2026-10-26)
+
+- Show Zetaris and H-MEM read/store roles beside each selected synthetic preview as an illustrative disclosure. Keep the validated preview report and execution trace unchanged: no Demo service call or persisted record is implied. Zetaris decision storage belongs to the separate Live Follow through Save action.
+
+## Live H-MEM participation (2026-10-26)
+
+- Live web investigations use the existing scoped H-MEM read/store path by default. The web worker takes `HMEM_PERSIST_DIR` from the server environment or uses `.cci-memory`; Docker Compose supplies a persistent named volume. Browser input never selects a storage path or authorizes a remote write.
+- H-MEM stores only validated summaries. A scoped summary can suggest which missing check to ask next; a typed conflict lesson requires cited authoritative evidence and applies only to the matching scope, instance, source mode and UTC window. Raw Zetaris recommendation rows remain an audit comparison; linked and validated operator outcomes can teach H-MEM. Neither historical store supplies current evidence or a shutdown verdict.
+- This supersedes the earlier browser choice to leave H-MEM disabled; CLI memory remains opt-in, and Demo previews remain storage-free.
+
 ## New Live investigation presentation (2026-10-26)
 
 - Clear the selected Live report and its related learning/decision context when the server accepts a new investigation. The result then belongs to the new run; retaining the prior report beside current progress can misattribute evidence or decisions.
@@ -1193,3 +1203,13 @@
 ## Docker web boundary — 2026-10-26
 
 Compose fixes the previously incidental `npm start` port at 36335. Per the user's network choice, it uses host networking without a published-port mapping; the Node server binds host loopback and retains its strict Host and Origin checks. The Docker image must include root `cli.ts` because the forked web investigation worker imports it before any result or progress is produced; serving static UI assets alone is not a sufficient smoke test. Optional `.env` values enter the web process through Compose `env_file` and are inherited by workers, so the host file need not be mounted into the image. Host AWS profile files are separate from `.env` and require the explicit read-only `compose.aws.yaml` overlay with the host UID/GID; keeping that overlay optional lets a clean checkout start Demo with one command and no AWS directory.
+
+## Zetaris history read status — 2026-10-26
+
+- A configured history service is not necessarily reachable: the read must complete with TLS verification and scoped validation before the UI can show `ok`. The adapter intentionally rejects `NODE_TLS_REJECT_UNAUTHORIZED=0`; keep that security boundary instead of forcing an available label or silently overriding the shell. Surface only allowlisted failure codes, never raw provider errors.
+- Read version-1 recommendation history by account, region and exact instance ID, then keep only the current source mode. An empty matching set is a successful `ok` read. Historical decisions remain context, not current evidence or planner instructions.
+
+## History execution events — 2026-10-26
+
+- Emit bounded source outcomes at the history boundary, where validated matching and verified writes are known. Zetaris prior verdict/window records are audit comparisons and never model inputs; H-MEM supplies only scoped check hints, subject to the proposed-window filter. Report the applicable hint count at each planner call so a retrieved lesson is not mistaken for one actually supplied to the model.
+- Describe stored field categories and categorical results in UI events, not raw operator prose, historical record bodies, AWS identifiers, credentials or provider errors. The separate warm-learning harness uses real temporary local H-MEM; the web Demo Learn tab is illustrative. The earlier absence of Live H-MEM storage was superseded by the Live H-MEM participation decision above; Zetaris remains read-only during investigation until a separate Save decision action.

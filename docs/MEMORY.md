@@ -10,7 +10,14 @@ New runs only reject a named, cited conflict or defer with explicit missing evid
 
 ## Configuration
 
-Set `HMEM_PERSIST_DIR=.cci-memory` to retain lessons between investigations. Leave it unset to disable local reasoning memory. Keep generated state untracked and use one writer per directory. The local store is capped at 100 records.
+For the CLI, set `HMEM_PERSIST_DIR=.cci-memory` to retain lessons between investigations; leave it unset to disable CLI memory. Keep generated state untracked and use one writer per directory. The local store is capped at 100 records.
+
+The Live web worker uses `.cci-memory` by default even when this variable is
+unset; `HMEM_PERSIST_DIR` overrides that path. Docker Compose sets
+`HMEM_PERSIST_DIR=/app/.cci-memory` and keeps it in the `cci-hmem` named volume
+across image rebuilds and container replacement. CLI investigations still
+require an explicit `HMEM_PERSIST_DIR` to enable memory. A memory read or write
+failure is reported as unavailable; it never becomes a safety finding.
 
 H-MEM uses the checked-in reference with deterministic local embeddings and JSON persistence. Direct telemetry and the operator decision ledger belong to the other [components](components.md).
 

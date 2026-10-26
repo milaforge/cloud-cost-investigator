@@ -1,14 +1,17 @@
-import { parseArgs, createEvidenceProvider } from '../cli.ts';
+import { createEvidenceProvider, parseArgs } from '../cli.ts';
 import { loadProjectEnv } from '../src/config.ts';
+import { recordDecision } from '../src/investigation/follow-up.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
-import { runInvestigation } from '../src/investigation/run.ts';
 import { progressText } from '../src/investigation/progress.ts';
 import { validateReport } from '../src/investigation/report.ts';
-import { demonstrateWarmLearning } from './demo-warm.ts';
+import { runInvestigation } from '../src/investigation/run.ts';
 import { demonstrateFollowUps } from './demo-follow-up.ts';
-import { validateDemoRun } from './demo-web-jobs.ts';
-import { recordDecision } from '../src/investigation/follow-up.ts';
+import { demonstrateWarmLearning } from './demo-warm.ts';
+import {
+  investigationHistoryOptions,
+  validateDemoRun,
+} from './demo-web-jobs.ts';
 
 let completed = false;
 process.once('disconnect', () => {
@@ -27,7 +30,7 @@ process.once('message', async (value) => {
     let result: unknown;
     if (run.kind === 'decision') {
       progress(
-        'Saving your recommendation and decision to Zetaris; verifying readback. No infrastructure changes.',
+        'Zetaris read: checking prior decision for the same instance. Store: linked recommendation and operator decision only, with exact readback; no infrastructure changes.',
       );
       const started = Date.now();
       const heartbeat = setInterval(
@@ -45,7 +48,7 @@ process.once('message', async (value) => {
           run.decision,
         );
         progress(
-          'Saved to Zetaris: recommendation and decision readback verified.',
+          'Zetaris store: linked recommendation and operator decision readback verified (or matched existing records).',
         );
       } finally {
         clearInterval(heartbeat);
@@ -81,8 +84,9 @@ process.once('message', async (value) => {
       if (run.evidence === 'mock') args.push('--scenario', run.scenario);
       const options = parseArgs(args);
       if (options === 'help') throw new Error();
+      const history = investigationHistoryOptions(run);
       progress(
-        `Evidence: ${run.evidence} · Planner: ${run.planner} · History: ${run.history ? 'Zetaris read-only' : 'disabled'}`,
+        `Evidence: ${run.evidence} · Planner: ${run.planner} · Zetaris: ${history.zetaris ? 'read-only' : 'disabled'} · Meterless H-MEM: ${history.hmem_directory ? 'local read/store' : 'disabled'}`,
       );
       const report = validateReport(
         await runInvestigation(options.request, {
@@ -94,7 +98,7 @@ process.once('message', async (value) => {
               : new ScriptedPlanner(),
           provider: createEvidenceProvider(options),
           owner_evidence: run.owner_evidence,
-          history: run.history ? { zetaris: true, zetaris_append: false } : {},
+          history,
           ...(run.evidence === 'aws'
             ? { limits: { tool_timeout_ms: 25000 } }
             : {}),
@@ -116,10 +120,6 @@ process.once('message', async (value) => {
             progress(`${observation.tool}: ${codes.join(', ')}`);
         }
       }
-      if (run.history)
-        progress(
-          `Zetaris history read: ${report.historical_context.zetaris}; append disabled`,
-        );
       result = report;
     }
     process.send?.({ type: 'result', result }, undefined, undefined, () => {

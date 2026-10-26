@@ -42,16 +42,21 @@ Demo is preview-only: generated synthetic/scripted
 investigation reports, an illustrative learning flow and illustrative fictional
 follow-through. It has no run, owner-input, model/service or remote-write controls.
 Live uses the server-configured model, AWS scope (`AWS_EXPECTED_ACCOUNT_ID`,
-`AWS_REGION`, `CCI_MAX_CANDIDATES`) and automatic configured Zetaris history
-reads. It has no Live configuration section or service checkbox: Run investigation
+`AWS_REGION`, `CCI_MAX_CANDIDATES`), automatic configured Zetaris history
+reads, and local H-MEM recall/store. It has no Live configuration section or service checkbox: Run investigation
 authorizes the run and validates loaded server configuration before worker startup.
 Configuration errors request `.env` fixes and restarting `npm start`.
 It owns investigation controls, live report loading and
 Zetaris decision recording through the explicit Save decision action. Live Learn displays the
-selected report's memory status; live H-MEM recall/storage are not enabled by
-this browser workflow. Separate CLI learning/follow-through demonstrations remain
+selected report's memory status. The web worker uses `HMEM_PERSIST_DIR` when set,
+otherwise `.cci-memory`; Docker Compose mounts a persistent `cci-hmem` volume.
+Memory failures remain visible and do not supply current evidence. Separate CLI learning/follow-through demonstrations remain
 available with their existing safeguards. [How](HOW.md#open-the-web-demo) owns
 usage and [components](components.md#local-report-viewer) owns boundaries.
+Execution events disclose bounded Zetaris and H-MEM read/store outcomes when
+those services are involved. Zetaris comparisons stay out of Planner input;
+only applicable H-MEM check hints may reach the Planner, and the event stream
+reports their count. Events never expose raw historical prose or provider replies.
 This supersedes the earlier mixed synthetic/real-service browser workflows.
 
 ## 3. User flows and expected dispositions

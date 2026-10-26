@@ -1,22 +1,23 @@
+import { type ChildProcess, fork } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fork, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { modelConfigFromEnv } from '../src/config.ts';
 import {
   exact,
-  member,
+  type InvestigationReport,
   identifier,
   integer,
-  validateScope,
-  validateOwnerEvidence,
+  member,
   type OwnerEvidence,
-  type InvestigationReport,
   object,
+  validateOwnerEvidence,
+  validateScope,
 } from '../src/contracts.ts';
 import { prepareDecision } from '../src/investigation/follow-up.ts';
+import type { HistoryOptions } from '../src/investigation/history.ts';
 import { INVESTIGATION_TIMEOUT_MS } from '../src/investigation/limits.ts';
-import { modelConfigFromEnv } from '../src/config.ts';
 
 export type DecisionRun = {
   request_id: string;
@@ -204,6 +205,21 @@ export function liveInvestigationFromEnv(
     // The worker's shared transport requires a scenario; AWS ignores it.
     scenario: 'A',
   });
+}
+
+/** Server-owned history policy; browser requests cannot select a memory path. */
+export function investigationHistoryOptions(
+  run: DemoRun,
+  env: NodeJS.ProcessEnv = process.env,
+): HistoryOptions {
+  if (run.kind !== 'investigate') return {};
+  return {
+    ...(run.history ? { zetaris: true } : {}),
+    zetaris_append: false,
+    ...(run.evidence === 'aws'
+      ? { hmem_directory: env.HMEM_PERSIST_DIR || '.cci-memory' }
+      : {}),
+  };
 }
 
 export function demoConfiguration(env: NodeJS.ProcessEnv = process.env) {

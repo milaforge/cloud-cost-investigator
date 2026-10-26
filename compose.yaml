@@ -5,6 +5,12 @@ services:
     network_mode: host
     environment:
       CCI_WEB_CONTAINER: "1"
+      HMEM_PERSIST_DIR: /app/.cci-memory
     env_file:
       - path: .env
         required: false
+    volumes:
+      - cci-hmem:/app/.cci-memory
+
+volumes:
+  cci-hmem:
