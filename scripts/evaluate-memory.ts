@@ -64,13 +64,13 @@ const CASES: {
     name: 'job_cleared',
     prior: 'B',
     current: 'A',
-    expected: 'conditional_recommendation',
+    expected: 'needs_verification',
   },
   {
     name: 'dependency_cleared',
     prior: 'C',
     current: 'A',
-    expected: 'conditional_recommendation',
+    expected: 'needs_verification',
   },
   {
     name: 'job_replaced_by_dependency',
@@ -94,7 +94,7 @@ const CASES: {
     name: 'no_prior_conflict',
     prior: 'A',
     current: 'A',
-    expected: 'conditional_recommendation',
+    expected: 'needs_verification',
   },
 ];
 const toolCount = (r: InvestigationReport) =>
@@ -214,7 +214,8 @@ export async function evaluateMemory() {
             v.correct &&
             v.independent_evidence &&
             v.planner_failures.length === 0 &&
-            v.completion === (r.current === 'missing' ? 'partial' : 'complete'),
+            v.completion ===
+              (r.expected === 'needs_verification' ? 'partial' : 'complete'),
         ),
       ),
       totals,

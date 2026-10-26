@@ -35,14 +35,14 @@ $env:ZETARIS_HISTORY_ALLOW_APPEND = 'false'
 
 ## Account assumptions and acceptance
 
-| Requirement | What must be true |
-| --- | --- |
-| Intended identity and scope | The SDK resolves an approved identity in the same 12-digit account as `--account`; `--region` contains the intended EC2 resources. Cross-account role assumption, if needed, is provisioned by the account owner, not CCI. |
-| Existing resource | Inventory returns a running candidate and matching positive compute spend. Optional owner/environment tags are informative, not authority. |
-| Metric history | Positive scheduling requires at least seven complete UTC days of gap-free CPU averages/peaks at five-minute or finer aggregation, plus the collector's network coverage. AWS mode defaults to 14 days and accepts `--lookback-days 1–14`; a shorter request does not remove the seven-day safety minimum. |
-| Billing availability | The intended caller can query attributable EC2 compute records for the same account/region/instance and UTC days; pagination, missing dates and currency remain validated. |
-| Job/dependency authority | Named operational sources cover the actual workload, including non-AWS jobs and consumers, plus current owner/calendar/recovery clearance. Native SSM/ELBv2 reads alone cannot satisfy this. |
-| Savings authority | Verified marginal rate, purchase option, commitment treatment and retained-cost exclusion are required; account access alone cannot supply these assumptions. |
+| Requirement                 | What must be true                                                                                                                                                                                                                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Intended identity and scope | The SDK resolves an approved identity in the same 12-digit account as `--account`; `--region` contains the intended EC2 resources. Cross-account role assumption, if needed, is provisioned by the account owner, not CCI.                                                                                |
+| Existing resource           | Inventory returns a running candidate and matching positive compute spend. Optional owner/environment tags are informative, not authority.                                                                                                                                                                |
+| Metric history              | Positive scheduling requires at least seven complete UTC days of gap-free CPU averages/peaks at five-minute or finer aggregation, plus the collector's network coverage. AWS mode defaults to 14 days and accepts `--lookback-days 1–14`; a shorter request does not remove the seven-day safety minimum. |
+| Billing availability        | The intended caller can query attributable EC2 compute records for the same account/region/instance and UTC days; pagination, missing dates and currency remain validated.                                                                                                                                |
+| Job/dependency authority    | Named operational sources cover the actual workload, including non-AWS jobs and consumers, plus current owner/calendar/recovery clearance. Native SSM/ELBv2 reads alone cannot satisfy this.                                                                                                              |
+| Savings authority           | Verified marginal rate, purchase option, commitment treatment and retained-cost exclusion are required; account access alone cannot supply these assumptions.                                                                                                                                             |
 
 The investigation provider requests **300-second** metrics by default. The
 standalone low-level collector retains its separate 3600-second default unless
@@ -186,10 +186,10 @@ prevent later challenges. The standalone operational smoke check below can verif
 their access independently of historical telemetry. Do not relax a prerequisite
 or substitute synthetic observations into a live run to reach them.
 
-| Native source | Retrieved facts | Coverage it cannot establish |
-| --- | --- | --- |
-| SSM `DescribeMaintenanceWindowSchedule` and `GetMaintenanceWindow` | Instance-targeted, AWS-expanded scheduled maintenance intervals and enabled-window duration; a dated overlap can reject the proposed window. | Guest cron, systemd timers, application/external schedulers, workload-wide job absence, owner/calendar/recovery approval. |
-| ELBv2 `DescribeTargetGroups` and `DescribeTargetHealth` | Matching instance-ID registrations, ports and target health; account/region are validated. | Direct clients, queue consumers, all upstream/downstream services, continuous-availability obligations or safe traffic draining. IP/Lambda/ALB target groups remain unresolved. |
+| Native source                                                      | Retrieved facts                                                                                                                              | Coverage it cannot establish                                                                                                                                                    |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SSM `DescribeMaintenanceWindowSchedule` and `GetMaintenanceWindow` | Instance-targeted, AWS-expanded scheduled maintenance intervals and enabled-window duration; a dated overlap can reject the proposed window. | Guest cron, systemd timers, application/external schedulers, workload-wide job absence, owner/calendar/recovery approval.                                                       |
+| ELBv2 `DescribeTargetGroups` and `DescribeTargetHealth`            | Matching instance-ID registrations, ports and target health; account/region are validated.                                                   | Direct clients, queue consumers, all upstream/downstream services, continuous-availability obligations or safe traffic draining. IP/Lambda/ALB target groups remain unresolved. |
 
 CCI does not request SSH or SSM `SendCommand`/session access. Fetching a schedule
 from SSM is different from executing a guest command. An empty SSM scan is not
@@ -207,22 +207,9 @@ The optional browser owner statement is unverified supporting context and cannot
 provide these permissions or clearances. General AWS account access cannot prove
 that all external jobs and consumers have been covered.
 
-## Numeric savings: current live limitation
+## Savings and historical compatibility
 
-The live billing adapter returns ranking costs, but currently always reports
-`commitment_coverage_known: false` and no per-instance `pricing`. Therefore
-**numeric live savings remain `null` even when the billing query is complete**.
-No IAM grant or Cost Explorer opt-in alone implements the missing pricing path.
-
-A future live pricing adapter needs verified marginal compute rate and currency,
-purchase option and account commitment treatment, billing granularity, retained
-resource exclusions and validity for the planning month. Public list prices alone
-do not establish marginal savings under Reservations or Savings Plans; historical
-`UnblendedCost` alone is not a future hourly rate. The existing calculator only
-supports USD on-demand pricing with these assumptions. Unsupported cases remain
-unknown. The mock provider already supplies explicitly synthetic pricing for
-testing the deterministic arithmetic and null guards; no new pricing service or
-production dependency is required for that demo.
+New runs only reject or defer; savings are always null regardless of billing coverage. Billing ranks known running candidates when available and is not a prerequisite for operational checks. Historical recommendation reports retain their validated deterministic calculations. The live adapter has no marginal-pricing proof; Cost Explorer access alone never establishes future savings.
 
 ## Common failures
 
@@ -234,8 +221,7 @@ production dependency is required for that demo.
 - `ACCESS_DENIED`: ask the account owner to verify the specific read actions,
   permission boundaries/SCPs and billing access. STS success is insufficient.
 - `COST_EXPLORER_DISABLED`: the app opt-in flag is absent. `SOURCE_UNAVAILABLE`
-  can mean unavailable/not-enabled resource-level data. Missing billing can
-  prevent candidate selection; it is not zero cost.
+  can mean unavailable/not-enabled resource-level data. Missing billing removes spend ranking; known running inventory remains investigable. It is not zero cost.
 - Recent usage may not yet appear. Cost Explorer refreshes at least daily, and
   upstream billing data can arrive later than 24 hours; do not promise immediate
   spend visibility. [AWS refresh guidance](https://docs.aws.amazon.com/cost-management/latest/userguide/ce-what-is.html).
@@ -244,7 +230,7 @@ production dependency is required for that demo.
 
 ## What synthetic and live runs prove
 
-The [six scenarios](SCENARIOS.md) prove supported, unsafe and uncertain outcomes
+The [six scenarios](SCENARIOS.md) prove named conflicts and evidence-driven deferrals
 with labeled synthetic evidence. Live AWS runs can prove authentication,
 inventory and the metrics/billing evidence actually returned, subject to coverage
 and permissions. Native SSM maintenance executions can contradict a window;
@@ -258,7 +244,7 @@ CLI requests the preceding 14 complete UTC days by default; unavailable periods
 are not zero utilization. An in-instance cron job is not an authoritative
 operations source for the current collector, which does not inspect guest jobs.
 Its CPU activity may lead to `needs_verification` if metrics are collected and
-prevent a supported window; it cannot establish the job's purpose, criticality
+require window-specific follow-up; it cannot establish the job's purpose, criticality
 or exact overlap. The authoritative unsafe job-overlap demonstration remains
 synthetic. Recent costs may also be absent until Cost Explorer updates. Do not
 launch instances or generate load merely to claim the synthetic safety proofs

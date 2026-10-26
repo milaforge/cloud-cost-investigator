@@ -94,9 +94,7 @@ function validateRecord(value: unknown): HistoryRecord {
     if (Date.parse(recorded) < Date.parse(window.to)) throw new Error();
     if ('kind' in summary) {
       if (
-        (summary.kind === 'deferred' ||
-          summary.kind === 'accepted' ||
-          summary.kind === 'outcome') &&
+        (summary.kind === 'accepted' || summary.kind === 'outcome') &&
         r.verdict !== 'conditional_recommendation'
       )
         throw new Error();

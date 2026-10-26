@@ -187,15 +187,12 @@ test('partial CPU observations describe measured activity without implying compl
     const candidate = report.candidates[0];
     assert.equal(candidate.verdict, 'needs_verification');
     assert.equal(candidate.estimated_monthly_savings, null);
-    assert.match(candidate.explanation, /Incomplete coverage/);
+    assert.match(candidate.explanation, /incomplete coverage/);
     assert.match(
       candidate.explanation,
-      /does not establish absence of tasks or dependencies/,
+      /does not prove absence of jobs or dependencies/,
     );
-    assert.equal(
-      candidate.explanation.includes('Low CPU utilization'),
-      peak === 5,
-    );
+    assert.match(candidate.explanation, /Decision deferred/);
     const metrics = report.evidence.find((e) => e.tool === 'get_ec2_metrics');
     assert.ok(metrics);
     assert.ok(candidate.supporting_evidence_ids.includes(metrics.evidence_id));

@@ -101,12 +101,12 @@ test('JSONL captures all six tested cases, replays seven evidence variants and r
   assert.deepEqual(
     rows.map((row) => row.expected_verdict),
     [
-      'conditional_recommendation',
+      'needs_verification',
       'not_recommended',
       'needs_verification',
       'needs_verification',
       'not_recommended',
-      'conditional_recommendation',
+      'needs_verification',
     ],
   );
   const { records } = mockZetarisLedger(t);

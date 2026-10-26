@@ -38,13 +38,6 @@
 - This supersedes the Oct 24 optional browser Zetaris-recall choice. History
   remains historical context and cannot satisfy fresh-evidence safety checks.
 
-## Missing web configuration notice (2026-10-26)
-
-- Reuse the environment loader's missing-file result to show setup guidance at
-  `npm start`. Suggest copying or renaming `.env.example` and filling required
-  service values, without creating a file, printing configuration or blocking
-  Demo mode and deployments configured through shell variables.
-
 ## Live workflow tab prerequisites (2026-10-26)
 
 - Keep Learn and Follow through visible but disabled in Live until a live
@@ -54,6 +47,13 @@
   clears selection and restores the gate; Demo previews keep all tabs enabled.
   Guard navigation handlers as well as native button state. Decision-saving
   eligibility remains governed by the existing completed-recommendation checks.
+
+## Missing web configuration notice (2026-10-26)
+
+- Reuse the environment loader's missing-file result to show setup guidance at
+  `npm start`. Suggest copying or renaming `.env.example` and filling required
+  service values, without creating a file, printing configuration or blocking
+  Demo mode and deployments configured through shell variables.
 
 ## Remove browser owner-statement capture (2026-10-26)
 
@@ -65,6 +65,18 @@
   Preserve the optional report contract and saved-report display/export for
   compatibility; owner prose still cannot satisfy safety gates, enter planner
   prompts, teach H-MEM or persist to Zetaris.
+
+## Fast missing-evidence preview and visible loading (2026-10-26)
+
+- Demo is an illustration, so selecting Missing evidence should not replay
+  real retry backoff. Reuse the existing validated `ec2-3` operations-outage
+  report from `docs/ec2-scenarios.jsonl`, preserving original timestamps and
+  labeling it Recorded preview. This supersedes generating that preview live;
+  real investigation and CLI retry policy remain unchanged.
+- Use a visible spinner and loading text in the report area while a preview
+  request is pending, alongside existing accessible status/busy attributes.
+  Honor reduced motion and clear the indicator on success, error or selection/
+  mode changes. Keep failure recovery text instead of a stuck loading panel.
 
 ## Web startup without preview work (2026-10-26)
 
@@ -1118,6 +1130,7 @@
 - The user requested pre-run lookback control. Reuse CLI `--lookback-days` through the validated worker request: 1–14 complete UTC days, web default 7. Scope, model and history remain server-controlled. Complete UTC-day alignment preserves billing compatibility; this is not a rolling 48-hour query.
 - Report measured CPU averages/peaks with partial coverage explicitly, without equating low CPU to no jobs or dependencies. The seven-day recommendation threshold remains separate from observed activity. SSM maintenance and ELBv2 registrations remain scoped evidence, not workload-wide absence proofs. No planner gate or clearance authority is relaxed.
 
+
 ## Project AWS selection at web startup (2026-10-26)
 
 - User explicitly requested plain `npm start` use project `.env` AWS profile and region even when the launching shell exports different values. This supersedes blanket shell precedence for these two keys at web startup only. Other commands and settings retain shell precedence; omitted file keys preserve inherited values.
@@ -1132,3 +1145,12 @@
 ## Operator-facing next actions (2026-10-26)
 
 - User correction: Next action contains concrete tasks a human can perform. Keep tool/status diagnostics in missing checks, strip those prefixes from action text, omit the unsupported-window finding, and combine incomplete/short utilization history into one period-selection or wait-and-rerun task. Preserve owner schedule/dependency requests and the external human approval boundary; this presentation change does not relax evidence policy.
+
+## Reject-or-defer product contract (2026-10-26)
+
+- User explicitly narrowed CCI to naming a specific reason to reject a shutdown window or naming missing evidence and deferring. New reports carry `decision_policy: reject_or_defer`; no new conditional recommendations or savings. Historic reports without the marker keep their strict original validation and acceptance/outcome compatibility.
+- An absence of found conflicts is not approval. Complete technical checks defer the external authorized human decision without inventing missing telemetry. Named jobs, dated maintenance and attributable dependency obligations make rejection explainable; an unnamed continuous-operation boolean is insufficient for a new rejection.
+- Inventory remains mandatory. Billing is ranking context, so bounded billing outages fall back to validated running inventory; malformed scoped billing and cancellation remain terminal. Billing gaps stay in discovery diagnostics, not the technical scheduling checklist. Whole-period peaks do not establish where activity occurs; a retrieved suggested window still deserves operational checks.
+- Preserve the concurrently developed all-checks collection policy, web AWS selection, preview loading and operator-action behavior. Both operational checks remain attempted within the aggregate budget after a conflict. H-MEM changes order, not freshness requirements or verdict authority.
+- Review requests now cover rejected and deferred results, including partial investigations, using existing append-only validated Zetaris records and readback. Acceptance and outcome learning remain legacy-only. No infrastructure authority or additional remote write permission is introduced.
+- The six-case exports describe the current policy; dated model/sponsor receipts retain their original policy and modes. The exporter synchronizes the root handoff copy and canonical docs JSONL to prevent drift. Current proof belongs in the execution plan.

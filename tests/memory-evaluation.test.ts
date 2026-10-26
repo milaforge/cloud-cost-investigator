@@ -9,7 +9,7 @@ test('memory evaluation preserves complete-collection ties, teaching cost and pa
   assert.ok(result.comparison.training_tool_calls > 0);
   for (const total of result.totals) {
     assert.equal(total.correct, 8);
-    assert.equal(total.partial, 1);
+    assert.equal(total.partial, 4);
   }
   const recurring = result.rows.find((r) => r.name === 'recurring_dependency');
   const changed = result.rows.find(

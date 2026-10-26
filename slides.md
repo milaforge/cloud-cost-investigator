@@ -1,235 +1,134 @@
 # 01 · Problem and users
 
-## Low CPU does not mean an EC2 instance can stop
+## Low CPU does not tell an engineer whether a shutdown window is safe
 
-**Cloud Cost Investigator** · Open Agent Hackathon 2026\
-Track 02 — The Agent That Can Explain Why
+**Cloud Cost Investigator** · Open Agent Hackathon 2026
+**Track 02 — The Agent That Can Explain Why**
 
-**User:** an infrastructure or platform engineer deciding which EC2 instances could stop during off-hours.
-
-Cost, utilization, scheduled jobs and dependencies live in separate places. A quiet instance may still run a critical overnight task.
+An infrastructure engineer sees a quiet EC2 instance. A scheduled job or dependent service may still need it during the proposed off-hours window.
 
 > Identify a specific reason to reject a shutdown window, or say exactly what evidence is missing and defer the decision.
 
-<details>
-<summary>Speaker notes and source</summary>
-
-Lead with the engineer's decision. The MVP investigates EC2 scheduling within a supplied account and region; it does not require a previous investigation. Keep the story focused on a cited conflict or an actionable evidence gap.
-
-[Product and users](docs/PROJECT_CONTEXT.md#1-product-and-user-decision)
-
-</details>
+CCI is read-only. The authorized human change process owns shutdown decisions.
 
 ---
 
 # 02 · The solution
 
-## A reason to reject, or the evidence needed to decide
+## A cited conflict, or an actionable evidence gap
 
-**Discover candidates → propose a window → challenge it with fresh evidence.**
+| Result                 | What the engineer receives                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Reject this window** | The named job, maintenance execution or dependency obligation; its conflict with this window; a current-run citation |
+| **Defer the decision** | Missing source, coverage, authority or external human decision; the next check needed                                |
 
-| Outcome | What the engineer receives |
-| --- | --- |
-| 🔴 Not recommended | A specific window rejected because retrieved evidence contradicts it |
-| 🟠 Needs verification | Missing evidence and the next checks needed to decide |
+**No conflict found does not mean approved.** Even complete technical checks leave the authorized shutdown decision outside CCI.
 
-Up to **three candidates per investigation**. The existing complete-clearance synthetic A case remains a broader conditional-recommendation boundary test; it does not demonstrate live clearance.
-
-**AWS access is read-only. Infrastructure changes require an authorized human.**
-
-<details>
-<summary>Speaker notes and source</summary>
-
-A rejected window does not establish that an instance must run at all other times. An application decision record is also not authenticated infrastructure approval. Keep these boundaries visible when presenting the positive scenario.
-
-[Decision policy](docs/PROJECT_CONTEXT.md#6-decision-policy)
-
-</details>
+New runs produce no conditional recommendations or savings. Historical reports remain readable under their original validation rules.
 
 ---
 
 # 03 · Agent workflow
 
-## One bounded investigation loop
+## One bounded loop, with explicit decisions
 
 ```mermaid
 flowchart TD
-    U[Engineer: account and region] --> D[Executor: required inventory discovery]
-    D --> P{Planner: next check or proposal?}
-    P --> X[Executor: apply proposal or retrieve validated evidence]
-    X --> S[Shared state: evidence IDs, hypothesis, attempts]
-    S --> E{Deterministic safety evaluator}
-    E -->|More checks needed; budget remains| P
-    E -->|Retrieved conflict| R[Reject this window with cited reason]
-    E -->|Evidence missing; no useful checks remain| F[Defer with exact gaps and next checks]
-    E -->|Existing complete-clearance path| C[Conditional recommendation; human approval required]
+    U[Engineer: account and region] --> I[Executor: validated EC2 inventory]
+    I -->|Empty or failed| N[Explain discovery result; no window verdict]
+    I -->|Running resources| P{Next useful check or tentative window?}
+    P --> X[Executor: scoped read-only evidence]
+    X --> E{Named current conflict with this window?}
+    E -->|Yes| R[Record rejection and citation]
+    E -->|No| G[Retain evidence gaps]
+    R --> Q{Remaining checks and budget?}
+    G --> Q
+    Q -->|Yes| P
+    Q -->|No; conflict established| O[Reject this window; show remaining limits]
+    Q -->|No conflict established| D[Defer; name missing evidence or human decision]
     H[H-MEM: scoped lessons] -. Prioritize fresh checks .-> P
-    C -. Authorized record append .-> Z[Zetaris: decisions, reviews, outcomes]
-    Z -. Validated linked outcome learning .-> H
+    O -. Explicit review request .-> Z[Zetaris: review history]
+    D -. Explicit review request .-> Z
+    Z -. Fresh investigation when review is due .-> I
 ```
 
-The model selects allowlisted actions. Trusted code binds scope, validates results and controls verdicts.
+The model chooses allowlisted questions. Trusted code binds scope, validates evidence and owns verdicts. Inventory is mandatory; billing ranks candidates but cannot block operational checks. Both operational checks are attempted within the shared budget, even after a conflict.
 
-**Maximum 15 minutes per investigation; 60 seconds per model call.** Failures are traced, retries are bounded, and unresolved safety is deferred.
-
-<details>
-<summary>Speaker notes and source</summary>
-
-The runner owns shared state. Planner, executor and evaluator describe responsibilities within one engine; the evaluator is deterministic code. Solid arrows show current investigation flow; dotted arrows show persistence and cross-run learning. Zetaris history is historical context, never fresh telemetry or raw planner instructions. H-MEM recall changes which question is asked first, while every current conclusion still requires new evidence.
-
-[Component authority, shared state and bounds](docs/components.md)
-
-</details>
+**Bounds:** at most three candidates, 15 minutes total, 60 seconds per model call. Missing evidence remains unknown; completed findings survive exhaustion.
 
 ---
 
-# 04 · Technical stack
+# 04 · Technical stack and live limits
 
-## TypeScript engine, direct evidence and separate memory roles
+| Layer               | Implementation                                                  |
+| ------------------- | --------------------------------------------------------------- |
+| Runtime / interface | Node.js 24+, TypeScript CLI and local web UI                    |
+| Current evidence    | Read-only AWS SDK: EC2, Cost Explorer, CloudWatch, SSM, ELBv2   |
+| Decision engine     | Planner → executor → deterministic evaluator; validated reports |
+| Planning            | Chat Completions adapter; NVIDIA-hosted Nemotron demonstrated   |
+| History             | Zetaris allowlisted queries and acknowledged append/readback    |
+| Lessons             | Vendored Meterless H-MEM, scoped local store/retrieve           |
 
-| Layer | Implementation |
-| --- | --- |
-| Runtime and interface | Node.js 24+, TypeScript CLI, local browser demo |
-| Current evidence | AWS SDK: EC2, Cost Explorer, CloudWatch, SSM and ELBv2 |
-| Investigation | Planner → executor → deterministic evaluator; runtime-validated reports |
-| Model planning | Chat Completions adapter; NVIDIA-hosted Nemotron demonstrated |
-| Durable decision trail | Zetaris allowlisted history queries and explicitly enabled append/readback |
-| Reusable lessons | Vendored Meterless H-MEM with scoped store/retrieve |
+**Native live coverage:** dated SSM maintenance can establish an overlap. ELBv2 registration alone cannot establish a continuous-operation obligation. Jobs and dependencies outside those sources remain unknown. Synthetic examples do not prove broader live integrations.
 
-**Development attribution:** Cursor use still requires a factual team account before submission.
-
-<details>
-<summary>Speaker notes and sources</summary>
-
-The offline scripted planner exercises the same policy without inference. NVIDIA is one demonstrated real planner provider; a separate repeated OpenAI gate must not be presented as NVIDIA reliability evidence. Credit the inherited notebook and vendored H-MEM reference as reused starter components.
-
-[Stack](package.json) · [Sponsor roles and reused components](docs/components.md#sponsor-technology-explanation)
-
-</details>
+[Architecture and proof boundaries](docs/components.md)
 
 ---
 
-# 05 · Zetaris, Meterless and NVIDIA
+# 05 · Sponsor contributions
 
-## Decisions become lessons; lessons guide fresh investigation
+## History preserves the question; fresh evidence decides the answer
 
-**Zetaris — follow the decision through**\
-Retain investigation history for later comparison. The existing Accept/Defer, review and outcome workflow currently requires a completed conditional recommendation; it does not yet accept rejected or evidence-deferred results. Authorized appends are schema-validated and checked by readback.
+**Zetaris:** retain rejected or deferred investigations and attributed review requests. Due reviews require fresh scoped evidence. Historical accepted recommendations and outcome records remain compatible; new runs never grant acceptance.
 
-**Meterless H-MEM — remember what to investigate**\
-Store and retrieve scoped lessons such as “check this workload's dependency first.” A validated, linked rollback outcome can teach a future check priority.
+**Meterless H-MEM:** store and retrieve scoped lessons about useful checks. Recall can change check order; a previous rejection cannot replace today's evidence. Measure against fixed orders and include teaching cost.
 
-**NVIDIA Nemotron — choose the next question**\
-Real model calls select allowlisted checks; the evaluator verifies the evidence before issuing a verdict.
+**NVIDIA Nemotron:** choose the next allowlisted question. The evaluator, not the model, controls the result. NVIDIA calls use the configured endpoint directly; H-MEM is not the model runtime.
 
-> Decision trail → validated lesson → prioritized check → fresh evidence → revised decision
-
-**Recorded proof:** real remote Zetaris append/readback, local H-MEM persistence and NVIDIA inference over explicitly synthetic operational evidence.
-
-<details>
-<summary>Speaker notes and source</summary>
-
-Zetaris provides durable follow-through that current telemetry cannot reconstruct. H-MEM retains investigation methods. NVIDIA planning calls use the configured model endpoint directly; this project does not route every model call through Meterless. Operator-reported outcomes are historical statements, not verified savings or current workload facts.
-
-[Sponsor explanation and linked execution receipts](docs/components.md#sponsor-technology-explanation)
-
-</details>
+Separate recorded receipts demonstrate real sponsor calls over **synthetic AWS evidence**. They do not prove the newly changed workflow against remote services or production shutdown safety. [Sponsor receipts](docs/components.md#sponsor-technology-explanation)
 
 ---
 
-# 06 · What is distinctive
+# 06 · Demonstrate both useful answers
 
-## The agent can disprove its own shutdown proposal
+1. **B — named conflict:** synthetic `mock-critical-daily-batch` runs **02:00–03:00 UTC**, overlapping proposed **00:00–06:00 UTC**. Reject that window and cite the job observation.
+2. **Missing evidence:** operations are unavailable. Defer; request an authoritative job schedule with timezones and exceptions. Other available checks still run.
+3. **Changed evidence:** a previous dependency conflict is no longer observed. Recheck the other sources and defer any outstanding decision; never repeat the stale rejection or infer approval.
 
-**Scenario B · real NVIDIA planner, synthetic operational evidence**
+A is the boundary case: complete synthetic technical evidence, no found conflict, external human decision still required.
 
-1. **Propose:** CPU averages **2.1%**, with a **9.3%** peak; investigate **00:00–06:00 UTC**.
-2. **Challenge:** retrieve operational evidence before treating the window as safe.
-3. **Revise:** a critical finance reconciliation job runs **02:00–03:00 UTC**. Reject this window and cite that observation.
-
-| Eight designed synthetic cases | Correct dispositions | Recommendations on known unsafe cases |
-| --- | --- | --- |
-| Average-CPU heuristic | 2/8 | 3/3 |
-| Investigation with scripted planner | 8/8 | 0/3 |
-
-**Memory result:** across eight workloads, H-MEM tied both fixed check orders at **47 planner / 38 tool calls**. Teaching added **45 / 37** calls if performed solely to seed memory.
-
-<details>
-<summary>Speaker notes and sources</summary>
-
-The B trace demonstrates evidence-dependent revision with an actual model. The comparison table is a separate scripted-policy measurement, not a claim about model superiority or production accuracy. The CPU baseline recommends when average CPU is at most 10% and ignores operational checks. The eight-workload memory comparison includes changed and missing evidence; it does not demonstrate a general speedup. Changed-evidence demonstrations show that fresh clearance can overturn a recalled blocker.
-
-[B model report](docs/evaluation/trace-readable-2026-10-26/B.json) · [Safety comparison](docs/evaluation-scripted.json) · [Memory comparison and teaching cost](docs/memory-order-evaluation.json)
-
-</details>
+The scenario suite proves policy and explanation behavior with labeled fixtures. Historical model measurements remain historical; rerun an explicitly authorized model gate to measure the current contract.
 
 ---
 
 # 07 · Product output
 
-## Verdict first, evidence one step away
+## Put the reason and next check in the default view
 
-**Actual CLI excerpt · offline B run · synthetic evidence / scripted planner**
+Illustrative projection of the actual B fixture, with varying citation IDs omitted:
 
 ```text
 NOT RECOMMENDED — i-mock-primary
 Window: 00:00–06:00 UTC daily
-Why: A retrieved critical job overlaps the proposed shutdown window; reject this window.
-Next: Keep the proposed window rejected; review the cited conflict with the resource owner.
-Savings: unknown
+Why: Critical job mock-critical-daily-batch runs 02:00–03:00 UTC,
+     overlapping proposed shutdown 00:00–06:00 UTC; reject this window.
+Next: Review the cited conflict with the resource owner.
 ```
 
-**Evidence panel · separate recorded NVIDIA B run · synthetic evidence**
+For a deferral, the CLI and result card show the missing checks directly. Raw evidence and full trace remain expandable. Trace coverage describes collected evidence, never a probability of safety.
 
-| Check | Finding | Status |
-| --- | --- | --- |
-| Metrics | 2.1% average / 9.3% peak CPU | Retrieved |
-| Operations | Critical job overlaps 02:00–03:00 UTC | Contradicts window |
-| Dependencies | Not queried | Unresolved |
+**Demo** is preview-only across Investigate, Learn and Follow through. **Live** runs configured services and separately acknowledged review recording. No scenario is selected automatically.
 
-**Coverage: 4/5 checks (80%)** in that recorded trace. Completeness is not the probability that shutdown is safe.
-
-The browser exposes **Investigate · Learn · Follow through**. Demo previews are synthetic; learning and follow-through are illustrations. Live operations and separately captured sponsor proofs remain clearly labeled.
-
-<details>
-<summary>Speaker notes and sources</summary>
-
-This excerpt was generated with histories disabled using:
-
-```bash
-ZETARIS_HISTORY_TABLE= ZETARIS_HISTORY_ALLOW_APPEND=false HMEM_PERSIST_DIR= npm run --silent investigate -- --evidence mock --planner scripted --account demo --region us-east-1 --lookback-days 7 --scenario B
-```
-
-The full output also labels MOCK mode, scope, observation window, stop reason and human approval. Use `--verbose` for evidence IDs and the full trace. The evidence panel comes from the separate recorded model run used on slide 6: metrics ID `mock-ec2-evidence-9e4452bd-7096-4eb7-a40a-0d34e96b7f3d`, conflicting operations ID `mock-ec2-evidence-8eec416f-ba04-43a5-b5b8-c75ab98c8ff7`. Its final JSONL coverage is 0.8. The JSONL confidence field counts complete authoritative checks already retrieved for this candidate divided by five required checks; it never determines the verdict. A decisive conflict can reject a window before every check finishes. The CLI excerpt is a product visual, not a browser screenshot or live AWS result.
-
-[CLI and trace interpretation](docs/CLI_GUIDE.md) · [Recorded B evidence](docs/evaluation/trace-readable-2026-10-26/B.json) · [Coverage trace](docs/evaluation/trace-readable-2026-10-26/B.trace.jsonl) · [Browser demo](docs/HOW.md#open-the-web-demo)
-
-</details>
+[Scenario reproduction](docs/SCENARIOS.md) · [Trace reference](docs/CLI_GUIDE.md)
 
 ---
 
-# 08 · Future enhancements
+# 08 · Next improvements and honest boundaries
 
-## Make conflicts more specific and evidence gaps actionable
+- Extend authoritative live job and named dependency coverage.
+- Resolve evidence gaps through fresh reviews, while preserving attribution and provenance.
+- Evaluate named reasons, exact missing evidence and useful next checks; compare learned check order with strong fixed baselines.
 
-**Next: complete operational evidence**\
-Identify named jobs and dependency obligations, preserve their time windows and coverage, and explain precisely which sources are still missing.
+No infrastructure writes, automated shutdown, multi-cloud expansion or invented savings are needed to deliver this purpose.
 
-**Then: stronger decision follow-through**\
-Support review of rejected windows and resolution of evidence gaps, with fresh investigations before reassessment.
-
-**Then: measure explanation quality and learning**\
-Verify named conflicts, exact missing evidence and useful next checks. Compare learned check order with strong fixed baselines, including teaching cost and changed evidence.
-
-**Current live boundary:** AWS retrieval is demonstrated; incomplete telemetry and operational authority still defer scheduling advice. Live savings remain unknown.
-
-> Every result should make the conflict or the missing evidence understandable without reading raw tool output.
-
-<details>
-<summary>Speaker notes and sources</summary>
-
-These enhancements are future work. The latest integrated live CLI run retrieved inventory and partial billing/metrics, then deferred with `metrics_evidence_incomplete`; it did not reach operational/dependency checks. Separate source-access tests do not establish combined scheduling safety. Release still requires the reviewed demo recording, final artifact review, accurate development-tool attribution and organizer/portal reconciliation. This Markdown deck does not establish completed submission.
-
-[Live execution receipt](docs/history/aws-investigation-2026-10-26.json) · [Release gates](docs/EXECUTION_PLAN.md#release-checklist)
-
-</details>
+Historical traces and sponsor receipts are preserved. This deck is not a recorded demo or a completed submission. Cursor attribution and organizer requirements still require factual team verification; current release gates live in [the execution plan](docs/EXECUTION_PLAN.md).

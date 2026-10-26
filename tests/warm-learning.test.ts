@@ -43,7 +43,7 @@ test('end-to-end H-MEM lesson prioritizes checks, revalidates fresh evidence and
   assert.equal(result.comparison?.tool_calls_saved, 0);
   assert.deepEqual(
     result.runs.map(({ report }) => report.candidates[0].verdict),
-    ['not_recommended', 'not_recommended', 'conditional_recommendation'],
+    ['not_recommended', 'not_recommended', 'needs_verification'],
   );
   for (const { report } of result.runs) {
     assert.equal(report.historical_context.zetaris, 'not_configured');
@@ -68,7 +68,7 @@ test('lessons require cited authoritative contradictions; older summaries still 
   assert.throws(() =>
     validateReasoningSummary({
       ...summary,
-      verdict: 'conditional_recommendation',
+      verdict: 'needs_verification',
     }),
   );
   const dependency = report.evidence.find(

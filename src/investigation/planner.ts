@@ -86,7 +86,7 @@ export class ScriptedPlanner implements Planner {
         window: data.suggested_window,
         evidence_ids: [metrics.evidence_id],
         reason:
-          'Observed low average and peak CPU suggest this window; challenge it before any decision.',
+          'The retrieved utilization window is a tentative question, not clearance; challenge it before any decision.',
       };
     }
     const priority = state.proposed_window

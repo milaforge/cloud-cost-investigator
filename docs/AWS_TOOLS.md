@@ -1,5 +1,9 @@
 # AWS evidence tools
 
+## Current decision contract — 2026-10-26
+
+New runs only reject a named, cited conflict or defer with explicit missing evidence/authority. A complete technical check with no conflict still defers the external human decision; new savings are null. Billing is ranking context and cannot block operational investigation of validated running inventory. Historical conditional-recommendation reports and dated receipts retain their original semantics. Zetaris accepts review requests for new rejected/deferred results; acceptance/outcomes are legacy-only. See [the product contract](PROJECT_CONTEXT.md#6-decision-policy).
+
 [What](../README.md) · [How](HOW.md)
 
 Framework-independent, read-only EC2 tools for the agent. Shared `src/contracts.ts`
@@ -244,7 +248,6 @@ savings calculation is done here. Unknown estimated/final billing status is null
 
 `getOperationalEvidence(instanceId, { kind: 'operations' | 'dependencies' })`
 defaults to operations. The agent-facing tools select the corresponding source:
-
 - **Operations:** [SSM DescribeMaintenanceWindowSchedule](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_DescribeMaintenanceWindowSchedule.html)
   targets the exact instance, then [GetMaintenanceWindow](https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_GetMaintenanceWindow.html)
   verifies ID, enabled state and duration. AWS expands schedule/timezone rules;
@@ -278,8 +281,7 @@ tokens within the existing page/request limits.
 Planned execution intervals are distinct from the utilization observation window
 and collection timestamp. Reports retain these facts with source provenance and
 validated evidence IDs. Both native sources always disclose missing broader
-coverage and owner/calendar/recovery clearance. Empty results cannot support a
-conditional recommendation; workload-specific authority is still required.
+coverage and owner/calendar/recovery clearance. Empty results cannot prove absence of other jobs or consumers. CCI defers with those exact gaps; even complete technical evidence cannot produce a new recommendation.
 
 ## Remaining integration
 

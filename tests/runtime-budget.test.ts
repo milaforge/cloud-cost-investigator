@@ -78,13 +78,14 @@ test('shared deadline preserves completed candidates and defers the rest before 
   assert.equal(report.completion_status, 'partial');
   assert.deepEqual(
     report.candidates.map((c) => c.verdict),
-    ['conditional_recommendation', 'not_recommended', 'needs_verification'],
+    ['needs_verification', 'not_recommended', 'needs_verification'],
   );
   assert.equal(report.budget.elapsed_ms, 895_000);
   assert.ok(deadlines.every((ms) => ms <= 60_000));
   assert.ok(
     report.trace.some(
-      (entry) => entry.phase === 'tool' && entry.status === 'error',
+      (entry) =>
+        entry.phase === 'finish' && entry.reason === 'total_runtime_exhausted',
     ),
   );
   assert.ok(

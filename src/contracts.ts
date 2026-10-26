@@ -136,6 +136,7 @@ export interface OperationsData {
   scheduled_maintenance?: ScheduledMaintenance[];
 }
 export interface DependenciesData {
+  continuous_operation_reason?: { dependency_id: string; requirement: string };
   scheduling_clearance?: SchedulingClearance;
   requires_continuous_operation: boolean;
   load_balancer_targets?: LoadBalancerTarget[];
@@ -323,6 +324,7 @@ export interface HistoricalComparison {
 export interface InvestigationReport {
   investigation_id: string;
   goal: 'evaluate_ec2_off_hours_scheduling';
+  decision_policy?: 'reject_or_defer';
   request: InvestigationRequest;
   started_at: string;
   finished_at: string;
@@ -684,11 +686,26 @@ export function validateObservation(
       case 'get_ec2_dependencies':
         exact(d, [
           'requires_continuous_operation',
+          'continuous_operation_reason',
           'scheduling_clearance',
           'load_balancer_targets',
         ]);
         data = {
           requires_continuous_operation: bool(d.requires_continuous_operation),
+          ...(d.continuous_operation_reason === undefined
+            ? {}
+            : {
+                continuous_operation_reason: (() => {
+                  const reason = exact(d.continuous_operation_reason, [
+                    'dependency_id',
+                    'requirement',
+                  ]);
+                  return {
+                    dependency_id: identifier(reason.dependency_id),
+                    requirement: textValue(reason.requirement, 400),
+                  };
+                })(),
+              }),
           ...(d.load_balancer_targets === undefined
             ? {}
             : {

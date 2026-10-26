@@ -176,6 +176,8 @@ export async function exportScenarios(
       .join('\n')}\n`;
     validateScenarioJsonl(jsonl);
     await writeFile(destination, jsonl, 'utf8');
+    if (destination === 'docs/ec2-scenarios.jsonl')
+      await writeFile('ec2-scenarios.jsonl', jsonl, 'utf8');
     return { path: resolve(destination), scenarios: 6, variants: 7 };
   } finally {
     await rm(directory, { recursive: true, force: true });

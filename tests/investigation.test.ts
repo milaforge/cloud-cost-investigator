@@ -151,11 +151,11 @@ test('unavailable operational data is distinct from no_match and never becomes s
   );
   assert.match(
     r.candidates[0].next_human_actions.join(' '),
-    /get_ec2_operations \(unavailable\): Ask the workload owner.*timezones and exceptions/,
+    /Ask the workload owner.*timezones and exceptions/,
   );
   assert.match(
     r.candidates[0].next_human_actions.join(' '),
-    /get_ec2_dependencies: Obtain owner, calendar and recovery clearance/,
+    /Obtain owner, calendar and recovery clearance/,
   );
 });
 
@@ -276,7 +276,7 @@ for (const tool of ['list_ec2_instances', 'get_ec2_billing'] as const) {
     'malformed',
     'throw',
   ] as const) {
-    test(`${tool} ${failure} stops discovery after bounded retries without another planner or different tool`, async (t) => {
+    test(`${tool} ${failure} follows mandatory-inventory and optional-billing recovery policy`, async (t) => {
       const calls: string[] = [];
       const base = new MockProvider();
       const r = await run({
@@ -305,6 +305,20 @@ for (const tool of ['list_ec2_instances', 'get_ec2_billing'] as const) {
               'list_ec2_instances',
               ...Array(failure === 'malformed' ? 1 : 4).fill(tool),
             ];
+      if (tool === 'get_ec2_billing' && failure !== 'malformed') {
+        assert.deepEqual(calls, [
+          ...expected,
+          'get_ec2_metrics',
+          'get_ec2_operations',
+          'get_ec2_dependencies',
+        ]);
+        assert.equal(r.budget.planner_calls, 5);
+        assert.equal(r.completion_status, 'partial');
+        assert.equal(r.candidates[0].verdict, 'not_recommended');
+        assert.ok(r.discovery.gaps.some((gap) => gap.includes(tool)));
+        assert.ok(!JSON.stringify(r).includes('private-detail'));
+        return;
+      }
       assert.deepEqual(calls, expected);
       assert.equal(
         r.budget.planner_calls,
@@ -453,6 +467,7 @@ test('usable partial inventory continues and retains long missing-fields lists w
 test('EC2 4: an unexplained high CPU peak defers without inventing a conflict', async (t) => {
   const r = await run({
     provider: modify((o) => {
+      if (o.data && 'jobs' in o.data) o.data.jobs = [];
       if (
         o.tool === 'get_ec2_metrics' &&
         o.data &&
@@ -462,7 +477,7 @@ test('EC2 4: an unexplained high CPU peak defers without inventing a conflict', 
     }),
   });
   assert.equal(r.candidates[0].verdict, 'needs_verification');
-  assert.equal(r.candidates[0].proposed_window, null);
+  assert.ok(r.candidates[0].proposed_window);
   assert.ok(r.evidence.some((e) => e.tool === 'get_ec2_operations'));
   assert.ok(r.evidence.some((e) => e.tool === 'get_ec2_dependencies'));
   const metrics = r.evidence.find((e) => e.tool === 'get_ec2_metrics');
@@ -475,8 +490,8 @@ test('EC2 4: an unexplained high CPU peak defers without inventing a conflict', 
   ]);
   assert.equal(r.candidates[0].estimated_monthly_savings, null);
   assert.ok(
-    r.candidates[0].missing_checks.includes(
-      'get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history.',
+    r.candidates[0].missing_checks.some((check) =>
+      check.includes('window-specific activity'),
     ),
   );
   assert.ok(r.evidence.some((e) => e.tool === 'get_ec2_operations'));
@@ -497,7 +512,13 @@ test('a confirmed dependency can independently refute the window after no matchi
     async call(a, s) {
       const o = (await base.call(a, s)) as Observation;
       if (o.tool === 'get_ec2_dependencies')
-        o.data = { requires_continuous_operation: true };
+        o.data = {
+          requires_continuous_operation: true,
+          continuous_operation_reason: {
+            dependency_id: 'test-consumer',
+            requirement: 'Requires continuous operation',
+          },
+        };
       return o;
     },
   };

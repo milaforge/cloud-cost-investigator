@@ -1,5 +1,9 @@
 # H-MEM reasoning memory
 
+## Current decision contract — 2026-10-26
+
+New runs only reject a named, cited conflict or defer with explicit missing evidence/authority. A complete technical check with no conflict still defers the external human decision; new savings are null. Billing is ranking context and cannot block operational investigation of validated running inventory. Historical conditional-recommendation reports and dated receipts retain their original semantics. Zetaris accepts review requests for new rejected/deferred results; acceptance/outcomes are legacy-only. See [the product contract](PROJECT_CONTEXT.md#6-decision-policy).
+
 [What](../README.md) · [How](HOW.md)
 
 > Current collection policy (2026-10-26): all remaining candidate checks run within budgets, even after a contradiction. H-MEM may prioritize a learned check but does not skip other checks. Earlier saved-call receipts below remain historical measurements under the old early-stop policy. Current `demo:warm` verifies ordering, fresh evidence and correction; it reports call deltas without requiring a speedup.
@@ -12,7 +16,7 @@ H-MEM uses the checked-in reference with deterministic local embeddings and JSON
 
 ## Store and recall
 
-The investigation recalls memory after fresh inventory/billing selects a candidate, then stores a validated summary after evaluation. Summaries retain scope, timestamps, hypothesis, decision reason, unresolved risks and provenance. Storage is isolated per account/region and validated on read and write; a failed local persistence operation prevents adoption.
+The investigation recalls memory after fresh inventory and available billing select a candidate, then stores a validated summary after evaluation. Summaries retain scope, timestamps, hypothesis, decision reason, unresolved risks and provenance. Storage is isolated per account/region and validated on read and write; a failed local persistence operation prevents adoption.
 
 Only authoritative, cited contradictions teach typed `dependency_continuous_operation` or `critical_job_overlap` lessons. Recall is scoped to account, region, instance, evidence mode and matching UTC window, excluding future records. The newest eligible summary is active; older records remain auditable and legacy summaries without lessons remain readable.
 
@@ -28,4 +32,4 @@ npm run probe:hmem
 
 This executes a mock B investigation, stores a compact summary through the real local H-MEM reference, reopens the engine and retrieves it. It owns and removes its temporary directory. This isolates store/reload/query behavior; it does not establish hosted memory or warm planning.
 
-[Warm-run methodology and recorded evidence](evaluation/README.md#learn-a-check-finish-earlier-then-change-the-conclusion) cover query-order behavior and changed evidence.
+[Warm-run methodology and recorded evidence](evaluation/README.md#learn-a-check-prioritize-it-then-change-the-conclusion) cover query-order behavior and changed evidence.

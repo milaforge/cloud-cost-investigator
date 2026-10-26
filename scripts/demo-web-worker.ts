@@ -59,7 +59,7 @@ process.once('message', async (value) => {
       if (process.env.ZETARIS_HISTORY_ALLOW_APPEND !== 'true')
         throw new Error();
       progress(
-        'Real Zetaris append/readback · seven retained synthetic records · scripted planner · no AWS changes',
+        'Real Zetaris append/readback · six retained synthetic review records · scripted planner · no AWS changes',
       );
       result = await demonstrateFollowUps(progress);
     } else {

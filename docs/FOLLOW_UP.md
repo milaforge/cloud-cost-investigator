@@ -12,80 +12,46 @@ Use the existing [Zetaris setup](ZETARIS_HISTORY.md). No table provisioning or
 infrastructure write is performed by these commands. Do not put secrets in decision
 reasons, actor IDs, outcome notes or evidence references.
 
-## Record a decision in the web UI
+## Schedule a review in the web UI
 
-Run `npm start`. After an investigation completes, select a conditional
-recommendation and choose **Record your decision in Zetaris**. In **Follow through**,
-choose **Accept** for a separate change process or **Defer** with a future UTC review
-date. Enter your engineer ID and reason, acknowledge real storage, then choose
-**Save decision to Zetaris**. No decision is preselected. Rejected windows and
-incomplete investigations cannot receive a decision.
+Run `npm start`, choose Live, then run an investigation or load a valid live report. Select a rejected or deferred result and choose **Schedule a review in Zetaris**. Select **Schedule a review**, enter the engineer ID, reason and future UTC review time, acknowledge real storage, and save. Partial investigations can be reviewed; failed investigations cannot receive decisions. A review request is not shutdown approval.
 
-The server validates the report and decision, then uses the existing append-only
-writer to persist the linked recommendation and decision. **Saved to Zetaris**
-appears only after exact readback verification. The receipt includes both record
-IDs and a JSON download. Evidence mode and resource scope remain visible; a
-synthetic recommendation stays labeled synthetic even when its history is stored
-in real Zetaris. Changing the selected recommendation clears the form and receipt.
-Engineer IDs are recorded attribution, not authenticated approval identities.
+The server validates the report, scope and event, appends the investigation and review request, and verifies exact readback before reporting success. Identifiers remain historically named `recommendation_record_id` for storage compatibility; they now link the investigated result, not a new recommendation. One immutable request is retained per investigation/candidate. An ambiguous write is never automatically retried. Engineer IDs are attribution, not authenticated authority.
 
-Server append configuration is required. An uncertain save may have retained rows;
-inspect history before retrying. There is no automatic write retry or infrastructure
-execution. Later reviews and outcomes use the CLI below. The **Demo** checkbox switches between the selected investigation
-and the separate fictional follow-through illustration. It starts unchecked;
-only one mode is visible. Switching modes performs no service call and clears
-write acknowledgment. Running the demo still requires explicit acknowledgment
-of its seven retained records. It does not record the engineer's form selection.
+The global Demo/Live selector applies across tabs. Demo only illustrates review and historical outcome flows; it performs no service calls or retained writes. Live Learn displays the selected report's memory status. Actual sponsor round-trips use separate authorized CLI demonstrations.
 
-## 1. Produce a recommendation
+## 1. Produce an investigation result
 
 ```bash
-npm run --silent investigate -- --evidence mock --account demo --region us-east-1 --scenario A --json > /tmp/recommendation.json
+ZETARIS_HISTORY_TABLE= HMEM_PERSIST_DIR= ZETARIS_HISTORY_ALLOW_APPEND=false npm run --silent investigate -- --evidence mock --account demo --region us-east-1 --scenario B --json > /tmp/investigation.json
 ```
 
-This uses **mock** evidence. A decision requires a validated, complete investigation
-with a `conditional_recommendation` for the selected instance. The first decision
-command persists that recommendation and the decision, verifying exact readback.
-The `decide` command takes an existing report, so it does not rerun inference.
+B rejects the named job conflict. A finds no technical conflict and defers the external human decision (exit 2). Both can receive a review request. The `decide` command uses the saved report without rerunning inference.
 
-## 2a. Defer, then review with new evidence
+## 2a. Schedule a review, then retrieve fresh evidence
 
-Create `/tmp/defer.json`, replacing `review_at` with the desired future UTC time:
+Create `/tmp/defer.json` with your attributed reason and a future UTC review time:
 
 ```json
 {
   "kind": "deferred",
   "actor": "engineer-id",
-  "reason": "Review after the migration window",
+  "reason": "Verify the named job schedule after the owner resolves the conflict",
   "review_at": "2026-11-01T09:00:00Z"
 }
 ```
 
 ```bash
-npm run --silent followup -- decide --report /tmp/recommendation.json --instance i-mock-primary --input /tmp/defer.json
+npm run --silent followup -- decide --report /tmp/investigation.json --instance i-mock-primary --input /tmp/defer.json
 npm run --silent followup -- list --account demo --region us-east-1 --instance i-mock-primary
+npm run --silent followup -- review --account demo --region us-east-1 --decision DECISION_ID --scenario C
 ```
 
-The first response contains `decision.record.record_id`. After the review date,
-use it as `DECISION_ID` below. Before that date the command fails with
-`follow_up_not_due` and does not investigate.
+Use the returned `decision.record.record_id` as `DECISION_ID`. Review before its due time fails without investigation. The current CLI review harness requires explicit synthetic `--scenario`; it does not pretend to run live AWS. It retrieves new scoped evidence IDs, validates the new report, and appends the linked review. Partial reviews remain due. New results still only reject or defer; acceptance never follows from a missing blocker.
 
-```bash
-npm run --silent followup -- review --account demo --region us-east-1 --decision DECISION_ID --scenario C > /tmp/review.json
-```
+## 2b. Historical compatibility: accept and record an outcome
 
-`--scenario` is required because current evidence is still synthetic. Scenario C
-introduces a fresh dependency conflict. The review runs the existing bounded
-investigator with a new observation window and fresh evidence IDs, then appends
-the new investigation and linked review outcome. The old recommendation never
-becomes current evidence. The target must actually be investigated among the
-bounded candidates, or persistence fails explicitly. Partial reviews are retained
-and remain due; no automatic retry occurs. `--planner model` optionally uses the
-configured live model, without fallback, while evidence remains mock.
-
-## 2b. Accept, then record an outcome
-
-Use a **different recommendation report** to demonstrate a second decision. One
+This path is supported only for a **historical complete conditional-recommendation report**. New runs cannot produce one. One
 recommendation has one immutable decision in this MVP; changing the existing
 choice is an explicit conflict, not a silent overwrite.
 
@@ -136,12 +102,11 @@ npm run --silent demo:followup > /tmp/follow-up.json
 ```
 
 The follow-up demo uses the **real configured Zetaris service**, a unique synthetic
-account and fictional operator decisions. It retains **seven** labeled records:
-two recommendations, two decisions, a fresh review investigation, its linked
-outcome, and an operator-reported rollback. H-MEM and live model calls are disabled
-for this proof, isolating the value of structured history. All eight checks must
-pass; the complete JSON is emitted at the end, progress on stderr. The retained
-[executed result](follow-up-zetaris.json) is actual remote persistence, not proof
+account and fictional operator decisions. It retains **six** labeled records:
+two investigation records, two review requests, a fresh review investigation and its linked review result. H-MEM and live model calls are disabled
+for this proof, isolating the value of structured history. All reported checks must
+pass; the complete JSON is emitted at the end, progress on stderr. The retained historical
+[executed result](follow-up-zetaris.json) demonstrates the earlier acceptance/outcome policy and actual remote persistence, not proof
 of a production human decision, live AWS integration or external change execution.
 
 For memory comparisons and warm demonstrations, use the [evaluation guide](evaluation/README.md).
@@ -171,7 +136,7 @@ For memory comparisons and warm demonstrations, use the [evaluation guide](evalu
 
 ## Automatic learning from outcomes
 
-Suppose a team accepts a shutdown recommendation, then rolls it back because another service needs the server running. The engineer records that rollback with the dependency check selected. On the next matching investigation, the feedback teaches H-MEM to check dependencies first. Fresh evidence decides whether the conflict still exists; cleared findings replace the old lesson.
+For an eligible historical recommendation, suppose a team accepted a shutdown recommendation, then rolls it back because another service needs the server running. The engineer records that rollback with the dependency check selected. On the next matching investigation, the feedback teaches H-MEM to check dependencies first. Fresh evidence decides whether the conflict still exists; cleared findings replace the old lesson.
 
 Enable both `ZETARIS_HISTORY_TABLE` and `HMEM_PERSIST_DIR` in the investigation
 CLI. Outcome recording still requires explicit append authorization. No additional

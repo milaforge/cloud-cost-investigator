@@ -148,7 +148,11 @@ const verdicts = {
     'Evaluated window rejected · see cited conflict',
     '×',
   ],
-  needs_verification: ['Recommendation withheld', 'More evidence needed', '?'],
+  needs_verification: [
+    'Decision deferred',
+    'Evidence or authorized decision still required',
+    '?',
+  ],
 };
 const toolTitles = {
   list_ec2_instances: 'Discover instances',
@@ -366,7 +370,7 @@ function render(focusCandidate = false) {
         live
           ? 'Run an investigation to load evidence for your AWS scope.'
           : selected
-            ? 'Waiting for this scenario preview. Restart the local server if it does not appear.'
+            ? 'Select another scenario or select this preview again to retry.'
             : 'No scenario is selected. Choose one above or open an A/B preview.',
         'muted',
       ),
@@ -378,7 +382,7 @@ function render(focusCandidate = false) {
   const meta = node('div', undefined, 'report-meta');
   const mode = node(
     'span',
-    `${modes[r.integration_mode]} · ${r.planner.mode === 'scripted' ? 'Scripted planner' : 'Model planner'}`,
+    `${modes[r.integration_mode]} · ${r.planner.mode === 'scripted' ? 'Scripted planner' : 'Model planner'}${isDemo() && active === 'missing' ? ' · Recorded preview' : ''}`,
     'mode',
   );
   mode.append(
@@ -487,20 +491,18 @@ function render(focusCandidate = false) {
           : `${c.estimated_monthly_savings.toFixed(2)} ${c.savings_calculation.currency}`,
       ),
     );
-    metrics.append(window, savings);
+    metrics.append(window);
+    if (!r.decision_policy) metrics.append(savings);
     card.append(metrics);
     const next = node('div', undefined, 'next-action');
     next.append(node('h3', 'Next action'), list(c.next_human_actions));
     card.append(next);
-    if (
-      r.completion_status === 'complete' &&
-      c.verdict === 'conditional_recommendation'
-    ) {
+    if (r.completion_status !== 'failed') {
       const decide = node(
         'button',
         isDemo()
           ? 'Explore follow-through demo'
-          : 'Record your decision in Zetaris',
+          : 'Schedule a review in Zetaris',
       );
       decide.type = 'button';
       decide.addEventListener('click', () => {
@@ -512,8 +514,8 @@ function render(focusCandidate = false) {
     if (c.missing_checks.length) {
       const pending = node('div', undefined, 'pending-checks');
       pending.append(
-        node('span', `${c.missing_checks.length} checks remain unverified`),
-        info('Unverified checks', c.missing_checks.join(' ')),
+        node('span', `${c.missing_checks.length} open checks`),
+        list(c.missing_checks),
       );
       card.append(pending);
     }
@@ -556,7 +558,7 @@ function render(focusCandidate = false) {
   title.append(
     info(
       'About timeline timestamps',
-      'Times show when cited evidence was collected, not when reasoning occurred. Individual reasoning steps have no recorded timestamps. The full trace below preserves every step.',
+      'Times show when cited evidence was collected, not when reasoning occurred. Current trace steps separately record their emission timestamps; older reports may not have them. The full trace below preserves every step.',
     ),
   );
   heading.append(node('p', 'THE INVESTIGATION', 'eyebrow'), title);
@@ -909,7 +911,12 @@ async function selectScenario(scenario) {
   if (!scenario || active) return;
   previewButtonsBusy(scenario);
   $('report').setAttribute('aria-busy', 'true');
-  updateText('message', 'Preparing synthetic preview…');
+  const indicator = node('div', undefined, 'empty-report preview-loading');
+  const spinner = node('span', undefined, 'preview-spinner');
+  spinner.setAttribute('aria-hidden', 'true');
+  indicator.append(spinner, node('h2', 'Loading preview…'));
+  $('report').replaceChildren(indicator);
+  updateText('message', 'Loading synthetic preview…');
   try {
     const response = await fetch(
       `/api/demos?scenario=${encodeURIComponent(scenario)}`,
@@ -925,7 +932,7 @@ async function selectScenario(scenario) {
     render();
   } catch {
     if (!isDemo() || $('scenario').value !== scenario) return;
-    $('report').setAttribute('aria-busy', 'false');
+    render();
     updateText(
       'message',
       'Could not load preview. Select the scenario again to retry.',
@@ -1012,8 +1019,7 @@ function decisionTarget() {
   const report = reports[active];
   if (isDemo() || report?.integration_mode !== 'live') return null;
   const candidate = report?.candidates[candidateIndex];
-  return report?.completion_status === 'complete' &&
-    candidate?.verdict === 'conditional_recommendation'
+  return report && report.completion_status !== 'failed' && candidate
     ? { report, candidate }
     : null;
 }
@@ -1025,6 +1031,14 @@ function syncDecisionForm() {
   if (key === decisionKey) return;
   decisionKey = key;
   $('decision-form').reset();
+  const acceptOption = $('decision-accept-option');
+  if (acceptOption) {
+    acceptOption.hidden =
+      !target ||
+      !!target.report.decision_policy ||
+      target.candidate.verdict !== 'conditional_recommendation';
+    acceptOption.disabled = acceptOption.hidden;
+  }
   $('decision-review-field').hidden = true;
   $('decision-review').required = false;
   $('decision-fields').disabled =
@@ -1035,7 +1049,7 @@ function syncDecisionForm() {
     'decision-context',
     target
       ? `${modes[target.report.integration_mode]} · Account ${target.report.request.account_id} · ${target.report.request.region} · ${target.candidate.instance_id} · Daily ${schedule(target.candidate.proposed_window)} UTC. Investigation ${target.report.investigation_id}.`
-      : 'Run an investigation or load a report, then select a completed conditional recommendation in Investigate.',
+      : 'Run an investigation or load a report, then select a result to schedule a review in Investigate.',
   );
 }
 function renderDecisionReceipt(receipt) {

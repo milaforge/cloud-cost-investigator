@@ -292,7 +292,7 @@ for (const [prior, current, previousVerdict, currentVerdict, name] of [
   [
     'A',
     'B',
-    'conditional_recommendation',
+    'needs_verification',
     'not_recommended',
     'Zetaris A -> B: fresh batch overrides prior approval',
   ],
@@ -300,13 +300,13 @@ for (const [prior, current, previousVerdict, currentVerdict, name] of [
     'B',
     'A',
     'not_recommended',
-    'conditional_recommendation',
+    'needs_verification',
     'EC2 6: resolved batch and fresh clearances overturn a Zetaris rejection',
   ],
   [
     'A',
     'C',
-    'conditional_recommendation',
+    'needs_verification',
     'not_recommended',
     'EC2 5: fresh continuous-operation dependency overturns a Zetaris recommendation',
   ],
@@ -314,7 +314,7 @@ for (const [prior, current, previousVerdict, currentVerdict, name] of [
     'C',
     'A',
     'not_recommended',
-    'conditional_recommendation',
+    'needs_verification',
     'Zetaris C -> A: resolved dependency and fresh clearances overturn rejection',
   ],
 ] as const) {
@@ -397,11 +397,14 @@ for (const [prior, current, previousVerdict, currentVerdict, name] of [
         operations.data.scheduling_clearance,
         dependency.data.scheduling_clearance,
       );
-      assert.deepEqual(candidate.missing_checks, []);
+      assert.match(
+        candidate.missing_checks.join(' '),
+        /Authorized human shutdown decision/,
+      );
       assert.deepEqual(candidate.contradicting_evidence_ids, []);
       assert.deepEqual(
         candidate.hypotheses.map((h) => h.state),
-        ['proposed', 'supported'],
+        ['proposed', 'unresolved'],
       );
       assert.ok(
         candidate.supporting_evidence_ids.includes(operations.evidence_id),

@@ -7,9 +7,10 @@ import { validateReport } from '../src/investigation/report.ts';
 import { citationCounts } from './evaluate.ts';
 
 const EXPECTED = {
-  A: 'conditional_recommendation',
+  A: 'needs_verification',
   B: 'not_recommended',
   C: 'not_recommended',
+  missing: 'needs_verification',
 } as const;
 type Scenario = keyof typeof EXPECTED;
 
@@ -25,7 +26,10 @@ export function reliabilityChecks(
   const contradictionTool =
     scenario === 'B' ? 'get_ec2_operations' : 'get_ec2_dependencies';
   return {
-    cli_completed: exitCode === 0 && report.completion_status === 'complete',
+    cli_completed:
+      scenario === 'missing' || scenario === 'A'
+        ? exitCode === 2 && report.completion_status === 'partial'
+        : exitCode === 0 && report.completion_status === 'complete',
     real_model: report.planner.mode === 'live' && !!report.planner.model,
     mock_evidence: report.integration_mode === 'mock',
     expected_verdict:
@@ -39,19 +43,31 @@ export function reliabilityChecks(
       report.historical_context.hmem === 'not_configured' &&
       report.historical_context.context_ids.length === 0,
     evidence_driven_revision:
-      scenario === 'A' ||
-      (candidate?.hypotheses[0]?.state === 'proposed' &&
-        candidate.hypotheses.some(
-          (hypothesis) =>
-            hypothesis.state === 'contradicted' &&
-            hypothesis.evidence_ids.some((id) =>
-              report.evidence.some(
-                (evidence) =>
-                  evidence.evidence_id === id &&
-                  evidence.tool === contradictionTool,
-              ),
+      scenario === 'missing'
+        ? report.evidence.some(
+            (e) =>
+              e.tool === 'get_ec2_operations' && e.status === 'unavailable',
+          ) &&
+          candidate?.missing_checks.some((check) =>
+            check.includes('get_ec2_operations'),
+          ) &&
+          candidate.hypotheses.some((h) => h.state === 'unresolved')
+        : scenario === 'A'
+          ? candidate?.missing_checks.some((check) =>
+              check.includes('Authorized human shutdown decision'),
+            ) && candidate.hypotheses.some((h) => h.state === 'unresolved')
+          : candidate?.hypotheses[0]?.state === 'proposed' &&
+            candidate.hypotheses.some(
+              (hypothesis) =>
+                hypothesis.state === 'contradicted' &&
+                hypothesis.evidence_ids.some((id) =>
+                  report.evidence.some(
+                    (evidence) =>
+                      evidence.evidence_id === id &&
+                      evidence.tool === contradictionTool,
+                  ),
+                ),
             ),
-        )),
   };
 }
 
@@ -63,7 +79,7 @@ async function probe(directory: string) {
   const rows = [];
   const seen = new Set<string>();
   for (let round = 1; round <= 3; round++) {
-    for (const scenario of ['A', 'B', 'C'] as const) {
+    for (const scenario of ['B', 'missing', 'C', 'A'] as const) {
       const name = `round-${round}-${scenario}`;
       console.error(`${name}: real model; mock evidence; history disabled`);
       const result = await new Promise<{
@@ -175,8 +191,8 @@ async function probe(directory: string) {
       'enable_thinking' in template &&
       template.enable_thinking === false,
     methodology:
-      'Three serial A/B/C rounds through the actual CLI, fresh processes and evidence, no history, retries or fallback. CLI pacing is unchanged. All nine attempts remain in the denominator. This is a designed-fixture release gate, not a production reliability estimate. Earlier diagnostics are recorded separately.',
-    passed: rows.length === 9 && rows.every((row) => row.passed),
+      'Three serial B/missing/C/A rounds through the actual CLI, fresh processes and evidence, no history, whole-run retries or fallback. Bounded in-run recovery and CLI pacing are unchanged. All twelve attempts remain in the denominator. This is a designed-fixture release gate, not a production reliability estimate. Earlier diagnostics are recorded separately.',
+    passed: rows.length === 12 && rows.every((row) => row.passed),
     passed_runs: rows.filter((row) => row.passed).length,
     total_runs: rows.length,
     rows,

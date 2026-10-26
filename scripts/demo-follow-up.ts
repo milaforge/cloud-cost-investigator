@@ -5,7 +5,6 @@ import { loadProjectEnv } from '../src/config.ts';
 import {
   listFollowUps,
   recordDecision,
-  recordOutcome,
   recordReview,
   reviewRequest,
 } from '../src/investigation/follow-up.ts';
@@ -37,10 +36,13 @@ export async function demonstrateFollowUps(
     planner: new ScriptedPlanner(),
   });
   log(
-    '[followup-demo] two identical current-evidence scenarios, different historical decisions',
+    '[followup-demo] evidence deferral and rejected window, separately attributed reviews',
   );
   const deferredReport = await runInvestigation(request, options());
-  const acceptedReport = await runInvestigation(request, options());
+  const rejectedReport = await runInvestigation(request, {
+    provider: new MockProvider('B'),
+    planner: new ScriptedPlanner(),
+  });
   // Leave time for the bounded ledger read before append, without waiting minutes in the demo.
   const reviewAt = new Date(Date.now() + 1000).toISOString();
   const deferred = await recordDecision(deferredReport, 'i-mock-primary', {
@@ -49,16 +51,17 @@ export async function demonstrateFollowUps(
     reason: 'Synthetic example: revisit after migration window.',
     review_at: reviewAt,
   });
-  const accepted = await recordDecision(acceptedReport, 'i-mock-primary', {
-    kind: 'accepted',
+  const pending = await recordDecision(rejectedReport, 'i-mock-primary', {
+    kind: 'deferred',
     actor: 'synthetic-demo-engineer',
     reason:
-      'Synthetic acceptance for a separate human-controlled change process.',
+      'Review the named job conflict after the owner updates the schedule.',
+    review_at: new Date(Date.now() + 86400000).toISOString(),
   });
   while (Date.now() < Date.parse(reviewAt))
     await setTimeout(Math.max(1, Date.parse(reviewAt) - Date.now()));
   log(
-    '[followup-demo] retrieve persisted decisions; deferred is due, accepted awaits outcome',
+    '[followup-demo] retrieve persisted decisions; one review is due, the other remains scheduled',
   );
   const before = await listFollowUps(scope, 'i-mock-primary');
   const { request: freshRequest } = await reviewRequest(
@@ -66,7 +69,7 @@ export async function demonstrateFollowUps(
     deferred.decision.record.record_id,
   );
   log(
-    '[followup-demo] deferred review: fresh dependency conflict overturns original recommendation',
+    '[followup-demo] deferred review: fresh dependency conflict resolves the original evidence deferral',
   );
   const fresh = await runInvestigation(
     { ...freshRequest, max_candidates: 1 },
@@ -77,35 +80,20 @@ export async function demonstrateFollowUps(
     deferred.decision.record.record_id,
     fresh,
   );
-  log(
-    '[followup-demo] accepted path: append synthetic operator-reported rollback receipt',
-  );
-  const outcome = await recordOutcome(
-    scope,
-    accepted.decision.record.record_id,
-    {
-      actor: 'synthetic-demo-engineer',
-      reason:
-        'Synthetic example: external change was rolled back after recovery problems.',
-      observed_at: new Date().toISOString(),
-      result: 'rolled_back',
-      evidence_reference: 'synthetic-change-ticket-42',
-    },
-  );
   const after = await listFollowUps(scope, 'i-mock-primary');
   const checks = {
-    same_initial_recommendations:
-      deferredReport.candidates[0].verdict === 'conditional_recommendation' &&
-      acceptedReport.candidates[0].verdict === 'conditional_recommendation',
+    rejection_and_deferral:
+      deferredReport.candidates[0].verdict === 'needs_verification' &&
+      rejectedReport.candidates[0].verdict === 'not_recommended',
     due_decision_retrieved: before.items.some(
       (i) =>
         i.decision_id === deferred.decision.record.record_id &&
         i.status === 'due',
     ),
-    acceptance_retrieved: before.items.some(
+    rejection_review_pending: before.items.some(
       (i) =>
-        i.decision_id === accepted.decision.record.record_id &&
-        i.status === 'awaiting_outcome',
+        i.decision_id === pending.decision.record.record_id &&
+        i.status === 'deferred',
     ),
     changed_evidence_controls_review:
       fresh.completion_status === 'complete' &&
@@ -121,17 +109,6 @@ export async function demonstrateFollowUps(
         i.decision_id === deferred.decision.record.record_id &&
         i.status === 'reviewed',
     ),
-    outcome_recorded: after.items.some(
-      (i) =>
-        i.decision_id === accepted.decision.record.record_id &&
-        i.status === 'outcome_reported' &&
-        i.outcomes.some(
-          (o) =>
-            o.event.kind === 'outcome' &&
-            o.event.result === 'rolled_back' &&
-            o.event.verification === 'operator_reported',
-        ),
-    ),
     no_history_as_current_facts:
       fresh.historical_context.context_ids.length === 0,
   };
@@ -144,15 +121,14 @@ export async function demonstrateFollowUps(
     decisions: 'synthetic explicit operator inputs',
     outcome_verification: 'operator_reported',
     methodology:
-      'Real Zetaris append/readback when invoked manually. Same fixture telemetry produces different follow-up obligations from recorded intent. Deferred recommendation is reinvestigated using new mock evidence. Accepted recommendation receives a synthetic external rollback receipt, not measured savings. No H-MEM needed, no model call, no AWS mutation. Seven labeled history records retained under an isolated synthetic account.',
+      'Real Zetaris append/readback when invoked manually. An evidence deferral and a rejected window receive explicit review requests. A due review retrieves fresh mock evidence and records its new conflict. The other review remains scheduled. No H-MEM needed, no model call, no AWS mutation. Six labeled history records retained under an isolated synthetic account.',
     scope,
     before,
     after,
     deferred,
-    accepted,
+    pending,
     reviewed,
-    outcome,
-    reports: [deferredReport, acceptedReport, fresh],
+    reports: [deferredReport, rejectedReport, fresh],
   };
 }
 if (

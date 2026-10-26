@@ -13,11 +13,22 @@ import { MockProvider } from '../src/investigation/mock.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
+import { validateScenarioJsonl } from './export-scenarios.ts';
 
 export const MAX_REPORT_BYTES = 2 * 1024 * 1024;
 const DEMO_SCENARIOS = ['A', 'B', 'C', 'missing', 'mixed'] as const;
 type DemoScenario = (typeof DEMO_SCENARIOS)[number];
 async function generateDemoReport(scenario: DemoScenario) {
+  if (scenario === 'missing') {
+    const recorded = validateScenarioJsonl(
+      await readFile(
+        new URL('../docs/ec2-scenarios.jsonl', import.meta.url),
+        'utf8',
+      ),
+    );
+    const missing = recorded.find((row) => row.scenario_id === 'ec2-3');
+    return validateReport(missing?.variants[0].current_investigation);
+  }
   const to = new Date();
   const request = {
     account_id: 'demo',

@@ -278,7 +278,10 @@ test('a dated SSM conflict rejects only the proposed window, with validated cita
   const candidate = report.candidates[0];
   assert.equal(report.completion_status, 'partial');
   assert.equal(candidate.verdict, 'not_recommended');
-  assert.match(candidate.explanation, /dated SSM maintenance execution/);
+  assert.match(
+    candidate.explanation,
+    /SSM maintenance mw-0123456789abcdef0 executes 2026-11-02T02:00:00/,
+  );
   assert.equal(candidate.estimated_monthly_savings, null);
   assert.equal(candidate.hypotheses[0].state, 'proposed');
   assert.equal(candidate.hypotheses[1].state, 'contradicted');

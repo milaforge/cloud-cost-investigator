@@ -89,7 +89,7 @@ export async function demonstrateWarmLearning(
       );
       // A failed phase cannot teach a verified lesson. Keep its report and stop honestly.
       if (
-        report.completion_status !== 'complete' ||
+        report.completion_status === 'failed' ||
         !record ||
         report.trace.some((t) => t.failure_code)
       )
@@ -117,9 +117,9 @@ export async function demonstrateWarmLearning(
     const toolCount = (report: InvestigationReport) =>
       report.budget.discovery_attempts + report.budget.candidate_attempts;
     const checks = {
-      three_complete_runs:
+      three_valid_runs:
         runs.length === 3 &&
-        runs.every(({ report }) => report.completion_status === 'complete'),
+        runs.every(({ report }) => report.completion_status !== 'failed'),
       no_planner_failures: runs.every(
         ({ report }) => !report.trace.some((t) => t.failure_code),
       ),
@@ -170,7 +170,7 @@ export async function demonstrateWarmLearning(
         operationalChecks(changed).join(',') ===
           'get_ec2_dependencies,get_ec2_operations',
       changed_abandons_rejection:
-        verdict(changed) === 'conditional_recommendation' &&
+        verdict(changed) === 'needs_verification' &&
         changed?.candidates[0].contradicting_evidence_ids.length === 0 &&
         !!changed.trace.some((t) =>
           t.reason.includes(
@@ -179,7 +179,7 @@ export async function demonstrateWarmLearning(
         ),
       correction_persisted:
         !!stored[2] &&
-        stored[2].summary.verdict === 'conditional_recommendation' &&
+        stored[2].summary.verdict === 'needs_verification' &&
         !stored[2].summary.lesson &&
         recalledAfterChange.some(
           (hint) => hint.context_id === stored[2]?.context_id,

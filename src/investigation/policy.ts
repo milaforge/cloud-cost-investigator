@@ -34,9 +34,7 @@ export function supportsTentativeWindow(
     o.tool === 'get_ec2_metrics' &&
     ['ok', 'partial'].includes(o.status) &&
     !!o.data &&
-    'suggested_window' in o.data &&
-    o.data.average_cpu_percent <= 10 &&
-    o.data.peak_cpu_percent <= 20
+    'suggested_window' in o.data
   );
 }
 
@@ -45,6 +43,7 @@ export function schedulingConflict(
   request: InvestigationRequest,
   window: Schedule,
   observation: Observation,
+  requireNamedDependency = false,
 ): 'critical_job' | 'scheduled_maintenance' | 'continuous_operation' | null {
   if (
     !['ok', 'no_match', 'partial'].includes(observation.status) ||
@@ -84,26 +83,65 @@ export function schedulingConflict(
   if (
     observation.tool === 'get_ec2_dependencies' &&
     'requires_continuous_operation' in observation.data &&
-    observation.data.requires_continuous_operation
+    observation.data.requires_continuous_operation &&
+    (!requireNamedDependency || !!observation.data.continuous_operation_reason)
   )
     return 'continuous_operation';
   return null;
 }
+const windowText = (w: Schedule) =>
+  `${String(w.start_hour_utc).padStart(2, '0')}:00–${String(w.end_hour_utc).padStart(2, '0')}:00 UTC`;
+
+/** Explain only the conflict selected by the shared deterministic policy. */
+export function conflictExplanation(
+  request: InvestigationRequest,
+  window: Schedule,
+  observation: Observation,
+): string | null {
+  const conflict = schedulingConflict(request, window, observation, true);
+  const data = observation.data;
+  if (!conflict || !data) return null;
+  if (conflict === 'critical_job' && 'jobs' in data) {
+    const job = data.jobs.find((j) => j.critical && overlaps(j.window, window));
+    if (!job) return null;
+    return `Critical job ${job.job_id} runs ${windowText(job.window)}, overlapping proposed shutdown ${windowText(window)}; reject this window.`;
+  }
+  if (conflict === 'scheduled_maintenance' && 'jobs' in data) {
+    const maintenance = data.scheduled_maintenance?.find(
+      (m) =>
+        schedulingConflict(request, window, {
+          ...observation,
+          data: { jobs: [], scheduled_maintenance: [m] },
+        }) === 'scheduled_maintenance',
+    );
+    if (maintenance)
+      return `SSM maintenance ${maintenance.window_id} executes ${maintenance.execution_window.from} to ${maintenance.execution_window.to}, overlapping proposed shutdown ${windowText(window)} in the planning month; reject this window.`;
+  }
+  if (
+    'requires_continuous_operation' in data &&
+    data.continuous_operation_reason
+  ) {
+    return `Dependency ${data.continuous_operation_reason.dependency_id} requires continuous operation: ${data.continuous_operation_reason.requirement.slice(0, 150)}. This conflicts with shutdown ${windowText(window)}; reject this window.`;
+  }
+  return null;
+}
+
 /** Shared deterministic discovery order for execution and report validation. */
 export function rankCandidates(
   inventory: InventoryData,
-  billing: BillingData,
+  billing: BillingData | null,
   maximum: number,
+  includeUnbilled = false,
 ): string[] {
   return inventory.instances
     .filter((i) => i.state === 'running')
     .map((i) => ({
       instance_id: i.instance_id,
       cost:
-        billing.costs.find((c) => c.instance_id === i.instance_id)
+        billing?.costs.find((c) => c.instance_id === i.instance_id)
           ?.compute_cost ?? 0,
     }))
-    .filter((i) => i.cost > 0)
+    .filter((i) => includeUnbilled || i.cost > 0)
     .sort(
       (a, b) => b.cost - a.cost || a.instance_id.localeCompare(b.instance_id),
     )
@@ -163,6 +201,7 @@ export function assessScheduling(
   request: InvestigationRequest,
   candidate: CandidateReport,
   evidence: Observation[],
+  requireBilling = true,
 ): { proof: Observation[] | null; missing_checks: string[] } {
   const window = candidate.proposed_window;
   const missing_checks: string[] = [];
@@ -208,10 +247,23 @@ export function assessScheduling(
   ] as const;
   for (const [tool, observation, action] of sources) {
     const status = observation?.status ?? 'no validated observation';
+    const detail =
+      observation?.missing_fields.join(', ') ||
+      (observation ? 'coverage or authority incomplete' : 'not queried');
+    if (tool === 'get_ec2_billing' && !requireBilling) continue;
     if (!authoritative(observation))
-      missing_checks.push(`${tool} (${status}): ${action}`);
+      missing_checks.push(`${tool} (${status}; ${detail}): ${action}`);
   }
   const period = estimatePeriod(request);
+  if (
+    dependencies?.data &&
+    'requires_continuous_operation' in dependencies.data &&
+    dependencies.data.requires_continuous_operation &&
+    !dependencies.data.continuous_operation_reason
+  )
+    missing_checks.push(
+      'get_ec2_dependencies: Identify the dependency and its attributable continuous-operation obligation; a boolean alone does not explain the conflict.',
+    );
   if (
     dependencies?.data &&
     'load_balancer_targets' in dependencies.data &&
@@ -235,7 +287,7 @@ export function assessScheduling(
       );
     if (m.average_cpu_percent > 10 || m.peak_cpu_percent > 20)
       missing_checks.push(
-        'get_ec2_metrics: Review observed CPU activity with the workload owner; this window exceeds the low-utilization policy thresholds.',
+        'get_ec2_metrics: Determine whether observed whole-period CPU peaks occur inside this window; retrieve window-specific activity before interpreting the peaks as a shutdown conflict.',
       );
     if (window && !sameSchedule(m.suggested_window, window))
       missing_checks.push(

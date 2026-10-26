@@ -7,12 +7,12 @@ documents component authority, runtime boundaries and integration details.
 
 ## Responsibilities and shared state
 
-| Role | Responsibility and authority | Feedback visible to judges |
-| --- | --- | --- |
-| **Planner** | Chooses the next check or proposes a window. The optional real model cannot authorize a verdict or modify infrastructure; the default scripted planner exercises the same engine offline. | Receives candidate-scoped observations, current hypothesis, prior attempts and scoped lesson hints on each turn. |
-| **Executor** | Owns validated tool execution and current-evidence registration. Invalid scope, malformed observations and exhausted budgets cannot become usable facts. | Tool action, status and evidence IDs enter shared run state before the next decision. |
-| **Safety evaluator** | Trusted deterministic code can block a positive recommendation, reject a contradicted window, or defer unknown safety. It is not another model agent. | Requires targeted checks after a proposal; remaining gaps feed the next planner turn. B ends when fresh evidence disproves the proposal. |
-| **Report validator and renderer** | Revalidates citations, chronological hypotheses, positive safety proof and savings before emitting human-readable or JSON output. | Shows the proposed → supported/contradicted/unresolved transition, limitations and next human actions. |
+| Role                              | Responsibility and authority                                                                                                                                                              | Feedback visible to judges                                                                                                                                                  |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Planner**                       | Chooses the next check or proposes a window. The optional real model cannot authorize a verdict or modify infrastructure; the default scripted planner exercises the same engine offline. | Receives candidate-scoped observations, current hypothesis, prior attempts and scoped lesson hints on each turn.                                                            |
+| **Executor**                      | Owns validated tool execution and current-evidence registration. Invalid scope, malformed observations and exhausted budgets cannot become usable facts.                                  | Tool action, status and evidence IDs enter shared run state before the next decision.                                                                                       |
+| **Safety evaluator**              | Trusted deterministic code rejects a window with a named conflict or defers with explicit missing evidence/authority. It is not another model agent.                                      | Requires targeted checks after a proposal; remaining gaps feed the next planner turn. B records the rejection and still collects remaining checks within the shared budget. |
+| **Report validator and renderer** | Revalidates citations, chronological hypotheses, new reject-or-defer policy and historical positive-proof/savings compatibility before emitting human-readable or JSON output.            | Shows the proposed → contradicted/unresolved (supported only in historical reports) transition, limitations and next human actions.                                         |
 
 The runner owns shared state; roles do not exchange unrestricted messages. Before the first planner call it initiates required inventory discovery through the same executor, with the same validation, retry and deadline handling. The first turn receives that observation and attempt history; later turns receive the subsequent validated evidence. Empty inventory or failed discovery needs no model call. The automatic prerequisite is recorded as an evaluator action and executor attempts, rather than a model decision. This supports critique, shared state, branching and evaluator authority within one loop. It does not claim several autonomous model agents. Trace capture and a real scripted B excerpt are in the [CLI walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace); bounds and failure policy are below and in the [CLI failure reference](CLI_GUIDE.md#failure-behavior).
 
@@ -37,7 +37,10 @@ inventing an assistant response. Scripted previews do not fabricate model messag
 `scripts/demo-web.ts` owns the dependency-free local HTTP surface and cached, on-demand
 synthetic A/B/C/missing/mixed previews. Startup only serves the UI. Explicit
 selection generates a preview; concurrent requests share its pending result,
-and failed generation can be retried. `src/web/` separates preview-only Demo
+and failed generation can be retried. Missing evidence reuses the validated
+recorded operations-outage report in `docs/ec2-scenarios.jsonl`; it is labeled
+as a recorded preview and preserves capture times without rerunning retries.
+`src/web/` separates preview-only Demo
 content from Live investigation and decision recording across all
 three tabs. Demo handlers reject run, decision and upload submissions. Live Learn
 only displays the selected report's memory status; this web investigation path
@@ -62,7 +65,7 @@ progress callbacks feed
 bounded browser events. Offline investigations and learning never enable remote
 history or models. Follow-through requires both server append configuration and
 an explicit browser acknowledgment. The user-decision form reuses `recordDecision`
-to validate and append a linked recommendation and attributed Accept/Defer event,
+to validate and append a linked recommendation and attributed review request (legacy acceptance remains compatible),
 then verify exact readback. Its receipt exposes both record IDs. The separate
 scripted demonstration uses a unique synthetic account.
 
@@ -97,11 +100,11 @@ follow-through demonstration.
 
 ## Sponsor technology explanation
 
-| Technology | Integration and contribution | Recorded proof |
-| --- | --- | --- |
-| **Zetaris** | Dedicated, schema-validated history reads and explicitly enabled append/readback retain recommendations, operator decisions, due reviews and reported outcomes. This decision trail cannot be reconstructed from current telemetry. | [Real remote append/readback and decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) |
-| **Meterless H-MEM** | The vendored local reference stores and retrieves scoped investigation lessons between runs. Relevant lessons prioritize fresh safety checks; linked structured rollback feedback can also teach a lesson. | [Real local persistence, cold/warm checks and changed-evidence correction](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24) |
-| **NVIDIA** | A configured NVIDIA-hosted Nemotron model chooses the next allowlisted evidence check through the Chat Completions planner. Trusted code binds arguments and the deterministic evaluator decides the verdict. The default scripted demo makes no NVIDIA call. | [Actual NVIDIA model access and both-store warm investigation](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24) |
+| Technology          | Integration and contribution                                                                                                                                                                                                                                  | Recorded proof                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Zetaris**         | Dedicated, schema-validated history reads and explicitly enabled append/readback retain recommendations, operator decisions, due reviews and reported outcomes. This decision trail cannot be reconstructed from current telemetry.                           | [Real remote append/readback and decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24)                         |
+| **Meterless H-MEM** | The vendored local reference stores and retrieves scoped investigation lessons between runs. Relevant lessons prioritize fresh safety checks; linked structured rollback feedback can also teach a lesson.                                                    | [Real local persistence, cold/warm checks and changed-evidence correction](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24) |
+| **NVIDIA**          | A configured NVIDIA-hosted Nemotron model chooses the next allowlisted evidence check through the Chat Completions planner. Trusted code binds arguments and the deterministic evaluator decides the verdict. The default scripted demo makes no NVIDIA call. | [Actual NVIDIA model access and both-store warm investigation](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24)                    |
 
 These sponsor proofs use **synthetic operational evidence**. Real persistence and model calls do not establish live AWS scheduling safety. Reported outcomes are operator statements; the [memory comparison](evaluation/README.md#memory-order-comparison) does not establish a general speedup. The organizer's Nightshift wording remains a separate [event-compliance question](RULES.md#online-source-check--2026-10-24).
 
@@ -110,9 +113,9 @@ These sponsor proofs use **synthetic operational evidence**. Real persistence an
 - `src/contracts.ts` validates requests, actions and observations at runtime, rejecting scope/period mismatches, stale collection times, malformed data, unsupported fields and units.
 - `src/investigation/run.ts` owns candidate ranking and the bounded planner → executor → evaluator loop. Only five read-only logical tools exist. The model chooses an allowlisted question; trusted code binds scope, window and current IDs. Model prose cannot authorize a verdict or infrastructure write.
 - `src/investigation/mock.ts` owns synthetic direct evidence and A/B/C/mixed/clear/missing scenarios. Metrics summarize the suggested daily UTC window across the observed lookback. These are application contracts, not claims about available AWS endpoints.
-- `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → supported/contradicted/unresolved transition; it renders the detailed CLI trace.
+- `src/investigation/report.ts` validates the final report, retrieved-current citations and the chronological proposed → contradicted/unresolved (supported only in historical reports) transition; it renders the detailed CLI trace.
 
-Candidate collection is independent of recommendation clearance: partial or unavailable metrics still permit operations/dependency reads, with no invented window. A tentative low-utilization window can cite partial observations. A conflict is retained while remaining checks run; complete evidence is still required for a recommendation. Model choices exclude finishing while candidate reads remain. Memory changes check priority, not whether the remaining checks run.
+Candidate collection is independent of recommendation clearance: partial or unavailable metrics still permit operations/dependency reads, with no invented window. A supplied tentative window can cite partial observations or whole-period peaks. A conflict is retained while remaining checks run; no conflict still defers the external human decision. Model choices exclude finishing while candidate reads remain. Memory changes check priority, not whether the remaining checks run.
 
 Hard bounds: two logical discovery actions, up to four attempts each (eight total);
 twelve tool attempts per candidate; the existing aggregate planner cap of
@@ -164,13 +167,13 @@ proposed reusable method against the same fixed baselines, counting teaching
 cost, completion, correctness and tool/model calls. Promote a method only after
 it shows a repeatable benefit without weakening fresh safety checks.
 
-| Earlier recommendation | Fit with this implementation |
-| --- | --- |
-| H-MEM and reusable methods | Best architectural fit; extend typed lessons only after measured benefit |
+| Earlier recommendation      | Fit with this implementation                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| H-MEM and reusable methods  | Best architectural fit; extend typed lessons only after measured benefit                                     |
 | Nightshift-style evaluation | Useful way to discover failure cases; extend `evaluate-memory.ts` before introducing a runtime or new agents |
-| World Model | Defer until real dependency evidence needs relationships beyond the existing contracts |
-| Markovian compression | Defer; current bounded scope has at most three candidates and capped planner calls |
-| Local Meterless runtime | Optional provider experiment; protocol, model approval and behavior need separate verification |
+| World Model                 | Defer until real dependency evidence needs relationships beyond the existing contracts                       |
+| Markovian compression       | Defer; current bounded scope has at most three candidates and capped planner calls                           |
+| Local Meterless runtime     | Optional provider experiment; protocol, model approval and behavior need separate verification               |
 
 ## Reused components
 

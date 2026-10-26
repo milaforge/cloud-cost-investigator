@@ -1,5 +1,9 @@
 # CLI reference
 
+## Current decision contract — 2026-10-26
+
+New runs only reject a named, cited conflict or defer with explicit missing evidence/authority. A complete technical check with no conflict still defers the external human decision; new savings are null. Billing is ranking context and cannot block operational investigation of validated running inventory. Historical conditional-recommendation reports and dated receipts retain their original semantics. Zetaris accepts review requests for new rejected/deferred results; acceptance/outcomes are legacy-only. See [the product contract](PROJECT_CONTEXT.md#6-decision-policy).
+
 [What](../README.md) · [How](HOW.md)
 
 Partial or unavailable metrics do not prevent the remaining scoped SSM operations
@@ -7,10 +11,8 @@ and ELBv2 dependency reads. Available low average/peak CPU samples may establish
 tentative window even with coverage gaps; without a window, the agent collects
 operational facts without inventing one. All remaining existing candidate checks
 are attempted within call/time budgets, including after a contradiction. Invalid
-scoped data and cancellation remain terminal; failed inventory/billing discovery
-still stops after bounded recovery. Native empty scans never prove workload-wide
-absence. Final recommendations still require complete authoritative evidence and
-at least seven days of utilization. Sample counts and missing fields explain
+scoped data and cancellation remain terminal; failed inventory discovery stops after bounded recovery; unavailable billing falls back to validated running inventory. Native empty scans never prove workload-wide
+absence. New runs never recommend shutdown. Under seven days of utilization, recurring-window evidence remains insufficient. Sample counts and missing fields explain
 uncertainty; historical `metrics_evidence_incomplete` receipts reflect the earlier
 stop policy, not current behavior.
 
@@ -26,15 +28,15 @@ npm run --silent investigate -- --evidence mock --account demo --region us-east-
 ```
 
 The default text leads with each candidate's verdict, proposed UTC window, reason,
-decisive source statuses, next human action and savings (or unknown). It labels
-mock evidence and conditional estimates, shows sample counts when available,
+decisive source statuses, missing checks and next human action. It labels
+mock evidence, shows sample counts when available,
 and retains run status and the stop reason. Rejection applies to the evaluated
 window; human approval is still required for any change. `--verbose` prints the
 comprehensive report: full evidence, citations, checks, assumptions, actions,
 owner context, trace, history and budgets. `--silent` suppresses npm's own script
 banner; direct Node invocation also emits only the application's output.
 
-The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. Scenario A supplies explicit owner/calendar/recovery clearance and compute pricing for a conditional recommendation; C supplies a continuous-operation dependency. `mixed` investigates A/B/C in ranked order from four synthetic instances. Supported flags:
+The missing-source variation returns `needs_verification`, `partial`, and exit status **2**. `--scenario clear` supplies an empty job query and continues to dependencies; it still defers positive clearance. Scenario A supplies complete synthetic technical clearance but defers the external human decision; C supplies a continuous-operation dependency. `mixed` investigates A/B/C in ranked order from four synthetic instances. Supported flags:
 
 ```text
 --account ID          required; AWS mode requires the actual 12-digit account
@@ -58,7 +60,7 @@ node --import tsx cli.ts investigate --evidence mock --account demo --region us-
 For read-only AWS setup, billing opt-in and source limitations, see the
 [AWS tools guide](AWS_TOOLS.md#investigation-cli).
 
-Exit codes: **0** completed scoped recommendations/rejections/no eligible candidates; **2** partial; **1** failed investigation, invalid invocation, or planner configuration. `complete` concerns the investigated window; it does not mean the project or sponsor gates are finished.
+Exit codes: **0** completed scoped rejections/no eligible candidates; **2** partial; **1** failed investigation, invalid invocation, or planner configuration. `complete` concerns the investigated window; it does not mean the project or sponsor gates are finished.
 
 ## Capture and read the decision trace
 
@@ -101,7 +103,7 @@ The readable JSONL view uses `timestamp`, `trace_id`, `step`, `agent_name`, `act
 
 JSONL `confidence` is measured evidence coverage: the count of distinct complete, authoritative, gap-free checks already retrieved for the current candidate divided by **5** (inventory, billing, metrics, operations and dependencies). Thus **0.6** means three checks are complete. Discovery checks are shared; candidate checks never transfer between instances. Failed attempts do not add coverage; future evidence never raises an earlier step's score. The categorical report value appears as `evidence_support` in this view. Coverage is not a calibrated probability, policy clearance or a verdict threshold: a fresh contradiction can reject a window at 0.8, and an owner-authority gap can still defer a run with all sources retrieved. Historical traces without captured step times export `null` timestamp/confidence rather than invented measurements.
 
-For three reproducible input/output cases, run the same JSON command with `--scenario A`, `B` and `C`: expect respectively `conditional_recommendation`, `not_recommended` and `not_recommended`. A has explicit synthetic clearance and qualified pricing; C cites continuous-operation requirements. With `--scenario missing`, expect `needs_verification`, `partial`, and exit **2**; retain the JSON even though the exit is nonzero. These scenarios compute reports from fixture observations; they do not return stored final answers. [Evaluation](evaluation/README.md) owns comparative measurements and D's memory proof.
+For three reproducible input/output cases, run the same JSON command with `--scenario A`, `B` and `C`: expect respectively `needs_verification`, `not_recommended` and `not_recommended`. A has explicit synthetic clearance but still defers (exit 2); C cites continuous-operation requirements. With `--scenario missing`, expect `needs_verification`, `partial`, and exit **2**; retain the JSON even though the exit is nonzero. These scenarios compute reports from fixture observations; they do not return stored final answers. [Evaluation](evaluation/README.md) owns comparative measurements and D's memory proof.
 
 ## Failure behavior
 
@@ -120,16 +122,16 @@ retrieval and does not claim the tool was never attempted. Resolving a checklist
 does not itself approve shutdown: rerun with fresh evidence and obtain authorized
 human approval before an infrastructure change.
 
-| Trigger | Actual response |
-| --- | --- |
-| Invalid flags/request or invalid planner configuration | Exit 1 with a bounded message; no silent planner/evidence fallback. |
-| Required inventory/billing discovery unavailable, error, timeout or invalid observation | Retry the same read-only call up to three times after the initial attempt, within budgets; on exhaustion stop with `required_tool_failed:<tool>`, a named diagnostic and exit 1. No advance to another planner/tool. Invalid scoped observations are terminal. Inventory must precede billing; usable partial metadata is retained. Authenticated empty inventory finishes without billing. |
-| Operational tool error, timeout or invalid observation | Retry the same read-only call up to three times after the initial attempt, within budgets. Retain every failed attempt; exhausted or invalid results leave safety unknown. |
-| `no_match`, partial or unavailable operational source | Preserve its distinct status; absence cannot establish authority or eliminate dependencies. |
-| Model transport/HTTP/schema failure | Retry transient failures within the existing budgets; permanent errors or invalid output stop planning. Exhaustion retains earlier evidence as a partial report (exit 2); no usable evidence yields failure (exit 1). |
-| Repeated action or exhausted tool/model/runtime budget | Stop rather than loop; preserve finished candidates and explicitly defer unresolved candidates. |
-| Historical-store read/write failure | Disclose it separately; current verdicts still require fresh evidence. No automatic retry after an uncertain append. |
-| Missing pricing, commitment or retained-resource assumptions | Savings stay `null`; current spend is not automatically avoidable cost. |
+| Trigger                                                                         | Actual response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invalid flags/request or invalid planner configuration                          | Exit 1 with a bounded message; no silent planner/evidence fallback.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Required inventory discovery unavailable, error, timeout or invalid observation | Retry the same read-only call up to three times after the initial attempt, within budgets; on exhaustion stop with `required_tool_failed:<tool>`, a named diagnostic and exit 1. No advance to another planner/tool. Invalid scoped observations are terminal. Inventory must precede billing; usable partial metadata is retained. Authenticated empty inventory finishes without billing. Billing outages are separately retried, then known running inventory is investigated without spend ranking; malformed or out-of-scope billing remains terminal. |
+| Operational tool error, timeout or invalid observation                          | Retry the same read-only call up to three times after the initial attempt, within budgets. Retain every failed attempt; exhausted or invalid results leave safety unknown.                                                                                                                                                                                                                                                                                                                                                                                  |
+| `no_match`, partial or unavailable operational source                           | Preserve its distinct status; absence cannot establish authority or eliminate dependencies.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Model transport/HTTP/schema failure                                             | Retry transient failures within the existing budgets; permanent errors or invalid output stop planning. Exhaustion retains earlier evidence as a partial report (exit 2); no usable evidence yields failure (exit 1).                                                                                                                                                                                                                                                                                                                                       |
+| Repeated action or exhausted tool/model/runtime budget                          | Stop rather than loop; preserve finished candidates and explicitly defer unresolved candidates.                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Historical-store read/write failure                                             | Disclose it separately; current verdicts still require fresh evidence. No automatic retry after an uncertain append.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Missing pricing, commitment or retained-resource assumptions                    | Savings stay `null`; current spend is not automatically avoidable cost.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 A live investigation has a 15-minute total limit and 60-second model-call cap,
 with five seconds reserved for report finalization. Model, tool, pacing and history
@@ -193,7 +195,6 @@ The readable CLI trace displays `[failure_code]`; JSON reports include optional
 runtime-validated against fixed values or `model_http_NNN` (HTTP 100–599).
 No raw provider body, exception message, URL, prompt, credential or stack trace
 is copied into the diagnostic field. Relevant codes include:
-
 - `planner_timeout`: the investigation's per-planner-call wait expired;
   `investigation_deadline_exceeded`: the shared total deadline expired.
 - `model_http_403`, `model_http_429`, etc.: actual non-200 HTTP status;
@@ -246,7 +247,6 @@ and allowlisted network error codes. It omits hostnames, IPs, headers, credentia
 prompts, model output and exception messages. Enable it only for diagnosis;
 [the repeated-gate procedure](evaluation/README.md#repeated-real-model-cli-gate)
 shows the invocation and artifact locations.
-
 - `sent_ms` records the point immediately before headers are written to a socket;
   `body_sent_ms` records completion of the request-body write.
 - `headers_ms` records receipt of HTTP response headers; `status` is the actual

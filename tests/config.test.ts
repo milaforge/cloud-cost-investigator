@@ -149,6 +149,7 @@ test('arbitrary compatible provider completes B through the same validated loop'
     'get_ec2_metrics',
     'propose',
     'get_ec2_operations',
+    'get_ec2_dependencies',
     'finish',
   ];
   const fetchMock = t.mock.method(

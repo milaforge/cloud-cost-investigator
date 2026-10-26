@@ -177,6 +177,7 @@ export function validateReport(value: unknown): InvestigationReport {
   const r = exact(value, [
     'investigation_id',
     'goal',
+    'decision_policy',
     'request',
     'started_at',
     'finished_at',
@@ -219,6 +220,17 @@ export function validateReport(value: unknown): InvestigationReport {
     gaps: strings(d.gaps),
   };
   const candidates = array(r.candidates, request.max_candidates).map(candidate);
+  const decision_policy =
+    r.decision_policy === undefined
+      ? undefined
+      : member(r.decision_policy, ['reject_or_defer']);
+  if (
+    decision_policy &&
+    candidates.some((c) => c.verdict === 'conditional_recommendation')
+  )
+    throw new Error(
+      'Unsupported conditional recommendation under reject-or-defer policy',
+    );
   if (
     discovery.candidate_limit !== request.max_candidates ||
     new Set(candidates.map((c) => c.instance_id)).size !== candidates.length
@@ -276,13 +288,14 @@ export function validateReport(value: unknown): InvestigationReport {
   if (
     inventory?.data &&
     'instances' in inventory.data &&
-    billing?.data &&
-    'costs' in billing.data
+    ((decision_policy && (candidates.length > 0 || billing)) ||
+      (billing?.data && 'costs' in billing.data))
   ) {
     const ranked = rankCandidates(
       inventory.data,
-      billing.data,
+      billing?.data && 'costs' in billing.data ? billing.data : null,
       request.max_candidates,
+      decision_policy === 'reject_or_defer',
     );
     if (
       candidates.length !== ranked.length ||
@@ -574,16 +587,17 @@ export function validateReport(value: unknown): InvestigationReport {
             (i) => i.instance_id === c.instance_id && i.state === 'running',
           ),
       ) ||
-      !selected.some(
-        (e) =>
-          usable(e) &&
-          e.tool === 'get_ec2_billing' &&
-          e.data &&
-          'costs' in e.data &&
-          e.data.costs.some(
-            (i) => i.instance_id === c.instance_id && i.compute_cost > 0,
-          ),
-      )
+      (!decision_policy &&
+        !selected.some(
+          (e) =>
+            usable(e) &&
+            e.tool === 'get_ec2_billing' &&
+            e.data &&
+            'costs' in e.data &&
+            e.data.costs.some(
+              (i) => i.instance_id === c.instance_id && i.compute_cost > 0,
+            ),
+        ))
     )
       throw new Error('Unsupported candidate selection');
     const proposedWindow = c.proposed_window;
@@ -632,8 +646,9 @@ export function validateReport(value: unknown): InvestigationReport {
           e.scope.instance_id === c.instance_id &&
           e.data &&
           'suggested_window' in e.data &&
-          e.data.average_cpu_percent <= 10 &&
-          e.data.peak_cpu_percent <= 20 &&
+          (decision_policy === 'reject_or_defer' ||
+            (e.data.average_cpu_percent <= 10 &&
+              e.data.peak_cpu_percent <= 20)) &&
           sameSchedule(e.data.suggested_window, proposedWindow) &&
           retrievalStep(id) < proposal.step
         );
@@ -656,7 +671,12 @@ export function validateReport(value: unknown): InvestigationReport {
         const e = evidenceById(id);
         if (
           e.scope.instance_id !== c.instance_id ||
-          !schedulingConflict(request, proposedWindow, e) ||
+          !schedulingConflict(
+            request,
+            proposedWindow,
+            e,
+            decision_policy === 'reject_or_defer',
+          ) ||
           retrievalStep(id) <= proposal.step
         )
           throw new Error('Invalid contradictory evidence');
@@ -752,6 +772,7 @@ export function validateReport(value: unknown): InvestigationReport {
   return {
     investigation_id,
     goal: member(r.goal, ['evaluate_ec2_off_hours_scheduling']),
+    ...(decision_policy ? { decision_policy } : {}),
     request,
     started_at,
     finished_at,
@@ -822,7 +843,9 @@ function renderSummary(r: InvestigationReport): string {
       summaryLine(
         lines,
         'Evidence',
-        observations.map((e) => `${e.tool} (${e.status})`).join('; '),
+        observations
+          .map((e) => `${e.tool} (${e.status}) [${e.evidence_id}]`)
+          .join('; '),
       );
     const metrics = r.evidence.find(
       (e) =>
@@ -841,19 +864,17 @@ function renderSummary(r: InvestigationReport): string {
       );
     if (c.next_human_actions.length)
       summaryLine(lines, 'Next', c.next_human_actions[0]);
-    if (c.missing_checks.length || c.next_human_actions.length > 1)
+    for (const check of c.missing_checks)
+      summaryLine(lines, 'Missing / next check', check);
+
+    if (!r.decision_policy)
       summaryLine(
         lines,
-        'Remaining',
-        `${c.missing_checks.length} checks; use --verbose for the full checklist and actions.`,
+        'Savings',
+        c.savings_calculation && c.estimated_monthly_savings !== null
+          ? `${c.estimated_monthly_savings.toFixed(2)} ${c.savings_calculation.currency} for ${c.savings_calculation.period.from.slice(0, 10)} → ${c.savings_calculation.period.to.slice(0, 10)} (conditional${r.integration_mode === 'mock' ? '; synthetic estimate' : ''})`
+          : 'unknown',
       );
-    summaryLine(
-      lines,
-      'Savings',
-      c.savings_calculation && c.estimated_monthly_savings !== null
-        ? `${c.estimated_monthly_savings.toFixed(2)} ${c.savings_calculation.currency} for ${c.savings_calculation.period.from.slice(0, 10)} → ${c.savings_calculation.period.to.slice(0, 10)} (conditional${r.integration_mode === 'mock' ? '; synthetic estimate' : ''})`
-        : 'unknown',
-    );
   }
   if (!r.candidates.length) {
     lines.push(
@@ -953,7 +974,9 @@ export function renderReport(
     lines.push(
       c.savings_calculation
         ? `Estimated monthly savings: ${c.estimated_monthly_savings} ${c.savings_calculation.currency}; ${c.savings_calculation.period.from} → ${c.savings_calculation.period.to}; ${c.savings_calculation.eligible_days} days × avoided daily hours = ${c.savings_calculation.avoided_hours} hours × ${c.savings_calculation.hourly_compute_rate}/hour (rounded down). ${citations(c.savings_calculation.evidence_ids)}`
-        : 'Estimated monthly savings: null (unsupported marginal-cost and scheduling assumptions)',
+        : r.decision_policy
+          ? 'Estimated monthly savings: null (not produced by reject-or-defer policy)'
+          : 'Estimated monthly savings: null (unsupported marginal-cost and scheduling assumptions)',
     );
   }
   if (r.owner_evidence?.length) {

@@ -67,11 +67,7 @@ export function prepareDecision(
   const index = report.candidates.findIndex(
     (c) => c.instance_id === identifier(instance),
   );
-  if (
-    index < 0 ||
-    report.completion_status !== 'complete' ||
-    report.candidates[index].verdict !== 'conditional_recommendation'
-  )
+  if (index < 0 || report.completion_status === 'failed')
     throw new Error('follow_up_completed_recommendation_required');
   const recommendation = historyRecordFromReport(report, index);
   const fields = exact(input, ['kind', 'actor', 'reason', 'review_at']);
@@ -81,6 +77,13 @@ export function prepareDecision(
   });
   if (event.kind !== 'deferred' && event.kind !== 'accepted')
     throw new Error('follow_up_decision_required');
+  if (
+    event.kind === 'accepted' &&
+    (report.decision_policy ||
+      report.completion_status !== 'complete' ||
+      report.candidates[index].verdict !== 'conditional_recommendation')
+  )
+    throw new Error('follow_up_completed_recommendation_required');
   return { report, recommendation, event };
 }
 
@@ -150,7 +153,8 @@ async function decisionRecord(scope: Scope, id: string, signal?: AbortSignal) {
   sameInstance(saved, recommendation);
   if (
     recommendation.schema_version !== 1 ||
-    recommendation.verdict !== 'conditional_recommendation' ||
+    (event.kind === 'accepted' &&
+      recommendation.verdict !== 'conditional_recommendation') ||
     recommendation.investigation_id !== saved.investigation_id ||
     Date.parse(saved.recorded_at_utc) <
       Date.parse(recommendation.recorded_at_utc)

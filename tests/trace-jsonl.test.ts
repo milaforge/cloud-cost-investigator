@@ -68,7 +68,7 @@ test('JSONL measures prefix evidence coverage and summarizes retrieved facts', a
     ),
   );
   assert.ok(events.some((e) => e.status === 'no_match'));
-  assert.equal(events.at(-1)?.status, 'complete');
+  assert.equal(events.at(-1)?.status, 'partial');
   const changed = structuredClone(report);
   changed.trace[0].timestamp = '2099-01-01T00:00:00Z';
   assert.throws(() => validateReport(changed), /timestamp/);

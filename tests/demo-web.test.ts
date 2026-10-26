@@ -9,9 +9,6 @@ import {
   MAX_REPORT_BYTES,
   openBrowser,
 } from '../scripts/demo-web.ts';
-import { MockProvider } from '../src/investigation/mock.ts';
-import { ScriptedPlanner } from '../src/investigation/planner.ts';
-import { runInvestigation } from '../src/investigation/run.ts';
 
 test('local viewer generates fresh A/B, validates uploads and confines its HTTP surface', async () => {
   const started = performance.now();
@@ -40,6 +37,21 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
       duplicate,
       'concurrent requests share one investigation',
     );
+    const previewStarted = performance.now();
+    const missingPreview = await (
+      await fetch(`${url}/api/demos?scenario=missing`)
+    ).json();
+    assert.ok(
+      performance.now() - previewStarted < 2000,
+      'recorded missing-evidence preview must not wait through retries',
+    );
+    assert.deepEqual(Object.keys(missingPreview), ['missing']);
+    assert.equal(missingPreview.missing.completion_status, 'partial');
+    assert.equal(
+      missingPreview.missing.candidates[0].verdict,
+      'needs_verification',
+    );
+    assert.equal(missingPreview.missing.integration_mode, 'mock');
     const get = await fetch(`${url}/api/demos`);
     const demos = await get.json();
     assert.deepEqual(
@@ -47,7 +59,7 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
       first.A,
       'cache previews for the server lifetime',
     );
-    assert.equal(demos.A.candidates[0].verdict, 'conditional_recommendation');
+    assert.equal(demos.A.candidates[0].verdict, 'needs_verification');
     assert.equal(demos.B.candidates[0].verdict, 'not_recommended');
     assert.equal(demos.A.integration_mode, 'mock');
     assert.equal(demos.A.planner.mode, 'scripted');
@@ -86,10 +98,7 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
       await (await post(JSON.stringify(demos.A))).json(),
       demos.A,
     );
-    const missing = await runInvestigation(demos.A.request, {
-      provider: new MockProvider('missing'),
-      planner: new ScriptedPlanner(),
-    });
+    const missing = demos.missing;
     assert.equal(missing.completion_status, 'partial');
     assert.equal((await post(JSON.stringify(missing))).status, 200);
     for (const invalid of ['{', '{}', JSON.stringify({ rows: [demos.A] })])

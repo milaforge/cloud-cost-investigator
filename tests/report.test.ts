@@ -108,7 +108,7 @@ test('readable report explains rejection, provenance, trace, uncertainty and his
 
 test('default CLI output leads with a scoped verdict and omits full evidence and trace', async () => {
   for (const [scenario, verdict, status] of [
-    ['A', 'CONDITIONAL RECOMMENDATION', 0],
+    ['A', 'NEEDS VERIFICATION', 2],
     ['B', 'NOT RECOMMENDED', 0],
     ['C', 'NOT RECOMMENDED', 0],
     ['missing', 'NEEDS VERIFICATION', 2],
@@ -127,7 +127,6 @@ test('default CLI output leads with a scoped verdict and omits full evidence and
       'Why:',
       'Evidence:',
       'Next:',
-      'Savings:',
       'Mode: MOCK',
       'planner: scripted',
       'Stopped:',
@@ -137,14 +136,11 @@ test('default CLI output leads with a scoped verdict and omits full evidence and
       assert.ok(result.stdout.includes(label), `${scenario}: ${label}`);
     assert.doesNotMatch(
       result.stdout,
-      /Decision trace:|Retrieved current evidence:|Validated action:|mock-ec2-evidence-/,
+      /Decision trace:|Retrieved current evidence:|Validated action:/,
     );
-    assert.ok(result.stdout.split('\n').length < 32);
+    assert.ok(result.stdout.split('\n').length < 60);
     assert.ok(result.stdout.split('\n').every((line) => line.length <= 96));
-    if (scenario === 'A') {
-      assert.match(result.stdout, /synthetic estimate/);
-      assert.match(result.stdout, /conditional/);
-    } else assert.match(result.stdout, /Savings: unknown/);
+    assert.doesNotMatch(result.stdout, /Savings:|conditional recommendation/i);
   }
 });
 
@@ -156,9 +152,9 @@ test('mixed default output keeps all three scoped verdicts and concise per-insta
     '--max-candidates',
     '3',
   );
-  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.status, 2, result.stderr);
   for (const label of [
-    'CONDITIONAL RECOMMENDATION — i-mock-primary',
+    'NEEDS VERIFICATION — i-mock-primary',
     'NOT RECOMMENDED — i-mock-secondary',
     'NOT RECOMMENDED — i-mock-third',
   ])
@@ -261,7 +257,8 @@ test('report rejects forged citations, historical IDs, scope/window mismatches, 
     (r) => {
       const e = r.evidence.find((e) => e.tool === 'get_ec2_metrics');
       assert.ok(e);
-      if (e.data && 'peak_cpu_percent' in e.data) e.data.peak_cpu_percent = 99;
+      if (e.data && 'suggested_window' in e.data)
+        e.data.suggested_window = { start_hour_utc: 12, end_hour_utc: 15 };
     },
     (r) => {
       r.trace = r.trace.filter((t) => t.phase !== 'tool');

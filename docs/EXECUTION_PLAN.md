@@ -1,5 +1,14 @@
 # Cloud Cost Investigator — Execution Plan (Milad + Zayan)
 
+## Coherence slice 2 — reject or defer, with legacy compatibility (2026-10-26)
+
+- **Gate/owner:** Days 3–4 product coherence, Milad. User explicitly approved new rejection/deferral-only reports and integration of concurrent collection, preview and human-action changes. This supersedes positive-recommendation requirements in older receipts below. The first documentation slice is commit `83f9fd2`.
+- **Implemented:** named job/maintenance/dependency reasons, visible missing checks, no new recommendations or savings, optional billing for candidate investigation, high-peak window challenges, review requests for rejected/deferred results, preserved historical recommendation/acceptance validation. README, diagrams, scenarios, guides, agent rules and `slides.md` now share that contract. Dated reports and measured sponsor receipts remain unchanged.
+- **Executed focused proof:** `npm run export:scenarios` produced six scenarios/seven variants and synchronized both JSONL handoffs. `node --import tsx --test --test-isolation=none tests/scenario-export.test.ts` passed **2/2**, including fresh replay of all variants. Final UI/worker/report/model-gate checks passed **34/34**; additional coherence/UI/gate checks passed **22/22**; discovery recovery and memory evaluation checks passed **10/10**. The new coherence regressions include malformed billing scope, billing outage fallback, exact reasons, unnamed-dependency deferral, complete-evidence deferral, review eligibility and historical compatibility.
+- **Static proof:** `npm run typecheck`, `npm run typecheck:aws` and `npm run lint` passed; lint retains one pre-existing informational style finding in the historical CloudWatch probe. Changed files pass Biome formatting. Repository-wide `npm run format:check` retains **56 pre-existing file findings**, verified against HEAD; no historical artifacts were reformatted to hide them.
+- **Full-suite proof:** `node --import tsx --test --test-isolation=process --test-concurrency=4 tests/*.test.ts` passed **379/379** with loopback fixtures (197 seconds). Earlier serial full runs exposed stale policy expectations and one pre-selection report-validation mismatch; those were corrected before this passing run. `node --import tsx scripts/demo-warm.ts --json` also passed: cold/warm/changed use 5/5/6 planner calls and 5/5/5 tool calls; changed evidence defers, with fresh H-MEM correction.
+- **Mode/limits/next:** synthetic evidence, real local H-MEM and isolated HTTP/DOM fixtures only. No live AWS, paid inference, remote Zetaris writes or browser-layout proof in this task. Historical real-model/sponsor gates do not prove the new policy against remote services. The current repeated model gate covers B/missing/C/A over twelve runs and still needs an explicitly authorized real-service run. Existing release/video/portal gates remain separate.
+
 ## Coherence slice 1 — narrative and scenario presentation (2026-10-26)
 
 - **Gate/owner:** Days 3–4 product coherence, Milad. README, diagrams, scenario runbook, historical trace ordering, demo narrative and slides now lead with a cited rejection or actionable evidence gap. Current broader conditional-clearance behavior remains labeled honestly. Historical trace payloads remain unchanged.
@@ -113,7 +122,6 @@
   Restart `npm start` for a new Live run. Broader release gates remain open.
 
 
-
 ### Inspectable model prompts and outputs — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web investigation transparency, Milad. Execution
@@ -141,30 +149,6 @@
   previews. No blocker for this slice. Restart `npm start` and run a new Live
   investigation to see messages; broader release gates remain open.
 
-
-
-### Dynamic UI entrance motion and CTA loading — 2026-10-26
-
-- **Gate/owner:** Days 3–4 web usability, Milad. `src/web/app.js` and
-  `src/web/style.css` add short entrances for report sections, changed status,
-  evidence details, disclosures and newly received execution events. Previously
-  received events do not replay on polling. Reduced motion disables entrances
-  and spinner rotation. Pending investigation, decision, stop, upload validation
-  and preview buttons expose loading labels, spinners and `aria-busy`; completion,
-  failure, cancellation and mode changes restore the applicable button state.
-- **Executed proof:** `node --import tsx --test --test-isolation=none
-  tests/demo-web-ui.test.ts tests/demo-web.test.ts tests/demo-web-jobs.test.ts`
-  passed **14/14** with loopback access, including validation-without-start,
-  pending/recovered/terminal action states, failed requests, mode isolation and
-  new-event-only/reduced-motion behavior. `npm run typecheck`, `npm run lint`,
-  scoped Biome format, `node --check src/web/app.js` and `git diff --check`
-  passed; existing unrelated CSS warning and probe style info remain.
-- **Mode/limits/next:** DOM-handler and local HTTP fixture verification only;
-  no paid model, AWS or remote Zetaris calls. The initial sandbox run hit four
-  loopback `listen EPERM` failures; the permitted rerun passed. Local startup
-  succeeded, then the test server was stopped. Browser inspection was attempted,
-  but no browser surface is available; rendered motion still needs visual review.
-  Restart the viewer to reload its cached assets. Live/release gates stay open.
 
 ### Run-click configuration validation without a Live settings section — 2026-10-26
 
@@ -194,7 +178,6 @@
 
 The newer Run-click correction above supersedes the displayed configuration and
 separate investigation service acknowledgment in this earlier implementation.
-
 - **Gate/owner:** Days 3–4 web usability, Milad. Removed browser planner,
   Zetaris-read and editable scope controls. Live always uses the configured model,
   automatically reads configured Zetaris history without appending, and displays
@@ -215,6 +198,21 @@ separate investigation service acknowledgment in this earlier implementation.
   optionally set `CCI_MAX_CANDIDATES`, and restart the server. Missing account
   configuration blocks Live execution; broader release gates remain open.
 
+### Live workflow tab prerequisites — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. Learn and Follow through stay
+  visible but disabled until a live report is selected from a run or validated
+  upload. Navigation handlers enforce the same condition; Demo tabs stay enabled.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/demo-web-ui.test.ts` passed **6/6**, covering initial/pending/failed
+  states, result selection, mode reset and live-report import. `npm run
+  typecheck`, `npm run lint`, `node --check src/web/app.js` and
+  `git diff --check` passed. Lint retains one pre-existing historical probe info.
+- **Mode/limits/next:** local DOM-handler and synthetic fixture verification,
+  without cloud/model/history calls or rendered-browser layout proof. No blocker
+  for this slice; restart the viewer to reload cached assets. Combined live and
+  release gates remain open.
+
 ### Missing `.env` startup guidance — 2026-10-26
 
 - **Gate/owner:** Days 3–4 web setup usability, Milad. `npm start` uses the
@@ -230,21 +228,6 @@ separate investigation service acknowledgment in this earlier implementation.
   loopback permission was required for the server check.
 - **Mode/limits:** local startup only; no cloud/model/history calls. Existing
   edits preserved. No blocker for this slice; broader release gates remain open.
-
-### Live workflow tab prerequisites — 2026-10-26
-
-- **Gate/owner:** Days 3–4 web usability, Milad. Learn and Follow through stay
-  visible but disabled until a live report is selected from a run or validated
-  upload. Navigation handlers enforce the same condition; Demo tabs stay enabled.
-- **Executed proof:** `node --import tsx --test --test-isolation=none
-  tests/demo-web-ui.test.ts` passed **6/6**, covering initial/pending/failed
-  states, result selection, mode reset and live-report import. `npm run
-  typecheck`, `npm run lint`, `node --check src/web/app.js` and
-  `git diff --check` passed. Lint retains one pre-existing historical probe info.
-- **Mode/limits/next:** local DOM-handler and synthetic fixture verification,
-  without cloud/model/history calls or rendered-browser layout proof. No blocker
-  for this slice; restart the viewer to reload cached assets. Combined live and
-  release gates remain open.
 
 ### Remove optional owner-evidence input — 2026-10-26
 
@@ -266,6 +249,50 @@ separate investigation service acknowledgment in this earlier implementation.
   paid-model or remote Zetaris calls. The sandbox initially blocked four HTTP
   fixtures with `listen EPERM`; the loopback-enabled rerun passed. Restart the
   viewer to reload cached assets. Existing live/release gates remain open.
+
+### Dynamic UI entrance motion and CTA loading — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. `src/web/app.js` and
+  `src/web/style.css` add short entrances for report sections, changed status,
+  evidence details, disclosures and newly received execution events. Previously
+  received events do not replay on polling. Reduced motion disables entrances
+  and spinner rotation. Pending investigation, decision, stop, upload validation
+  and preview buttons expose loading labels, spinners and `aria-busy`; completion,
+  failure, cancellation and mode changes restore the applicable button state.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/demo-web-ui.test.ts tests/demo-web.test.ts tests/demo-web-jobs.test.ts`
+  passed **14/14** with loopback access, including validation-without-start,
+  pending/recovered/terminal action states, failed requests, mode isolation and
+  new-event-only/reduced-motion behavior. `npm run typecheck`, `npm run lint`,
+  scoped Biome format, `node --check src/web/app.js` and `git diff --check`
+  passed; existing unrelated CSS warning and probe style info remain.
+- **Mode/limits/next:** DOM-handler and local HTTP fixture verification only;
+  no paid model, AWS or remote Zetaris calls. The initial sandbox run hit four
+  loopback `listen EPERM` failures; the permitted rerun passed. Local startup
+  succeeded, then the test server was stopped. Browser inspection was attempted,
+  but no browser surface is available; rendered motion still needs visual review.
+  Restart the viewer to reload its cached assets. Live/release gates stay open.
+
+### Static Missing evidence preview and loading feedback — 2026-10-26
+
+- **Gate/owner:** Days 3–4 web usability, Milad. Missing evidence now reuses the
+  validated recorded operations-outage report in `docs/ec2-scenarios.jsonl`.
+  Original timestamps remain visible and its report is labeled Recorded preview.
+  All pending previews show a spinner and loading text; success, failure and
+  selection/mode changes remove it. Reduced motion disables rotation.
+- **Executed proof:** `node --import tsx --test --test-isolation=none
+  tests/demo-web.test.ts tests/demo-web-ui.test.ts` passed **5/5**, covering
+  fast missing preview retrieval with `needs_verification`, loading feedback,
+  error recovery, cache behavior and Live-mode isolation. A separate first-request
+  loopback probe returned HTTP **200** in **51 ms**, with mock provenance and
+  `needs_verification`. `npm run typecheck`, `npm run lint`, scoped Biome format,
+  `node --check src/web/app.js` and `git diff --check` passed; existing unrelated
+  lint warning/info remain.
+- **Mode/limits/next:** synthetic report, loopback and DOM-handler proof only;
+  no service calls or rendered-browser verification. Real investigation retries
+  remain unchanged. Restart `npm start` to reload server-cached assets. This
+  supersedes the earlier missing-preview retry-delay limitation; existing live
+  and release gates remain open.
 
 ### Preview-only Demo across all tabs — 2026-10-26
 
@@ -1190,7 +1217,6 @@ separate investigation service acknowledgment in this earlier implementation.
 **Current provider gate: CLOSED with OpenAI, 9/9 complete.** See the
 [executed OpenAI gate](#openai-reliability-gate-closed--2026-10-25) below. The NVIDIA
 measurements and focused comparison remain separately retained historical evidence.
-
 - **Gate/owner:** repeated real-model A/B/C completion, Milad. **Historical NVIDIA initial measurement:**
   [three-round CLI measurement](evaluation/model-reliability-2026-10-25/summary.json)
   exited **1**, with **8/9 complete, 1/9 partial**; A **3/3**, B **3/3**, C
@@ -1454,14 +1480,14 @@ measurements and focused comparison remain separately retained historical eviden
 
 This table summarizes the release checklist below. [Historical execution receipts](history/execution-log.md) retain original commands and failed measurements; they are not current instructions. Acceptance criteria live in the [product contract](PROJECT_CONTEXT.md#9-test-and-release-acceptance).
 
-| Gate | Verified state and proof | Remaining work / owner |
-| --- | --- | --- |
-| Day 2 engine and B | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23). | Live operational coverage is separate; Zayan. |
-| AWS CLI | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). [CCI profile proof](#dedicated-cci-aws-profile-and-live-reads--2026-10-25) retrieves one live Paris instance and completes empty SSM/ELBv2 reads. [CloudWatch proof](#live-cloudwatch-verification--2026-10-25) retrieves all four series at five-minute resolution, with incomplete history. | Obtain adequate metric history and verify opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports. |
-| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately. | Repeated OpenAI A/B/C gate closed; Milad. Owner confirms the existing Zetaris identity is non-admin/limited API; detailed effective table/overwrite policy evidence remains separate ([permission review](#zetaris-deployment-permission-review--2026-10-25)). No replacement account is required on the previous admin assumption. Live evidence and event eligibility remain separate. |
-| Learned investigation checks | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained. | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad. |
-| Evaluation and reporting | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators. | Do not claim reliable real-model completion or live pricing from fixture results. Milad. |
-| Release | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**. | Independent reproducer/visual review, final README review, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources. |
+| Gate                                  | Verified state and proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Remaining work / owner                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Day 2 engine and B                    | Complete with mock evidence, including safe missing-source deferral; [first-loop proof](history/execution-log.md#executed-first-loop-slice--2026-10-23) and [broader scenarios](history/execution-log.md#broader-ac-three-candidates-and-savings-proof--2026-10-23).                                                                                                                                                                                                                                                                                                                                   | Live operational coverage is separate; Zayan.                                                                                                                                                                                                                                                                                                                                            |
+| AWS CLI                               | Live AWS default, explicit mock mode; AWS integration recorded `npm test` **204/204**, typechecks and lint passed. [Integration](history/execution-log.md#aws-merge-and-cli-integration-verification-2026-10-24), [default correction](history/execution-log.md#default-evidence-correction-2026-10-24). [CCI profile proof](#dedicated-cci-aws-profile-and-live-reads--2026-10-25) retrieves one live Paris instance and completes empty SSM/ELBv2 reads. [CloudWatch proof](#live-cloudwatch-verification--2026-10-25) retrieves all four series at five-minute resolution, with incomplete history. | Obtain adequate metric history and verify opted-in billing; configure authoritative jobs/dependencies and pricing/commitment coverage. Zayan/team; Milad verifies integrated reports.                                                                                                                                                                                                    |
+| Real model and both historical stores | Genuine NVIDIA call, remote Zetaris append/readback and local H-MEM recall in a real-model warm run over mock evidence; [proof](history/execution-log.md#successful-real-model-access-retry-and-warm-proof--2026-10-24). [Decision follow-through](history/execution-log.md#distinct-memory-roles-and-decision-follow-through--2026-10-24) also has real Zetaris proof. Oct 25 [OpenAI gate](#openai-reliability-gate-closed--2026-10-25): **9/9 complete**, 51 HTTP 200 model requests, 63/63 valid citations, mock evidence/history disabled. Earlier NVIDIA gates remain retained separately.       | Repeated OpenAI A/B/C gate closed; Milad. Owner confirms the existing Zetaris identity is non-admin/limited API; detailed effective table/overwrite policy evidence remains separate ([permission review](#zetaris-deployment-permission-review--2026-10-25)). No replacement account is required on the previous admin assumption. Live evidence and event eligibility remain separate. |
+| Learned investigation checks          | Full scripted cold/warm/changed proof; live cold/warm plus separately recovered changed phase. [Proof](history/execution-log.md#learned-operational-check-cold-warm-and-changed-evidence--2026-10-24). Eight-workload H-MEM comparison ties both fixed orders; teaching cost retained.                                                                                                                                                                                                                                                                                                                 | No general advantage demonstrated. Prioritize live evidence; richer memory only with measured benefit. Milad.                                                                                                                                                                                                                                                                            |
+| Evaluation and reporting              | A/B/C/failure fixtures, deterministic savings/null guards, validated trace and measured baselines recorded. [Evaluation](history/execution-log.md#measured-fixture-evaluation-and-earlier-failed-real-model-warm-attempt--2026-10-24), [diagnostics](history/execution-log.md#sanitized-failure-diagnostics-and-separate-execution-metrics--2026-10-24). Real-model failures remain in denominators.                                                                                                                                                                                                   | Do not claim reliable real-model completion or live pricing from fixture results. Milad.                                                                                                                                                                                                                                                                                                 |
+| Release                               | Local isolated clean-checkout runtime proof passed at `391cdef` ([receipt](#clean-checkout-validation-and-coding-agent-runbook--2026-10-25)); release is **not complete**.                                                                                                                                                                                                                                                                                                                                                                                                                             | Independent reproducer/visual review, final README review, final artifact security review, accurate sponsor/Cursor documentation, slides, 1–4 minute demo and portal/submission verification. Milad; Zayan reviews sources.                                                                                                                                                              |
 
 **Next slice:** CloudWatch access and populated retrieval are verified, with incomplete history. Zayan/team obtains adequate metric coverage, verifies opted-in Cost Explorer and supplies authoritative operational sources; Milad runs the integrated CLI against those sources, retaining `needs_verification` wherever critical coverage is missing. The repeated OpenAI A/B/C gate is closed; retain prior failures and complete the Oct 26 freeze assets. No positive live scheduling or numeric savings claim before its evidence gate passes.
 
@@ -1470,7 +1496,7 @@ This table summarizes the release checklist below. [Historical execution receipt
 | Area                                       | Driver                         | Deliverable                                                                                                                                                  |
 | ------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Direct evidence adapters and mock datasets | **Zayan**                      | Read-only TypeScript logical tools for inventory, billing, utilization, operations/jobs and dependencies, shared typed observations with stable evidence IDs |
-| Zetaris history                            | **Milad**                     | Dedicated append-only structured history schema, authorized write boundary, allowlisted read and append, actual read-after-write proof                       |
+| Zetaris history                            | **Milad**                      | Dedicated append-only structured history schema, authorized write boundary, allowlisted read and append, actual read-after-write proof                       |
 | Planner/evaluator, approved model, H-MEM   | **Milad**                      | Bounded evidence-dependent loop, real reasoning memory round-trip, validated report, decision trace                                                          |
 | Shared data/report contract and tests      | **Both**                       | Runtime validation, scope/UTC/units/coverage, integration mode labeling, A/B/C/D fixtures, missing-source case                                               |
 | CLI, README, evaluation and submission     | **Milad** (Zayan reviews data) | Detailed readable report/JSON, repeatable commands, measured evaluation, slides and demo                                                                     |
@@ -1503,14 +1529,14 @@ This table summarizes the release checklist below. [Historical execution receipt
 
 ## Adopted quality-bar release checks
 
-Apply [`the_bar.md`](../the_bar.md) as illustrative quality guidance without changing the approved architecture or safety constraints. This table adds review criteria to the existing release gates; it is not a second milestone.
+Apply the [submission quality bar](../AGENTS.md#submission-quality-bar) as quality guidance without changing the approved architecture or safety constraints. This table adds review criteria to the existing release gates; it is not a second milestone.
 
-| Review criterion | Acceptance evidence / owner |
-| --- | --- |
-| Understandable agent behavior | [Role authority/shared state diagram](components.md), real-model trace showing evidence-dependent choices and evaluator critique; Milad. Scripted policy proof alone is insufficient for model behavior. |
+| Review criterion                 | Acceptance evidence / owner                                                                                                                                                                                                                   |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Understandable agent behavior    | [Role authority/shared state diagram](components.md), real-model trace showing evidence-dependent choices and evaluator critique; Milad. Scripted policy proof alone is insufficient for model behavior.                                      |
 | Reproducible output and failures | [CLI trace walkthrough](CLI_GUIDE.md#capture-and-read-the-decision-trace), A/B/C examples, missing-source result, exact modes and exits; local isolated clean-checkout proof recorded above; separate reproducer review remains; Milad/Zayan. |
-| Sponsor and development claims | [Canonical explanation and reused components](components.md#sponsor-technology-explanation), real service receipts, actual development-tool attribution, permission and portal verification; existing open gates remain open; both. |
-| Final presentation | Exported eight-topic slide deck and reviewed 1–4 minute video showing run, critique, sponsor proof, output and limitations; [storyboard](DEMO.md) is preparation only; Milad. |
+| Sponsor and development claims   | [Canonical explanation and reused components](components.md#sponsor-technology-explanation), real service receipts, actual development-tool attribution, permission and portal verification; existing open gates remain open; both.           |
+| Final presentation               | Exported eight-topic slide deck and reviewed 1–4 minute video showing run, critique, sponsor proof, output and limitations; [storyboard](DEMO.md) is preparation only; Milad.                                                                 |
 
 ## Documentation review — 2026-10-24
 
@@ -1543,7 +1569,6 @@ Apply [`the_bar.md`](../the_bar.md) as illustrative quality guidance without cha
 ## Initial local A/B report viewer — 2026-10-24
 
 The execution-only restrictions in this receipt are superseded by the guided browser demo below; the original verification evidence is retained.
-
 - **Gate/owner:** release presentation surface, Milad; no advancement of the
   populated-live-evidence or final submission gates. User approved A/B scenario
   selection and loading generated single investigation reports.

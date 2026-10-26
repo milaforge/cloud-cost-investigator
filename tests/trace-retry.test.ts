@@ -235,8 +235,8 @@ test('all three candidate tools can each recover on retry three within the aggre
   });
   assert.deepEqual([...calls.values()], [4, 4, 4]);
   assert.equal(report.budget.candidate_attempts, 12);
-  assert.equal(report.candidates[0].verdict, 'conditional_recommendation');
-  assert.equal(report.completion_status, 'complete');
+  assert.equal(report.candidates[0].verdict, 'needs_verification');
+  assert.equal(report.completion_status, 'partial');
 });
 
 test('partial and no_match responses never trigger retries or claim unsupported safety', async () => {

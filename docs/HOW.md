@@ -1,5 +1,9 @@
 # How
 
+## Current decision contract — 2026-10-26
+
+New runs only reject a named, cited conflict or defer with explicit missing evidence/authority. A complete technical check with no conflict still defers the external human decision; new savings are null. Billing is ranking context and cannot block operational investigation of validated running inventory. Historical conditional-recommendation reports and dated receipts retain their original semantics. Zetaris accepts review requests for new rejected/deferred results; acceptance/outcomes are legacy-only. See [the product contract](PROJECT_CONTEXT.md#6-decision-policy).
+
 [What](../README.md) · **How**
 
 ## AI agent clean checkout
@@ -75,12 +79,12 @@ Run each command and record its exit code separately. The final command returnin
 **2** is an expected safe partial result, not a failed setup; avoid shell
 fail-fast handling that mistakes it for a broken installation.
 
-| Scenario | CLI exit | `completion_status` | Candidate verdict / evidence |
-| --- | --- | --- | --- |
-| B | 0 | `complete` | `not_recommended`; proposed window contradicted by a fresh operations/job observation |
-| A | 0 | `complete` | `conditional_recommendation`; human approval remains required |
-| C | 0 | `complete` | `not_recommended`; fresh dependency evidence contradicts the proposal |
-| missing | 2 | `partial` | `needs_verification`; missing authority cannot clear shutdown |
+| Scenario | CLI exit | `completion_status` | Candidate verdict / evidence                                                          |
+| -------- | -------- | ------------------- | ------------------------------------------------------------------------------------- |
+| B        | 0        | `complete`          | `not_recommended`; proposed window contradicted by a fresh operations/job observation |
+| A        | 0        | `complete`          | `needs_verification`; authorized human decision remains external                      |
+| C        | 0        | `complete`          | `not_recommended`; fresh dependency evidence contradicts the proposal                 |
+| missing  | 2        | `partial`           | `needs_verification`; missing authority cannot clear shutdown                         |
 
 All four must report `integration_mode: mock`, `planner.mode: scripted`,
 `historical_context.zetaris: not_configured` and `historical_context.hmem: not_configured`.
@@ -140,16 +144,16 @@ above. Ask only for authorization that is missing from the current task; reuse
 approval already granted for the same action and scope. Sandbox/tool approval
 may still be required separately from human authorization of the project work.
 
-| Action | Agent behavior |
-| --- | --- |
-| Read project files, install locked packages, run local checks, create temporary H-MEM, start/stop a loopback viewer | Proceed within the setup request. Keep dependency changes and upstream refreshes out of this procedure. |
-| Install/upgrade system tools, add production dependencies, refresh vendored H-MEM | Obtain explicit authorization before changing that environment or dependency set. |
-| Real model/integration test or repeated reliability gate | Requires authorization for the provider/model, request limit and billable usage. Read [model setup](CLI_GUIDE.md#model-configuration); the application requires its own configured Chat Completions access. Do not assume the coding agent's login supplies it. Never guess a credential destination, repeat successful paid diagnostics, or automatically retry. |
-| Live AWS or remote Zetaris reads | Requires an authorized account/region or history scope and an approved existing identity. Follow [AWS setup](AWS_TOOLS.md#authentication-and-live-smoke-check) or [Zetaris setup](ZETARIS_SETUP.md). Credential presence alone is not authorization. |
-| Provision remote storage/table/user/grants; retain Zetaris recommendations, decisions or outcomes | Prepare the exact target, permissions and retained records for human review before execution unless already authorized. Appends also need the configured append flag and the workflow's explicit acknowledgment. See [Zetaris permissions](ZETARIS_HISTORY.md#required-app-configuration-and-table-setup) and [follow-through](FOLLOW_UP.md). Never retry an uncertain write without inspecting history. |
-| Login/SSO, API keys or secrets | Let the human provision secrets through their approved local mechanism. Never ask them to paste a key into chat, print `.env`, overwrite existing secrets, or copy them into validation receipts. Resume from safe key-presence checks. |
-| Stop/resize resources or otherwise mutate AWS infrastructure | Outside this application's scope; never execute it as a setup step or as a consequence of a recommendation. |
-| Commit, push, publish reports/video, or submit the entry | Requires explicit instruction for that action. Review the exact files/artifacts first, including privacy and source-mode labels. |
+| Action                                                                                                              | Agent behavior                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read project files, install locked packages, run local checks, create temporary H-MEM, start/stop a loopback viewer | Proceed within the setup request. Keep dependency changes and upstream refreshes out of this procedure.                                                                                                                                                                                                                                                                                                  |
+| Install/upgrade system tools, add production dependencies, refresh vendored H-MEM                                   | Obtain explicit authorization before changing that environment or dependency set.                                                                                                                                                                                                                                                                                                                        |
+| Real model/integration test or repeated reliability gate                                                            | Requires authorization for the provider/model, request limit and billable usage. Read [model setup](CLI_GUIDE.md#model-configuration); the application requires its own configured Chat Completions access. Do not assume the coding agent's login supplies it. Never guess a credential destination, repeat successful paid diagnostics, or automatically retry.                                        |
+| Live AWS or remote Zetaris reads                                                                                    | Requires an authorized account/region or history scope and an approved existing identity. Follow [AWS setup](AWS_TOOLS.md#authentication-and-live-smoke-check) or [Zetaris setup](ZETARIS_SETUP.md). Credential presence alone is not authorization.                                                                                                                                                     |
+| Provision remote storage/table/user/grants; retain Zetaris recommendations, decisions or outcomes                   | Prepare the exact target, permissions and retained records for human review before execution unless already authorized. Appends also need the configured append flag and the workflow's explicit acknowledgment. See [Zetaris permissions](ZETARIS_HISTORY.md#required-app-configuration-and-table-setup) and [follow-through](FOLLOW_UP.md). Never retry an uncertain write without inspecting history. |
+| Login/SSO, API keys or secrets                                                                                      | Let the human provision secrets through their approved local mechanism. Never ask them to paste a key into chat, print `.env`, overwrite existing secrets, or copy them into validation receipts. Resume from safe key-presence checks.                                                                                                                                                                  |
+| Stop/resize resources or otherwise mutate AWS infrastructure                                                        | Outside this application's scope; never execute it as a setup step or as a consequence of a recommendation.                                                                                                                                                                                                                                                                                              |
+| Commit, push, publish reports/video, or submit the entry                                                            | Requires explicit instruction for that action. Review the exact files/artifacts first, including privacy and source-mode labels.                                                                                                                                                                                                                                                                         |
 
 After the local proof, stop unless the user also requested a specific authorized
 service check. Use the service configuration links below for that separate task.
@@ -177,15 +181,17 @@ Starts the shared Demo/Live web UI on a loopback-only server and opens the
 browser without running investigations. All three tabs exist in both modes. The top-center **Mode** select
 defaults to **Demo**, with no scenario or report selected.
 
-| Tab | Demo — preview only | Live — operations |
-| --- | --- | --- |
-| **Investigate** | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Click **Run investigation** to validate server configuration and start. Missing or invalid settings prompt `.env` fixes and a restart of `npm start`. Uses the configured model and reads configured Zetaris history automatically. Load a live report for inspection. |
-| **Learn** | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes. | Inspect the selected live report's H-MEM status and limitations. Live recall/lesson storage are not enabled by this browser workflow; no synthetic demonstration is offered here. |
-| **Follow through** | Read illustrative defer/review and accept/outcome paths. No forms, service calls or retained records. | Accept or defer a completed conditional recommendation, with attributed reason and explicit Zetaris storage acknowledgment. Readback verifies the stored decision and linked recommendation. |
+| Tab                | Demo — preview only                                                                                                                                                                                   | Live — operations                                                                                                                                                                                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Investigate**    | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Click **Run investigation** to validate server configuration and start. Missing or invalid settings prompt `.env` fixes and a restart of `npm start`. Uses the configured model and reads configured Zetaris history automatically. Load a live report for inspection. |
+| **Learn**          | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes.                                                                                           | Inspect the selected live report's H-MEM status and limitations. Live recall/lesson storage are not enabled by this browser workflow; no synthetic demonstration is offered here.                                                                                      |
+| **Follow through** | Read illustrative defer/review and accept/outcome paths. No forms, service calls or retained records.                                                                                                 | Schedule a review of a rejected or deferred investigation result, with attributed reason and explicit Zetaris storage acknowledgment. Readback verifies the stored decision and linked recommendation.                                                                 |
 
 Demo previews use synthetic evidence and a scripted planner generated locally
-on explicit scenario selection, then cached until server restart. The missing-evidence
-preview includes bounded retries; its wait never blocks startup or Live setup.
+on explicit scenario selection, then cached until server restart. **Missing evidence**
+loads the recorded unavailable-operations example from `docs/ec2-scenarios.jsonl`,
+retaining its original timestamps instead of replaying retry delays. A visible,
+accessible loading indicator covers pending preview requests.
 Learn and Follow through illustrations are not executed proof.
 Selecting a scenario loads its preview without starting a worker. Demo cannot
 submit runs, owner statements or decisions, contact a model or write to Zetaris.
@@ -276,12 +282,12 @@ These use 14 complete UTC days; the policy still enforces a seven-day minimum.
 
 Copy [.env.example](../.env.example) to `.env` **only if `.env` does not exist**; otherwise merge the needed keys. Keep it untracked. Commands load it from the working directory; existing shell variables take precedence except that `npm start` prefers `.env` values for `AWS_PROFILE` and `AWS_REGION` when present.
 
-| Choose | Continue here |
-| --- | --- |
-| Live AWS evidence and permissions | [AWS setup and account requirements](AWS_SETUP.md) |
-| A real model, including NVIDIA | [Model configuration](CLI_GUIDE.md#model-configuration) |
-| Persistent investigation lessons | [H-MEM configuration](MEMORY.md#configuration) |
-| Historical recommendations and decisions | [Zetaris setup](ZETARIS_SETUP.md) |
+| Choose                                   | Continue here                                           |
+| ---------------------------------------- | ------------------------------------------------------- |
+| Live AWS evidence and permissions        | [AWS setup and account requirements](AWS_SETUP.md)      |
+| A real model, including NVIDIA           | [Model configuration](CLI_GUIDE.md#model-configuration) |
+| Persistent investigation lessons         | [H-MEM configuration](MEMORY.md#configuration)          |
+| Historical recommendations and decisions | [Zetaris setup](ZETARIS_SETUP.md)                       |
 
 Live, read-only AWS evidence is the default. Synthetic runs require `--evidence mock`; failures never switch to mocks. Replace the account placeholder and region with your intended AWS scope:
 
@@ -289,7 +295,7 @@ Live, read-only AWS evidence is the default. Synthetic runs require `--evidence 
 npm run investigate -- --account YOUR_12_DIGIT_ACCOUNT_ID --region us-east-1
 ```
 
-The [team-adopted quality bar](../the_bar.md) guides reproducibility, visible decision-making and submission materials. Its examples do not change this project’s safety policy or technology roles.
+The [submission quality bar](../AGENTS.md#submission-quality-bar) guides reproducibility, visible decision-making and submission materials. Its examples do not change this project’s safety policy or technology roles.
 
 ## Authenticate to AWS
 
@@ -306,17 +312,17 @@ facts actually retrieved and their reported coverage.
 
 ## Go deeper
 
-| Question | One place to read |
-| --- | --- |
-| Which flags and scenarios can I run? | [CLI reference](CLI_GUIDE.md) |
-| How do the components work together? | [Architecture](components.md) |
-| How are Zetaris, Meterless and NVIDIA used? | [Sponsor technology explanation](components.md#sponsor-technology-explanation) |
-| How do I record a decision, review or outcome? | [Follow-up workflow](FOLLOW_UP.md) |
-| How are lessons stored and reused? | [H-MEM reference](MEMORY.md) |
-| What are the exact evidence and safety rules? | [Product contracts](PROJECT_CONTEXT.md) |
-| How do I reproduce and assess the demos? | [Evaluation](evaluation/README.md) |
-| How do I present the workflow to judges? | [Demo and deck preparation](DEMO.md) |
-| What works today, and what is still unverified? | [Current status and release checklist](EXECUTION_PLAN.md) |
-| What does the hackathon require? | [Recorded event rules](RULES.md) |
+| Question                                        | One place to read                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------ |
+| Which flags and scenarios can I run?            | [CLI reference](CLI_GUIDE.md)                                                  |
+| How do the components work together?            | [Architecture](components.md)                                                  |
+| How are Zetaris, Meterless and NVIDIA used?     | [Sponsor technology explanation](components.md#sponsor-technology-explanation) |
+| How do I record a decision, review or outcome?  | [Follow-up workflow](FOLLOW_UP.md)                                             |
+| How are lessons stored and reused?              | [H-MEM reference](MEMORY.md)                                                   |
+| What are the exact evidence and safety rules?   | [Product contracts](PROJECT_CONTEXT.md)                                        |
+| How do I reproduce and assess the demos?        | [Evaluation](evaluation/README.md)                                             |
+| How do I present the workflow to judges?        | [Demo and deck preparation](DEMO.md)                                           |
+| What works today, and what is still unverified? | [Current status and release checklist](EXECUTION_PLAN.md)                      |
+| What does the hackathon require?                | [Recorded event rules](RULES.md)                                               |
 
 For contributors: [checks and diagnostics](CLI_GUIDE.md#verify), [working rules](../AGENTS.md), and [decision rationale](../memory.md).

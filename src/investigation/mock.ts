@@ -164,6 +164,15 @@ export class MockProvider implements CurrentEvidenceProvider {
         observation.units = 'boolean';
         observation.data = {
           requires_continuous_operation: scenario === 'C',
+          ...(scenario === 'C'
+            ? {
+                continuous_operation_reason: {
+                  dependency_id: 'shared-api-consumer',
+                  requirement:
+                    'The synthetic consumer requires this instance available continuously, including 00:00–06:00 UTC',
+                },
+              }
+            : {}),
           ...(scenario === 'A' ? { scheduling_clearance: clearance } : {}),
         };
         break;

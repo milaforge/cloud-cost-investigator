@@ -15,20 +15,20 @@ import { runInvestigation } from '../src/investigation/run.ts';
 test('evaluation preserves all denominators and exposes heuristic unsafe and unknown positives', async () => {
   const results = await evaluate('scripted');
   assert.deepEqual(results.cpu_baseline, {
-    disposition_correct: 2,
+    disposition_correct: 0,
     cases: 8,
-    unsafe_positives: 3,
-    unsafe_cases: 3,
-    unverified_positives: 3,
-    unknown_cases: 3,
+    unsafe_positives: 2,
+    unsafe_cases: 2,
+    unverified_positives: 4,
+    unknown_cases: 4,
   });
   assert.deepEqual(results.investigation, {
     disposition_correct: 8,
     cases: 8,
     unsafe_positives: 0,
-    unsafe_cases: 3,
+    unsafe_cases: 2,
     unverified_positives: 0,
-    unknown_cases: 3,
+    unknown_cases: 4,
   });
   assert.ok(
     results.rows.every(
@@ -46,8 +46,8 @@ test('evaluation preserves all denominators and exposes heuristic unsafe and unk
   assert.equal(results.model_cost, null);
   assert.deepEqual(results.execution, {
     cases: 8,
-    complete: 4,
-    partial: 4,
+    complete: 2,
+    partial: 6,
     failed: 0,
     planner_failure_cases: 0,
     matching_dispositions_with_planner_failure: 0,
@@ -177,7 +177,7 @@ test('evaluation CLI keeps verbose progress on stderr and stdout as final JSON',
       assert.match(progress, /Starting 8 cases/);
       assert.match(progress, /case 1\/8 A: planner call 1 waiting/);
       assert.match(progress, /tool get_ec2_metrics ok/);
-      assert.match(progress, /case 8\/8 unknown_commitments: complete/);
+      assert.match(progress, /case 8\/8 unknown_commitments: partial/);
       assert.match(progress, /All cases finished; writing JSON/);
     } else assert.equal(progress, '');
   }

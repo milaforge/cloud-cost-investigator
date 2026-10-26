@@ -265,6 +265,15 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   const previewButton = lazy.elements.find((el) => el.dataset.report === 'B');
   assert.equal(previewButton?.attributes['aria-busy'], 'true');
   assert.equal(previewButton?.disabled, true);
+  assert.equal(
+    lazy.get('report').children[0].className,
+    'empty-report preview-loading',
+  );
+  assert.equal(
+    lazy.get('report').children[0].children[0].attributes['aria-hidden'],
+    'true',
+  );
+  assert.equal(lazy.get('message').textContent, 'Loading synthetic preview…');
   lazy.mode('live');
   assert.equal(previewButton?.attributes['aria-busy'], 'false');
   assert.equal(previewButton?.disabled, false);
@@ -289,9 +298,17 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   assert.equal(recovery.run('active'), null);
   assert.match(recovery.get('message').textContent, /Could not load preview/);
   assert.equal(recovery.get('report').attributes['aria-busy'], 'false');
+  assert.equal(
+    recovery.get('report').querySelectorAll('.preview-spinner').length,
+    0,
+  );
   available = true;
   await recovery.get('scenario').listeners.change();
   assert.equal(recovery.run('active'), 'A');
+  assert.equal(
+    recovery.get('report').querySelectorAll('.preview-spinner').length,
+    0,
+  );
   const requests = recovery.requests.length;
   await recovery.get('scenario').listeners.change();
   assert.equal(

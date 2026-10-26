@@ -46,7 +46,7 @@ for (const peak of [5, 60]) {
     });
     assert.equal(report.candidates[0].verdict, 'needs_verification');
     assert.equal(report.candidates[0].estimated_monthly_savings, null);
-    assert.equal(!!report.candidates[0].proposed_window, peak === 5);
+    assert.equal(!!report.candidates[0].proposed_window, true);
     for (const tool of [
       'get_ec2_metrics',
       'get_ec2_operations',
@@ -60,7 +60,7 @@ for (const peak of [5, 60]) {
         t.action.tool === 'get_ec2_operations',
     );
     assert.ok(operation?.action?.type === 'tool');
-    assert.equal(!!operation.action.args.proposed_window, peak === 5);
+    assert.equal(!!operation.action.args.proposed_window, true);
     validateReport(report);
     if (peak === 5) {
       const forged = structuredClone(report);

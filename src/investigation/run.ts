@@ -37,11 +37,9 @@ import {
 import {
   assessScheduling,
   nextHumanActions,
-  calculateSavings,
   rankCandidates,
   sameSchedule,
-  schedulingConflict,
-  schedulingProof,
+  conflictExplanation,
   supportsTentativeWindow,
 } from './policy.ts';
 import { ModelHttpError } from './provider-error.ts';
@@ -314,7 +312,7 @@ export async function runInvestigation(
   const select = async (instance: string) => {
     const inventory = find('list_ec2_instances');
     const billing = find('get_ec2_billing');
-    if (!inventory || !billing) throw new Error('Discovery required');
+    if (!usable(inventory)) throw new Error('Discovery required');
     historicalHints = [];
     if (
       !runtimeExhausted &&
@@ -348,8 +346,11 @@ export async function runInvestigation(
     const selectedCandidate: CandidateReport = {
       instance_id: instance,
       selection_reason:
-        'Selected in descending observed compute cost among discovered running instances with positive matching billing; ties by instance ID.',
-      selection_evidence_ids: [inventory.evidence_id, billing.evidence_id],
+        'Selected from validated running inventory, ordered by available compute spend then instance ID. Missing billing is unknown, not zero spend.',
+      selection_evidence_ids: [
+        inventory.evidence_id,
+        ...(usable(billing) ? [billing.evidence_id] : []),
+      ],
       proposed_window: null,
       verdict: 'needs_verification',
       explanation: 'Operational safety has not been established.',
@@ -581,12 +582,12 @@ export async function runInvestigation(
           state: 'proposed',
           evidence_ids: action.evidence_ids,
           reason:
-            'Low observed average and peak CPU suggest a question; operational safety is unverified.',
+            'The retrieved utilization window is a tentative question; whole-period CPU statistics do not establish window safety.',
         });
         candidate.supporting_evidence_ids.push(...action.evidence_ids);
         add(
           'evaluator',
-          'Plausible window proposed. Require a fresh targeted operations challenge; low CPU is not scheduling authority.',
+          'Tentative window proposed. Require fresh targeted operational checks; utilization alone is not scheduling authority.',
           action.evidence_ids,
         );
         continue;
@@ -657,6 +658,7 @@ export async function runInvestigation(
       actions.add(signature);
       let observation: Observation | undefined;
       let toolRetryCount = 0;
+      let invalidEvidence = false;
       for (;;) {
         if (discovery) discoveryAttempts++;
         else {
@@ -692,6 +694,7 @@ export async function runInvestigation(
             break;
         } catch (error) {
           observation = undefined;
+          invalidEvidence = validatingObservation;
           // Invalid payloads and cancellation are trust/cancellation boundaries,
           // not temporary source outages. Raw exception details stay private.
           toolCancelled = error instanceof Error && error.name === 'AbortError';
@@ -761,6 +764,26 @@ export async function runInvestigation(
         gaps.push(
           `${action.tool}: timed out, failed, or returned invalid scoped evidence`,
         );
+        if (
+          action.tool === 'get_ec2_billing' &&
+          !invalidEvidence &&
+          !toolCancelled &&
+          !runtimeExhausted
+        ) {
+          const inventory = find('list_ec2_instances');
+          if (usable(inventory)) {
+            pending = rankCandidates(
+              inventory.data as InventoryData,
+              null,
+              request.max_candidates,
+              true,
+            );
+            const next = pending.shift();
+            if (next) candidate = await select(next);
+            else stopReason = 'no_eligible_candidates';
+            if (candidate) continue;
+          }
+        }
         if (discovery) failDiscovery(action.tool);
         if (toolCancelled) stopReason = 'tool_cancelled';
         if (runtimeExhausted || discovery || toolCancelled) break;
@@ -817,7 +840,7 @@ export async function runInvestigation(
             'AWS denied inventory access before candidate evaluation. Verify the server AWS_PROFILE and ec2:DescribeInstances permission for the requested account/region; restart the server with the intended profile and rerun. Shutdown safety was not assessed.',
           );
       }
-      if (discovery && !usable(observation)) {
+      if (action.tool === 'list_ec2_instances' && !usable(observation)) {
         failDiscovery(action.tool);
         break;
       }
@@ -830,11 +853,12 @@ export async function runInvestigation(
           stopReason = 'no_eligible_candidates';
           break;
         }
-        if (usable(inventory) && usable(billing)) {
+        if (usable(inventory) && action.tool === 'get_ec2_billing') {
           const eligible = rankCandidates(
             inventory.data as InventoryData,
-            billing.data as BillingData,
+            usable(billing) ? (billing.data as BillingData) : null,
             request.max_candidates,
+            true,
           );
           if (!eligible.length) {
             stopReason = 'no_eligible_candidates';
@@ -849,19 +873,14 @@ export async function runInvestigation(
       }
       const proposedWindow = candidate.proposed_window;
       if (proposedWindow && usable(observation)) {
-        const conflict = schedulingConflict(
+        const explanation = conflictExplanation(
           request,
           proposedWindow,
           observation,
         );
-        if (conflict && candidate.verdict !== 'not_recommended') {
+        if (explanation && candidate.verdict !== 'not_recommended') {
           candidate.verdict = 'not_recommended';
-          candidate.explanation =
-            conflict === 'scheduled_maintenance'
-              ? 'A retrieved dated SSM maintenance execution overlaps the proposed shutdown window in the planning month; shutdown is not recommended for this window.'
-              : conflict === 'critical_job'
-                ? 'A retrieved critical job overlaps the proposed shutdown window; reject this window.'
-                : 'A retrieved dependency requires continuous operation; reject this window.';
+          candidate.explanation = explanation;
           candidate.contradicting_evidence_ids = [observation.evidence_id];
           candidate.hypotheses.push({
             window: proposedWindow,
@@ -881,56 +900,25 @@ export async function runInvestigation(
         stopReason = 'hypothesis_contradicted';
         break;
       }
-      const proof = schedulingProof(request, candidate, evidence);
-      if (
-        proof &&
-        candidate.proposed_window &&
-        candidate.verdict !== 'not_recommended'
-      ) {
-        candidate.verdict = 'conditional_recommendation';
-        candidate.explanation =
-          'Current complete operational evidence clears this window conditionally; obtain human approval and revalidate before execution.';
-        candidate.supporting_evidence_ids = proof.map((o) => o.evidence_id);
-        candidate.hypotheses.push({
-          window: candidate.proposed_window,
-          state: 'supported',
-          evidence_ids: candidate.supporting_evidence_ids,
-          reason: candidate.explanation,
-        });
-        candidate.assumptions = [
-          'Clearance applies only to the specified UTC calendar month following the observation window and reviewed exclusions.',
-          'Compute-only on-demand savings exclude retained storage, networking and other charges; subtract recovery overhead and round down to billing units.',
-        ];
-        candidate.next_human_actions = [
-          'Obtain authorized human approval; revalidate jobs, dependencies, calendar exceptions and recovery readiness before scheduling.',
-        ];
-        const savings = calculateSavings(request, candidate, evidence);
-        candidate.estimated_monthly_savings = savings?.amount ?? null;
-        candidate.savings_calculation = savings?.calculation ?? null;
-        if (!savings)
-          candidate.missing_checks.push(
-            'Savings require a valid marginal on-demand compute rate, known commitment treatment and retained-cost exclusions.',
-          );
-        add(
-          'evaluator',
-          candidate.explanation,
-          candidate.supporting_evidence_ids,
-        );
-        stopReason = 'hypothesis_supported';
-        break;
-      }
     }
     if (candidate && candidate.verdict === 'needs_verification') {
-      candidate.explanation =
-        'Critical operational authority or complete evidence is unresolved; no shutdown recommendation is issued.';
+      const assessment = assessScheduling(request, candidate, evidence, false);
+      candidate.missing_checks.push(...assessment.missing_checks);
+      if (!candidate.missing_checks.length)
+        candidate.missing_checks.push(
+          'Authorized human shutdown decision is not supplied by CCI. Review the retrieved evidence and obtain approval through the external change process.',
+        );
+      candidate.explanation = `Decision deferred. ${candidate.missing_checks[0].slice(0, 200)} No shutdown recommendation is issued.`;
+      if (assessment.proof) {
+        candidate.supporting_evidence_ids = assessment.proof.map(
+          (o) => o.evidence_id,
+        );
+        candidate.explanation =
+          'No conflict was established by the completed checks. Technical evidence is present; an authorized human shutdown decision remains outside CCI. Decision deferred; this is not a recommendation.';
+      }
       const metrics = find('get_ec2_metrics');
       if (metrics?.data && 'average_cpu_percent' in metrics.data) {
-        const m = metrics.data;
-        const low = m.average_cpu_percent <= 10 && m.peak_cpu_percent <= 20;
-        const days =
-          (Date.parse(request.window.to) - Date.parse(request.window.from)) /
-          86400000;
-        candidate.explanation = `${low ? 'Low CPU utilization across available observations' : 'CPU activity observed'}: average ${m.average_cpu_percent.toFixed(2)}%, peak ${m.peak_cpu_percent.toFixed(2)}%. ${metrics.coverage.complete ? 'Complete' : 'Incomplete'} coverage of the requested ${days}-day period. ${days < 7 ? 'Insufficient history for a recurring schedule. ' : ''}Workload safety remains unresolved; low CPU does not establish absence of tasks or dependencies. No shutdown recommendation is issued.`;
+        candidate.explanation += ` Observed CPU average ${metrics.data.average_cpu_percent.toFixed(2)}%, peak ${metrics.data.peak_cpu_percent.toFixed(2)}%; ${metrics.coverage.complete ? 'complete' : 'incomplete'} coverage. Low CPU does not prove absence of jobs or dependencies.`;
         candidate.supporting_evidence_ids = [
           ...new Set([
             ...candidate.supporting_evidence_ids,
@@ -938,9 +926,7 @@ export async function runInvestigation(
           ]),
         ];
       }
-      candidate.missing_checks.push(
-        ...assessScheduling(request, candidate, evidence).missing_checks,
-      );
+      candidate.explanation = candidate.explanation.slice(0, 400);
       candidate.next_human_actions = [
         ...nextHumanActions(candidate.missing_checks),
         'Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change.',
@@ -985,6 +971,7 @@ export async function runInvestigation(
   const report: InvestigationReport = {
     investigation_id,
     goal: 'evaluate_ec2_off_hours_scheduling',
+    decision_policy: 'reject_or_defer',
     request,
     ...(ownerEvidence === undefined ? {} : { owner_evidence: ownerEvidence }),
     started_at,
@@ -1021,7 +1008,7 @@ export async function runInvestigation(
       elapsed_ms: Date.now() - start,
     },
     limitations: [
-      'Conditional scheduling requires human approval. Savings are estimates for the UTC calendar month following the observation window, not all-in invoice reductions.',
+      'CCI only rejects or defers the evaluated window. No found conflict is not approval; any infrastructure change requires an external authorized human decision. New savings are not produced.',
       ...(options.planner.mode === 'scripted'
         ? [
             'Scripted planner exercises deterministic behavior; no model call was made.',

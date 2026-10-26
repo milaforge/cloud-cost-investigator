@@ -1,3 +1,4 @@
+import { legacyRecommendation } from './helpers/legacy-report.ts';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -49,7 +50,7 @@ async function feedback(
   check: string | undefined = 'dependency_continuous_operation',
   result = 'rolled_back',
 ) {
-  const report = await run('A');
+  const report = legacyRecommendation(await run('A'));
   const receipt = await recordDecision(report, instance, {
     kind: 'accepted',
     actor: 'operator-fixture',
@@ -91,11 +92,11 @@ test('operator rollback automatically teaches H-MEM; next investigation verifies
     'get_ec2_operations',
     'get_ec2_dependencies',
   ]);
-  assert.deepEqual(checks(warm), ['get_ec2_dependencies']);
-  assert.equal(
-    warm.budget.candidate_attempts,
-    cold.budget.candidate_attempts - 1,
-  );
+  assert.deepEqual(checks(warm), [
+    'get_ec2_dependencies',
+    'get_ec2_operations',
+  ]);
+  assert.equal(warm.budget.candidate_attempts, cold.budget.candidate_attempts);
   assert.equal(warm.candidates[0].verdict, 'not_recommended');
   assert.ok(warm.historical_context.context_ids.includes(outcome.context_id));
   assert.ok(
@@ -127,7 +128,7 @@ test('fresh clearance supersedes the rollback lesson; later runs do not resurrec
   await feedback();
   const changed = await run('A', dir);
   assert.equal(checks(changed)[0], 'get_ec2_dependencies');
-  assert.equal(changed.candidates[0].verdict, 'conditional_recommendation');
+  assert.equal(changed.candidates[0].verdict, 'needs_verification');
   assert.ok(
     changed.trace.some((t) =>
       t.reason.includes('not_observed by fresh evidence'),
@@ -136,7 +137,7 @@ test('fresh clearance supersedes the rollback lesson; later runs do not resurrec
   await setTimeout(2);
   const next = await run('A', dir);
   assert.equal(checks(next)[0], 'get_ec2_operations');
-  assert.equal(next.candidates[0].verdict, 'conditional_recommendation');
+  assert.equal(next.candidates[0].verdict, 'needs_verification');
 });
 
 for (const [check, result] of [

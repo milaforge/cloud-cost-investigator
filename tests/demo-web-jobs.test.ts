@@ -178,7 +178,7 @@ test('isolated offline investigations and H-MEM learning return actual results w
     );
     assert.equal(
       learned.runs[2].report.candidates[0].verdict,
-      'conditional_recommendation',
+      'needs_verification',
     );
   } finally {
     jobs.close();
@@ -239,7 +239,7 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     const result =
       await finish<Awaited<ReturnType<typeof demonstrateFollowUps>>>(jobs);
     assert.equal(result.passed, true);
-    assert.equal(records.length, 7);
+    assert.equal(records.length, 6);
     assert.ok(
       jobs.current?.events.some((e) =>
         e.startsWith('Synthetic follow-up account:'),
@@ -253,18 +253,19 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     });
     const historyReport = await finish(jobs);
     assert.equal(historyReport.historical_context.zetaris, 'ok');
-    assert.equal(records.length, 7);
+    assert.equal(records.length, 6);
     assert.ok(jobs.current?.events.some((e) => e.includes('append disabled')));
     const report = (await generateDemoReports()).A;
     const decisionInput = {
-      request_id: 'engineer-accept',
+      request_id: 'engineer-review',
       kind: 'decision',
       real_services: true,
       allow_append: true,
       report,
       instance_id: report.candidates[0].instance_id,
       decision: {
-        kind: 'accepted',
+        kind: 'deferred',
+        review_at: new Date(Date.now() + 86400000).toISOString(),
         actor: 'engineer-42',
         reason: 'Accepted in local fixture test.',
       },
@@ -276,13 +277,13 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
       { decision: { ...decisionInput.decision, kind: 'delete' } },
       { decision: { ...decisionInput.decision, actor: 'spaces not allowed' } },
       { sql: 'arbitrary SQL' },
-      { report: { ...report, completion_status: 'partial' } },
+      { report: { ...report, completion_status: 'failed' } },
     ])
       assert.throws(() => validateDemoRun({ ...decisionInput, ...change }));
     jobs.start(decisionInput);
     const receipt =
       await finish<Awaited<ReturnType<typeof recordDecision>>>(jobs);
-    assert.equal(records.length, 9);
+    assert.equal(records.length, 8);
     assert.equal(receipt.decision.record.schema_version, 2);
     assert.equal(
       JSON.parse(receipt.decision.record.summary_json).actor,
@@ -297,7 +298,7 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     );
     jobs.start({ ...decisionInput, request_id: 'same-decision' });
     assert.deepEqual(await finish(jobs), receipt);
-    assert.equal(records.length, 9);
+    assert.equal(records.length, 8);
     jobs.start({
       ...decisionInput,
       request_id: 'conflict-decision',
@@ -306,7 +307,7 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     const conflict = await settle(jobs);
     assert.equal(conflict?.status, 'failed');
     assert.match(conflict?.error ?? '', /cannot be overwritten/);
-    assert.equal(records.length, 9);
+    assert.equal(records.length, 8);
     const deferredReport = (await generateDemoReports()).A;
     const review_at = new Date(Date.now() + 3600000).toISOString();
     // A failed worker reports its error before its close/cleanup event.
@@ -328,7 +329,7 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
       JSON.parse(deferred.decision.record.summary_json).review_at,
       review_at,
     );
-    assert.equal(records.length, 11);
+    assert.equal(records.length, 10);
     uncertainInsert = true;
     jobs.start({
       ...decisionInput,
@@ -341,7 +342,7 @@ test('browser follow-through worker reaches the real adapter via a local HTTP fi
     assert.match(uncertain?.error ?? '', /could not be verified/);
     assert.equal(
       records.length,
-      12,
+      11,
       'uncertain recommendation write is not automatically replayed',
     );
     assert.equal(JSON.stringify(jobs.current).includes('fixture-key'), false);
@@ -544,7 +545,7 @@ test('selected lookback reaches the isolated investigation worker', async () => 
     assert.equal(report.candidates[0].verdict, 'needs_verification');
     assert.match(
       report.candidates[0].explanation,
-      /Low CPU utilization.*requested 2-day period.*Insufficient history/,
+      /Decision deferred.*Insufficient history.*Observed CPU/,
     );
   } finally {
     jobs.close();

@@ -1,3 +1,4 @@
+import { legacyRecommendation } from './helpers/legacy-report.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { tmpdir } from 'node:os';
@@ -35,6 +36,8 @@ const run = (scenario: MockScenario = 'A') =>
       },
     },
     { provider: new MockProvider(scenario), planner: new ScriptedPlanner() },
+  ).then((report) =>
+    scenario === 'A' ? legacyRecommendation(report) : report,
   );
 const accepted = {
   kind: 'accepted',
@@ -60,7 +63,7 @@ test('both follow-up paths use persisted intent; fresh review and attributed out
   t.mock.method(console, 'error', () => {});
   const result = await demonstrateFollowUps();
   assert.equal(result.passed, true, JSON.stringify(result.checks));
-  assert.equal(records.length, 7);
+  assert.equal(records.length, 6);
   assert.equal((await readZetarisHistory(result.scope, 20)).length, 3);
 });
 

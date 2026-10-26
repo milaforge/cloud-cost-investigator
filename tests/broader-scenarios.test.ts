@@ -1,3 +1,4 @@
+import { legacyRecommendation } from './helpers/legacy-report.ts';
 import { OpenAICompatiblePlanner } from '../src/investigation/model.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -51,22 +52,23 @@ const run = (
     planner: new ScriptedPlanner(),
   });
 
-test('EC2 1: matching clearances support conditional approval with reproducible compute savings', async (t) => {
+test('EC2 1: complete technical evidence still defers to an authorized human decision', async (t) => {
   const r = await run('A');
   const c = r.candidates[0];
-  assert.equal(r.completion_status, 'complete');
-  assert.equal(c.verdict, 'conditional_recommendation');
+  assert.equal(r.completion_status, 'partial');
+  assert.equal(c.verdict, 'needs_verification');
   assert.deepEqual(
     c.hypotheses.map((h) => h.state),
-    ['proposed', 'supported'],
+    ['proposed', 'unresolved'],
   );
-  assert.equal(c.estimated_monthly_savings, 75); // October: (31 - 1 excluded) * floor((360 - 30)/60) * 0.50
-  assert.equal(c.savings_calculation?.avoided_hours, 150);
-  assert.equal(c.savings_calculation?.eligible_days, 30);
-  assert.equal(c.savings_calculation?.period.from, '2026-10-01T00:00:00.000Z');
-  assert.match(c.next_human_actions.join(' '), /human approval/);
-  assert.match(renderReport(r), /75 USD/);
-  assert.deepEqual(c.missing_checks, []);
+  assert.equal(c.estimated_monthly_savings, null);
+  assert.equal(c.savings_calculation, null);
+  assert.match(c.explanation, /No conflict was established/);
+  assert.match(
+    c.missing_checks.join(' '),
+    /Authorized human shutdown decision/,
+  );
+  assert.match(renderReport(r), /Decision|decision/);
   assert.deepEqual(c.contradicting_evidence_ids, []);
   assert.deepEqual(
     c.supporting_evidence_ids.map(
@@ -163,7 +165,7 @@ for (const condition of [
       missing_clearance: /Obtain owner, calendar and recovery clearance/,
       non_authoritative:
         /Ask the workload owner to supply an authoritative job schedule/,
-      partial: /get_ec2_operations \(partial\)/,
+      partial: /get_ec2_operations \(partial; incomplete_job_schedule\)/,
       owner_unknown: /Ask the workload owner to confirm/,
       calendar_unknown: /Review the job calendar and exceptional dates/,
       recovery_unknown: /Verify stop\/start recovery readiness/,
@@ -171,7 +173,7 @@ for (const condition of [
       mismatch: /Reconcile operations and dependency clearances/,
       noncritical_job: /Resolve overlapping jobs/,
       coarse_metrics: /five-minute or finer resolution/,
-      high_peak: /exceeds the low-utilization policy thresholds/,
+      high_peak: /window-specific activity/,
     }[condition];
     assert.match(r.candidates[0].missing_checks.join(' '), expectedAction);
     assert.match(
@@ -208,24 +210,26 @@ for (const condition of [
         p.valid_window.to = '2026-10-02T00:00:00Z';
       if (condition === 'other_currency') o.data.currency = 'JPY';
     });
-    assert.equal(r.candidates[0].verdict, 'conditional_recommendation');
+    assert.equal(r.candidates[0].verdict, 'needs_verification');
     assert.equal(r.candidates[0].estimated_monthly_savings, null);
     assert.equal(r.candidates[0].savings_calculation, null);
   });
 }
 
 test('calendar arithmetic handles leap February, reviewed exclusions, overhead and billing units', async () => {
-  const r = await run('A', undefined, {
-    ...request,
-    window: { from: '2024-01-01T00:00:00Z', to: '2024-01-29T00:00:00Z' },
-  });
+  const r = legacyRecommendation(
+    await run('A', undefined, {
+      ...request,
+      window: { from: '2024-01-01T00:00:00Z', to: '2024-01-29T00:00:00Z' },
+    }),
+  );
   assert.equal(r.candidates[0].savings_calculation?.eligible_days, 28);
   assert.equal(r.candidates[0].estimated_monthly_savings, 70);
 });
 
 test('mixed top three isolate identical proposed windows, share discovery, and retain rank order', async () => {
   const r = await run('mixed', undefined, { ...request, max_candidates: 3 });
-  assert.equal(r.completion_status, 'complete');
+  assert.equal(r.completion_status, 'partial');
   assert.equal(r.discovery.discovered_count, 4);
   assert.deepEqual(
     r.candidates.map((c) => c.instance_id),
@@ -233,11 +237,11 @@ test('mixed top three isolate identical proposed windows, share discovery, and r
   );
   assert.deepEqual(
     r.candidates.map((c) => c.verdict),
-    ['conditional_recommendation', 'not_recommended', 'not_recommended'],
+    ['needs_verification', 'not_recommended', 'not_recommended'],
   );
   assert.equal(r.budget.discovery_attempts, 2);
   assert.equal(r.budget.candidate_attempts, 9);
-  assert.equal(r.budget.planner_calls, 13);
+  assert.equal(r.budget.planner_calls, 14);
   for (let i = 0; i < 3; i++) {
     const summary = reasoningSummaryFromReport(r, i);
     const record = historyRecordFromReport(r, i);
@@ -277,7 +281,7 @@ test('a later candidate tool failure preserves earlier supported recommendation'
   assert.equal(r.completion_status, 'partial');
   assert.deepEqual(
     r.candidates.map((c) => c.verdict),
-    ['conditional_recommendation', 'needs_verification', 'not_recommended'],
+    ['needs_verification', 'needs_verification', 'not_recommended'],
   );
   assert.doesNotMatch(JSON.stringify(r), /private provider failure/);
 });
@@ -293,7 +297,7 @@ test('aggregate planner exhaustion retains finished candidates and explicitly de
   );
   assert.deepEqual(
     r.candidates.map((c) => c.verdict),
-    ['conditional_recommendation', 'needs_verification', 'needs_verification'],
+    ['needs_verification', 'needs_verification', 'needs_verification'],
   );
   assert.equal(r.completion_status, 'partial');
   assert.equal(r.budget.planner_calls, 6);
@@ -388,7 +392,7 @@ test('aggregate deadline does not restart for later candidates', async () => {
   assert.equal(thirdCalls, 0);
   assert.deepEqual(
     r.candidates.map((c) => c.verdict),
-    ['conditional_recommendation', 'needs_verification', 'needs_verification'],
+    ['needs_verification', 'needs_verification', 'needs_verification'],
   );
   assert.equal(r.stop_reason, 'total_runtime_exhausted');
 });
@@ -406,7 +410,7 @@ test('policy boundary is seven days, not the agreed fourteen-day scenario window
     });
     assert.equal(
       r.candidates[0].verdict,
-      days < 7 ? 'needs_verification' : 'conditional_recommendation',
+      'needs_verification',
       `${days}-day boundary`,
     );
   }
@@ -461,10 +465,10 @@ test('model transport uses candidate-specific choices and observations across al
       }),
     },
   );
-  assert.equal(r.completion_status, 'complete');
-  assert.equal(calls, 13);
+  assert.equal(r.completion_status, 'partial');
+  assert.equal(calls, 14);
   assert.deepEqual(
     r.candidates.map((c) => c.verdict),
-    ['conditional_recommendation', 'not_recommended', 'not_recommended'],
+    ['needs_verification', 'not_recommended', 'not_recommended'],
   );
 });

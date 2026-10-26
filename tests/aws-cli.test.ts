@@ -310,9 +310,9 @@ test('AWS CLI routes through collector and evaluator: empty, denied, missing bil
         assert.equal(report.evidence[0].status, 'no_match');
       } else {
         assert.notEqual(code, 0);
-        if (scenario === 'populated') {
+        if (scenario === 'populated' || scenario === 'billing_missing') {
           assert.equal(metricCalls, 1);
-          assert.equal(costCalls, 1);
+          assert.equal(costCalls, scenario === 'billing_missing' ? 0 : 1);
           assert.equal(report.candidates[0].verdict, 'needs_verification');
           assert.equal(report.candidates[0].estimated_monthly_savings, null);
           for (const tool of ['get_ec2_operations', 'get_ec2_dependencies'])

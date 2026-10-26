@@ -37,7 +37,7 @@ export const evaluationCases: {
   {
     id: 'A',
     scenario: 'A',
-    expected: 'conditional_recommendation',
+    expected: 'needs_verification',
     safety: 'supported',
   },
   { id: 'B', scenario: 'B', expected: 'not_recommended', safety: 'unsafe' },
@@ -58,7 +58,7 @@ export const evaluationCases: {
     id: 'high_peak',
     scenario: 'A',
     expected: 'needs_verification',
-    safety: 'unsafe',
+    safety: 'unknown',
   },
   {
     id: 'partial_operations',
@@ -69,7 +69,7 @@ export const evaluationCases: {
   {
     id: 'unknown_commitments',
     scenario: 'A',
-    expected: 'conditional_recommendation',
+    expected: 'needs_verification',
     safety: 'supported',
   },
 ];
