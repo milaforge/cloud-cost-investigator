@@ -46,6 +46,7 @@ export type DemoRun =
       account: string;
       region: string;
       max_candidates: number;
+      lookback_days?: number;
       owner_evidence?: OwnerEvidence[];
     };
 export function validateDemoRun(value: unknown): DemoRun {
@@ -93,6 +94,7 @@ export function validateDemoRun(value: unknown): DemoRun {
     'region',
     'max_candidates',
     'owner_evidence',
+    'lookback_days',
   ]);
   const kind = member(o.kind, ['investigate', 'learn', 'followup']);
   const planner = member(o.planner, ['scripted', 'model']);
@@ -145,6 +147,9 @@ export function validateDemoRun(value: unknown): DemoRun {
     account: scope.account_id,
     region: scope.region,
     max_candidates: integer(o.max_candidates, 1, 3),
+    ...(o.lookback_days === undefined
+      ? {}
+      : { lookback_days: integer(o.lookback_days, 1, 14) }),
   };
 }
 function liveScopeFromEnv(env: NodeJS.ProcessEnv) {
@@ -175,6 +180,7 @@ export function liveInvestigationFromEnv(
     'evidence',
     'real_services',
     'allow_append',
+    'lookback_days',
   ]);
   if (
     o.kind !== 'investigate' ||
@@ -183,6 +189,13 @@ export function liveInvestigationFromEnv(
     o.allow_append !== false
   )
     throw new Error('Invalid live investigation request');
+  if (o.lookback_days !== undefined) {
+    try {
+      integer(o.lookback_days, 1, 14);
+    } catch {
+      throw new Error('invalid_lookback_days');
+    }
+  }
   return validateDemoRun({
     ...o,
     ...liveScopeFromEnv(env),

@@ -156,6 +156,13 @@ test('Live HTTP configuration rejects missing scope and browser overrides before
       real_services: true,
       allow_append: false,
     };
+    const invalidDays = await post({ ...body, lookback_days: 15 });
+    assert.equal(invalidDays.status, 400);
+    assert.match(
+      (await invalidDays.json()).error,
+      /lookback days from 1 to 14/,
+    );
+    assert.equal(await (await fetch(`${url}/api/job`)).json(), null);
     const rejected = await post(body);
     assert.equal(rejected.status, 400);
     assert.match(

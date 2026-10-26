@@ -204,7 +204,7 @@ contact services on startup. If `.env` is missing, startup suggests copying or
 renaming `.env.example` to `.env`, filling in the required service values and
 restarting; Demo mode remains available. Set `AWS_EXPECTED_ACCOUNT_ID` (12 digits),
 `AWS_REGION` and `CCI_MAX_CANDIDATES` (1–3, default 1) in `.env`, then restart
-`npm start`. Live has no configuration section or service checkbox. Clicking
+`npm start`. Live has no configuration section or service checkbox. Choose **Lookback days** (1–14, default 7) before running. The period ends at midnight UTC today, excluding the current incomplete day; two days is not a rolling last-48-hours query. Under seven days, the report can describe observed activity but cannot recommend a recurring schedule. Incomplete coverage is reported against the selected period; selecting fewer days does not create missing samples. Clicking
 **Run investigation** authorizes the live read/model run and validates the loaded
 AWS scope and model configuration before starting a worker. Missing or invalid
 settings show a toast explaining which `.env` settings to fix and to restart

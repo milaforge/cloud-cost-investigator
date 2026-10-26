@@ -1106,3 +1106,8 @@
   the aggregate recovery cap and old report compatibility. Record the prerequisite
   as an evaluator action, never a model-authored decision; only actual planner
   calls count toward the planner budget.
+
+## User-selected Live observation period (2026-10-26)
+
+- The user requested pre-run lookback control. Reuse CLI `--lookback-days` through the validated worker request: 1–14 complete UTC days, web default 7. Scope, model and history remain server-controlled. Complete UTC-day alignment preserves billing compatibility; this is not a rolling 48-hour query.
+- Report measured CPU averages/peaks with partial coverage explicitly, without equating low CPU to no jobs or dependencies. The seven-day recommendation threshold remains separate from observed activity. SSM maintenance and ELBv2 registrations remain scoped evidence, not workload-wide absence proofs. No planner gate or clearance authority is relaxed.

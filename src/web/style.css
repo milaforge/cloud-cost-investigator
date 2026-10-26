@@ -1017,3 +1017,12 @@ dialog::backdrop {
 #decision-receipt {
   overflow-wrap: anywhere;
 }
+
+#lookback-days {
+  width: 5rem;
+}
+#lookback-help {
+  max-width: 28em;
+  font-size: 0.78rem;
+  color: var(--muted);
+}

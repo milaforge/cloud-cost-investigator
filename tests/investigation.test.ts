@@ -468,11 +468,13 @@ test('EC2 4: an unexplained high CPU peak defers without inventing a conflict', 
   assert.equal(metrics.data.average_cpu_percent, 2);
   assert.equal(metrics.data.peak_cpu_percent, 95);
   assert.deepEqual(r.candidates[0].contradicting_evidence_ids, []);
-  assert.deepEqual(r.candidates[0].supporting_evidence_ids, []);
+  assert.deepEqual(r.candidates[0].supporting_evidence_ids, [
+    metrics.evidence_id,
+  ]);
   assert.equal(r.candidates[0].estimated_monthly_savings, null);
   assert.ok(
     r.candidates[0].missing_checks.includes(
-      'get_ec2_metrics: Establish a potential UTC window from covered utilization data before requesting operational clearance.',
+      'get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history.',
     ),
   );
   assert.ok(

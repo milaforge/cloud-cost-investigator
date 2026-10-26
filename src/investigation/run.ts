@@ -933,6 +933,21 @@ export async function runInvestigation(
     if (candidate && candidate.verdict === 'needs_verification') {
       candidate.explanation =
         'Critical operational authority or complete evidence is unresolved; no shutdown recommendation is issued.';
+      const metrics = find('get_ec2_metrics');
+      if (metrics?.data && 'average_cpu_percent' in metrics.data) {
+        const m = metrics.data;
+        const low = m.average_cpu_percent <= 10 && m.peak_cpu_percent <= 20;
+        const days =
+          (Date.parse(request.window.to) - Date.parse(request.window.from)) /
+          86400000;
+        candidate.explanation = `${low ? 'Low CPU utilization across available observations' : 'CPU activity observed'}: average ${m.average_cpu_percent.toFixed(2)}%, peak ${m.peak_cpu_percent.toFixed(2)}%. ${metrics.coverage.complete ? 'Complete' : 'Incomplete'} coverage of the requested ${days}-day period. ${days < 7 ? 'Insufficient history for a recurring schedule. ' : ''}Workload safety remains unresolved; low CPU does not establish absence of tasks or dependencies. No shutdown recommendation is issued.`;
+        candidate.supporting_evidence_ids = [
+          ...new Set([
+            ...candidate.supporting_evidence_ids,
+            metrics.evidence_id,
+          ]),
+        ];
+      }
       candidate.missing_checks.push(
         ...assessScheduling(request, candidate, evidence).missing_checks,
       );

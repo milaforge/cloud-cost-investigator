@@ -367,6 +367,7 @@ test('Live tabs expose operations and report context while excluding every demo 
     'allow_append',
     'evidence',
     'kind',
+    'lookback_days',
     'real_services',
     'request_id',
   ]);
@@ -636,4 +637,29 @@ test('planner exchanges use literal text disclosures and retain open state acros
   assert.equal(messages()[0].open, false);
   p.run('paintJob(null)');
   assert.equal(messages().length, 0);
+});
+
+test('Live lookback is bounded before submission and included in the request', async () => {
+  const p = page();
+  assert.equal(p.get('lookback-days').visible, false);
+  p.mode('live');
+  assert.equal(p.get('lookback-days').visible, true);
+  const bodies: { lookback_days: number }[] = [];
+  p.context.fetch = async (_url: string, options: { body: string }) => {
+    bodies.push(JSON.parse(options.body));
+    return {
+      ok: false,
+      json: async () => ({ error: 'test configuration missing' }),
+    };
+  };
+  for (const value of ['', '0', '15', '1.5', 'invalid']) {
+    p.get('lookback-days').value = value;
+    await p.get('run-investigate').listeners.click();
+    assert.equal(bodies.length, 0);
+    assert.equal(p.get('lookback-days'), p.run('document.activeElement'));
+    assert.equal(p.get('run-state').visible, false);
+  }
+  p.get('lookback-days').value = '2';
+  await p.get('run-investigate').listeners.click();
+  assert.equal(bodies[0].lookback_days, 2);
 });

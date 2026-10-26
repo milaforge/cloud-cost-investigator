@@ -138,3 +138,51 @@ test('invalid partial observations remain failed attempts, never accepted curren
   );
   validateReport(report);
 });
+
+test('partial CPU observations describe measured activity without implying complete history or safety', async () => {
+  for (const peak of [5, 60]) {
+    const base = new MockProvider('A');
+    const report = await runInvestigation(request, {
+      planner: new ScriptedPlanner(),
+      history: {},
+      provider: {
+        mode: 'mock',
+        async call(action, signal) {
+          const observation = (await base.call(action, signal)) as Observation;
+          if (
+            action.tool === 'get_ec2_metrics' &&
+            observation.data &&
+            'peak_cpu_percent' in observation.data
+          ) {
+            observation.status = 'partial';
+            observation.coverage.complete = false;
+            observation.missing_fields = ['INCOMPLETE_COVERAGE:cpu_max'];
+            observation.data.peak_cpu_percent = peak;
+          }
+          return observation;
+        },
+      },
+    });
+    const candidate = report.candidates[0];
+    assert.equal(candidate.verdict, 'needs_verification');
+    assert.equal(candidate.estimated_monthly_savings, null);
+    assert.match(candidate.explanation, /Incomplete coverage/);
+    assert.match(
+      candidate.explanation,
+      /does not establish absence of tasks or dependencies/,
+    );
+    assert.equal(
+      candidate.explanation.includes('Low CPU utilization'),
+      peak === 5,
+    );
+    const metrics = report.evidence.find((e) => e.tool === 'get_ec2_metrics');
+    assert.ok(metrics);
+    assert.ok(candidate.supporting_evidence_ids.includes(metrics.evidence_id));
+    assert.ok(
+      !candidate.next_human_actions.some((action) =>
+        action.includes('Retrieve complete CPU'),
+      ),
+    );
+    validateReport(report);
+  }
+});

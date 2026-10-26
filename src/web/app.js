@@ -1220,6 +1220,7 @@ function jobMatchesMode(job) {
   );
 }
 function paintJob(job) {
+  $('lookback-days').disabled = submitted || job?.status === 'running';
   $('mode').disabled =
     loading || submitted || (!isDemo() && job?.status === 'running');
   if (!job) {
@@ -1311,8 +1312,19 @@ async function startRun(kind) {
     currentJob?.status === 'running'
   )
     return;
+  const lookbackDays = Number($('lookback-days').value);
+  if (
+    !Number.isInteger(lookbackDays) ||
+    lookbackDays < 1 ||
+    lookbackDays > 14
+  ) {
+    showToast('Choose a whole number of lookback days from 1 to 14.');
+    $('lookback-days').focus();
+    return;
+  }
   const body = {
     request_id: crypto.randomUUID(),
+    lookback_days: lookbackDays,
     kind,
     evidence: 'aws',
     real_services: true,
@@ -1329,6 +1341,7 @@ async function submitRun(body) {
   )
     return;
   submitted = true;
+  $('lookback-days').disabled = true;
   submittingKind = body.kind;
   syncRunButtonLoading();
   $('mode').disabled = true;
@@ -1363,6 +1376,7 @@ async function submitRun(body) {
     polling = setTimeout(pollJob, 500);
   } finally {
     submitted = false;
+    $('lookback-days').disabled = currentJob?.status === 'running';
     submittingKind = null;
     syncRunButtonLoading();
     $('mode').disabled = loading || currentJob?.status === 'running';

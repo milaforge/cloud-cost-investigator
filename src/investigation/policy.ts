@@ -153,7 +153,7 @@ export function assessScheduling(
   const missing_checks: string[] = [];
   if (!window)
     missing_checks.push(
-      'get_ec2_metrics: Establish a potential UTC window from covered utilization data before requesting operational clearance.',
+      'get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history.',
     );
   const find = (tool: string) =>
     evidence.find(
@@ -178,7 +178,7 @@ export function assessScheduling(
     [
       'get_ec2_metrics',
       metrics,
-      'Retrieve complete CPU averages and peaks for the observed period; missing samples cannot establish inactivity.',
+      'Utilization coverage is incomplete for the requested period. Review the reported sample dates and counts; select a period with available history or collect more observations. Missing samples are unknown, not inactivity.',
     ],
     [
       'get_ec2_operations',
@@ -210,7 +210,7 @@ export function assessScheduling(
     7 * 86400000
   )
     missing_checks.push(
-      'get_ec2_metrics: Collect at least seven days of utilization before reconsidering this window.',
+      'get_ec2_metrics: Insufficient history for a recurring schedule: at least seven days of utilization are required by policy. Shorter periods can describe observed activity only.',
     );
   if (authoritative(metrics)) {
     const m = metrics.data as MetricsData;

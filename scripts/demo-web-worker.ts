@@ -76,6 +76,8 @@ process.once('message', async (value) => {
         '--max-candidates',
         String(run.max_candidates),
       ];
+      if (run.lookback_days !== undefined)
+        args.push('--lookback-days', String(run.lookback_days));
       if (run.evidence === 'mock') args.push('--scenario', run.scenario);
       const options = parseArgs(args);
       if (options === 'help') throw new Error();

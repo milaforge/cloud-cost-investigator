@@ -9,6 +9,14 @@
 **Deadline:** 2026-10-27 23:45 UTC in recorded event notes; verify portal. Target freeze: Oct 26.  
 **Active milestone:** Days 3–4 — full user flows and live-evidence integration, reconciled Oct 25, 2026. Day 2's mock B/failure gate and separate real-model, H-MEM and Zetaris round-trips have linked historical proof. This advances the work stage, not the combined live-evidence or release gates.
 
+### User-selected web lookback and measured partial reports — 2026-10-26
+
+- **Owner/slice:** Milad web/runner integration within the active live-evidence milestone. Live toolbar accepts 1–14 complete UTC days (default 7); browser/server validation and worker forwarding reuse CLI period alignment. AWS scope/model/history remain server-controlled.
+- **Verified:** `node --import tsx --test --test-isolation=none tests/demo-web-ui.test.ts tests/demo-web-jobs.test.ts tests/demo-web.test.ts` passed **21/21** with localhost access. Covers invalid input before job creation, Demo visibility, selected two-day worker output, existing lifecycle and isolated local fixture integrations. Initial sandbox attempt blocked localhost; a request-shape expectation was updated for the new field.
+- **Policy proof:** `node --import tsx --test --test-isolation=none --test-name-pattern='EC2 4:|partial CPU observations' tests/investigation.test.ts tests/recommendation-boundary.test.ts` passed **2/2**. Low/peaky partial metrics retain citations, uncertainty and null savings; a two-day run remains deferred. `npm run typecheck`, scoped Biome lint and `git diff --check` passed.
+- **Mode/limits/next:** synthetic/isolated local fixture proof only; no live AWS, paid model, remote writes or browser-layout verification. Partial-metric planner gate and seven-day recommendation minimum remain unchanged. SSM/ELBv2 cannot establish workload-wide absence; full live recommendation evidence remains a separate gate. Restart `npm start`, choose the period, and explicitly run Live to verify the intended account.
+
+
 ## Current status and next actions — reconciled 2026-10-25
 
 ### Task 3 final evidence and slide review — 2026-10-26

@@ -133,6 +133,19 @@ test('Live browser investigations bind validated server scope, model and read-on
     assert.throws(() =>
       liveInvestigationFromEnv({ ...request, ...change }, env),
     );
+  for (const days of [1, 2, 7, 14]) {
+    const selected = liveInvestigationFromEnv(
+      { ...request, lookback_days: days },
+      env,
+    );
+    assert.ok(selected.kind !== 'decision');
+    assert.equal(selected.lookback_days, days);
+  }
+  for (const days of [0, 15, 1.5, '2', null])
+    assert.throws(
+      () => liveInvestigationFromEnv({ ...request, lookback_days: days }, env),
+      /invalid_lookback_days/,
+    );
   const config = JSON.stringify(demoConfiguration(env));
   assert.ok(!config.includes(env.ZETARIS_PASSWORD));
   assert.ok(!config.includes(env.ZETARIS_BASE_URL));
@@ -515,5 +528,25 @@ test('stopping during planner backoff prevents another provider request', async 
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+  }
+});
+
+test('selected lookback reaches the isolated investigation worker', async () => {
+  const jobs = new DemoJobs();
+  try {
+    jobs.start({ ...input, scenario: 'A', lookback_days: 2 });
+    const report = await finish(jobs);
+    assert.equal(
+      Date.parse(report.request.window.to) -
+        Date.parse(report.request.window.from),
+      2 * 86400000,
+    );
+    assert.equal(report.candidates[0].verdict, 'needs_verification');
+    assert.match(
+      report.candidates[0].explanation,
+      /Low CPU utilization.*requested 2-day period.*Insufficient history/,
+    );
+  } finally {
+    jobs.close();
   }
 });

@@ -203,15 +203,17 @@ export async function startDemoServer(port = 0) {
             error:
               code === 'demo_busy'
                 ? 'Another demo is still running.'
-                : code === 'live_scope_not_configured'
-                  ? 'Set AWS_EXPECTED_ACCOUNT_ID (12 digits), AWS_REGION and CCI_MAX_CANDIDATES (1–3; default 1) in .env, then restart npm start.'
-                  : code === 'demo_model_not_configured'
-                    ? 'Model configuration is missing or invalid. Set LLM_BASE_URL, LLM_MODEL and any required LLM_API_KEY (or NVIDIA_API_KEY) in .env, then restart npm start.'
-                    : code === 'demo_zetaris_not_configured'
-                      ? 'Zetaris configuration and append opt-in are required in server .env. Restart after configuring.'
-                      : code === 'demo_zetaris_history_not_configured'
-                        ? 'Zetaris history configuration is required in server .env. Restart after configuring.'
-                        : 'Invalid demo request or missing explicit service opt-in.',
+                : code === 'invalid_lookback_days'
+                  ? 'Choose a whole number of lookback days from 1 to 14.'
+                  : code === 'live_scope_not_configured'
+                    ? 'Set AWS_EXPECTED_ACCOUNT_ID (12 digits), AWS_REGION and CCI_MAX_CANDIDATES (1–3; default 1) in .env, then restart npm start.'
+                    : code === 'demo_model_not_configured'
+                      ? 'Model configuration is missing or invalid. Set LLM_BASE_URL, LLM_MODEL and any required LLM_API_KEY (or NVIDIA_API_KEY) in .env, then restart npm start.'
+                      : code === 'demo_zetaris_not_configured'
+                        ? 'Zetaris configuration and append opt-in are required in server .env. Restart after configuring.'
+                        : code === 'demo_zetaris_history_not_configured'
+                          ? 'Zetaris history configuration is required in server .env. Restart after configuring.'
+                          : 'Invalid demo request or missing explicit service opt-in.',
           });
         }
         return;
