@@ -66,8 +66,10 @@ function dismissToast() {
   $('toast').hidden = true;
   $('toast-message').textContent = '';
 }
-function showToast(message) {
+function showToast(message, success = false) {
   dismissToast();
+  $('toast').className = success ? 'toast success' : 'toast';
+  $('toast-icon').textContent = success ? '✓' : '!';
   $('toast').hidden = false;
   $('toast-message').textContent = message;
   toastCountdown = $('toast-countdown').animate(
@@ -1054,30 +1056,15 @@ function syncDecisionForm() {
 }
 function renderDecisionReceipt(receipt) {
   const record = receipt.decision.record;
-  const event = JSON.parse(record.summary_json);
+  const storageReceipt = {
+    recommendation_record_id: receipt.recommendation.record.record_id,
+    decision_record_id: record.record_id,
+    investigation_id: record.investigation_id,
+  };
   $('decision-receipt').replaceChildren(
-    node('h3', 'Saved to Zetaris'),
-    node('p', 'Recommendation and decision readback verified.', 'mode'),
-    node(
-      'p',
-      `${modes[record.source_mode]} · ${record.account_id} · ${record.region} · ${record.instance_id}`,
-    ),
-    node(
-      'p',
-      `${human(event.kind)} by ${event.actor} · ${record.recorded_at_utc}`,
-    ),
-    node('p', event.reason),
-    ...(event.kind === 'deferred'
-      ? [node('p', `Review due: ${event.review_at}`)]
-      : []),
-    node('p', 'No infrastructure change was executed.', 'hint'),
     disclosure('Zetaris storage receipt', [
-      facts({
-        recommendation_record_id: receipt.recommendation.record.record_id,
-        decision_record_id: record.record_id,
-        investigation_id: record.investigation_id,
-      }),
-      downloadButton(receipt, 'zetaris-decision-receipt.json'),
+      facts(storageReceipt),
+      downloadButton(storageReceipt, 'zetaris-storage-receipt.json'),
     ]),
   );
   enter($('decision-receipt'));
@@ -1277,6 +1264,10 @@ function paintJob(job) {
     if (job.kind === 'investigate') showReport(job.result);
     else if (job.kind === 'decision') {
       renderDecisionReceipt(job.result);
+      $('decision-form').reset();
+      $('decision-review-field').hidden = true;
+      $('decision-review').required = false;
+      showToast('Saved to Zetaris. Storage receipt is available.', true);
       showView('followup');
     }
     const complete =

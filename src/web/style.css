@@ -984,6 +984,15 @@ dialog::backdrop {
   font-size: 1.1rem;
   font-weight: 700;
 }
+.toast.success {
+  border-color: #548c6c;
+}
+.toast.success .toast-icon {
+  color: #8ee0aa;
+}
+.toast.success #toast-countdown {
+  background: #8ee0aa;
+}
 #dismiss-toast {
   background: transparent;
   color: #f5f7f2;

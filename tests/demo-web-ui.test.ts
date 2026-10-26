@@ -78,7 +78,19 @@ function page(
     focus() {
       focused = this;
     }
-    reset() {}
+    reset() {
+      for (const field of this.querySelectorAll('input, textarea, select')) {
+        field.value =
+          field.tag === 'select'
+            ? ((
+                field.children.find(
+                  (option) => 'selected' in option.attributes,
+                ) ?? field.children[0]
+              )?.value ?? '')
+            : (field.attributes.value ?? '');
+        field.checked = 'checked' in field.attributes;
+      }
+    }
     reportValidity() {
       return true;
     }
@@ -554,6 +566,55 @@ test('action loading follows pending and resumed jobs, restores labels on termin
   p.run('paintJob(null)');
   assert.equal(p.get('save-decision').textContent, 'Save decision to Zetaris');
   assert.equal(p.get('save-decision').attributes['aria-busy'], 'false');
+});
+
+test('confirmed Zetaris save clears the form and shows only a storage receipt', () => {
+  const p = page();
+  p.mode('live');
+  p.get('decision-choice').value = 'deferred';
+  p.get('decision-actor').value = 'engineer-42';
+  p.get('decision-reason').value = 'Private review detail';
+  p.get('decision-review').value = '2026-11-02T12:00';
+  p.get('decision-ack').checked = true;
+  p.get('decision-review-field').hidden = false;
+  p.get('decision-review').required = true;
+  p.context.receipt = {
+    recommendation: { record: { record_id: 'recommendation-1' } },
+    decision: {
+      record: {
+        record_id: 'decision-1',
+        investigation_id: 'investigation-1',
+        summary_json: JSON.stringify({ reason: 'Private review detail' }),
+      },
+    },
+  };
+  p.run(
+    "paintJob({request_id:'saved-1',kind:'decision',source_mode:'live',status:'complete',events:[],result:receipt})",
+  );
+  for (const id of [
+    'decision-choice',
+    'decision-actor',
+    'decision-reason',
+    'decision-review',
+  ])
+    assert.equal(p.get(id).value, '', id);
+  assert.equal(p.get('decision-ack').checked, false);
+  assert.equal(p.get('decision-review-field').hidden, true);
+  assert.equal(p.get('decision-review').required, false);
+  assert.equal(p.get('toast').className, 'toast success');
+  assert.match(p.get('toast-message').textContent, /Saved to Zetaris/);
+  const receiptText = p
+    .get('decision-receipt')
+    .querySelectorAll('p, summary')
+    .map((el) => el.textContent)
+    .join(' ');
+  assert.match(receiptText, /Zetaris storage receipt/);
+  assert.doesNotMatch(receiptText, /Private review detail/);
+  assert.equal(p.get('decision-receipt').querySelectorAll('button').length, 1);
+  p.run(
+    "paintJob({request_id:'saved-1',kind:'decision',source_mode:'live',status:'complete',events:[],result:receipt})",
+  );
+  assert.equal(p.get('decision-receipt').querySelectorAll('button').length, 1);
 });
 
 test('stop and report validation show loading only for their pending requests', async () => {

@@ -1165,3 +1165,7 @@
 - Name the five actual AWS adapters separately so fragmented evidence is visible;
   distinguish fresh reads, scoped lessons and historical decision follow-through.
   Number the main flow without implying a fixed check order or automatic writes.
+
+## Zetaris save confirmation presentation (2026-10-26)
+
+- A verified readback is the point at which Follow through can claim a save. Reset the input and storage acknowledgment then, while keeping the scoped result selected so the engineer can still inspect its receipt. The success toast is green and the visible/downloadable receipt contains only record IDs and investigation ID; decision prose and the full historical records stay out of the success surface.

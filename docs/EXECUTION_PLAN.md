@@ -1,5 +1,11 @@
 # Cloud Cost Investigator — Execution Plan (Milad + Zayan)
 
+## Zetaris save confirmation UI — 2026-10-26
+
+- **Gate/owner/slice:** Days 3–4 Follow through UI, Milad. After verified decision readback, reset the form and acknowledgment, show a green success toast, and retain only the storage receipt IDs and their download. Failed or incomplete saves do not enter this path.
+- **Verified:** `node --import tsx --test --test-isolation=none tests/demo-web-ui.test.ts` passed **11/11**, including the focused confirmed-save test; `npm run typecheck` and `git diff --check` passed. The UI test uses an isolated DOM and receipt fixture; it does not prove a remote Zetaris write or browser layout.
+- **Format:** `npx biome check src/web/app.js src/web/index.html src/web/style.css tests/demo-web-ui.test.ts` still flags an unrelated, concurrent formatting change in `src/web/app.js` around the AWS coverage message. This slice's added code and test formatting pass. Existing live and release gates remain open.
+
 ## Current-policy real-service verification — 2026-10-26
 
 - **Gate/owner:** Days 3–4 current `reject_or_defer` verification, Milad; Zayan owns remaining source coverage. User authorized the repeated configured-model gate and live-evidence/permission review. Executed revision: `65f65ca146861a8c150fe5980170c3eada427f90`; initially clean worktree. Product code, credentials, grants and infrastructure are unchanged.
