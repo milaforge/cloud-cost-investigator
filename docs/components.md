@@ -24,16 +24,23 @@ report validation. Native negative scans never supply positive safety proof.
 
 ## Local report viewer
 
-`scripts/demo-web.ts` owns the dependency-free local HTTP surface and initial
-synthetic A/B previews. `src/web/` presents the report and runs three guided
-workflows. Setup and interactions live in [How](HOW.md#open-the-web-demo).
+`scripts/demo-web.ts` owns the dependency-free local HTTP surface and cached, on-demand
+synthetic A/B/C/missing/mixed previews. Startup only serves the UI. Explicit
+selection generates a preview; concurrent requests share its pending result,
+and failed generation can be retried. `src/web/` separates preview-only Demo
+content from Live investigation, owner input and decision recording across all
+three tabs. Demo handlers reject run, decision and upload submissions. Live Learn
+only displays the selected report's memory status; this web investigation path
+does not enable live H-MEM recall/storage. Setup and interactions live in [How](HOW.md#open-the-web-demo).
 
 `scripts/demo-web-jobs.ts` validates the allowlisted action, mode, scope and
 explicit service/write choices; it permits one isolated child worker at a time.
 `scripts/demo-web-worker.ts` calls the existing investigator, H-MEM demonstration
 or Zetaris follow-through functions directly. It never executes arbitrary shell
 commands, accepts provider URLs/credentials from the browser, or exposes SQL.
-Existing CLI entry points remain intact; their optional progress callbacks feed
+The browser exposes only live investigations and live-report decisions. Existing
+CLI/demo entry points and worker regression harnesses remain intact; optional
+progress callbacks feed
 bounded browser events. Offline investigations and learning never enable remote
 history or models. Follow-through requires both server append configuration and
 an explicit browser acknowledgment. The user-decision form reuses `recordDecision`
@@ -49,6 +56,9 @@ terminates an orphaned worker. Parent-owned temporary directories are cleaned on
 worker exit, including cancellation. A cancelled or failed write can leave remote
 records; history writes are never retried automatically. Latest job state,
 current activity and at most 160 bounded progress events stay in server memory.
+Job source mode is retained from the validated request before execution, so
+failed/running live jobs remain identifiable without a result and synthetic jobs
+cannot appear as live operations.
 The runner emits active-stage heartbeats every two seconds; these replace current
 activity rather than accumulating in the execution tree. Reconnecting polls that state without
 starting another run; duplicate submissions of the current request ID reuse its

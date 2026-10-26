@@ -1,5 +1,38 @@
 # Project Memory
 
+## Web startup without preview work (2026-10-26)
+
+- Serve the shared Demo/Live UI without generating or fetching synthetic
+  investigations. Eagerly running all five scenarios made even Live setup wait
+  through the missing-evidence scenario's real retry backoff.
+- Generate only the selected preview, share pending requests and cache success
+  until server restart. Evict failed generation so selection can retry. Preserve
+  actual investigation safety and retry policy.
+- Late preview responses must not replace another scenario or Live state.
+  Scenario selection and preview shortcut buttons use the same loader.
+
+
+## Preview-only Demo and Live operations (2026-10-26)
+
+- User clarified Demo must be preview-only across Investigate, Learn and Follow
+  through. This supersedes the earlier mixed service/demo controls and separate
+  Follow-through Demo checkbox. Keep all three tabs in both modes.
+- Demo scenario selection opens locally generated synthetic/scripted previews;
+  Learn and Follow through are explicitly illustrative, without executed proofs.
+  No run button, upload, owner form, model control or Zetaris write belongs there.
+- Live owns AWS scope/investigation, owner input, live-report import and attributed
+  Accept/Defer storage. Live Learn honestly displays selected-report memory status;
+  live H-MEM recall/storage are not enabled in the browser investigation path.
+  Preserve separate CLI demonstrations rather than disguising them as live flows.
+- Enforce mode in handlers as well as full-section visibility. Clear selected
+  reports and opt-ins and close evidence on switching; never submit a run.
+  Retain validated job source mode before execution so failures, pending jobs
+  and synthetic results cannot be misclassified from missing result data.
+- Enforce HTML hidden above component display styles. Tests must inspect every
+  tab and ancestor visibility, plus negative calls to run/save/upload handlers;
+  testing only named demo controls missed entire unclassified live sections.
+
+
 ## Concise CLI and explicit detail (2026-10-26)
 
 - The CLI's default presentation is a short verdict-first projection of the

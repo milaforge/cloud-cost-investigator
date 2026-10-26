@@ -171,6 +171,7 @@ export function demoConfiguration() {
 export type DemoJob = {
   request_id: string;
   kind: DemoRun['kind'];
+  source_mode: InvestigationReport['integration_mode'];
   status: 'running' | 'complete' | 'failed' | 'cancelled';
   started_at: string;
   finished_at?: string;
@@ -206,6 +207,12 @@ export class DemoJobs {
     const job: DemoJob = {
       request_id: run.request_id,
       kind: run.kind,
+      source_mode:
+        run.kind === 'decision'
+          ? run.report.integration_mode
+          : run.evidence === 'aws'
+            ? 'live'
+            : 'mock',
       status: 'running',
       started_at: new Date().toISOString(),
       events: [],

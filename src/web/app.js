@@ -1,4 +1,5 @@
 const $ = (id) => document.getElementById(id);
+const isDemo = () => $('mode').value === 'demo';
 const reports = {};
 let active = null;
 let candidateIndex = 0;
@@ -29,7 +30,7 @@ function dismissToast() {
   clearTimeout(toastTimer);
   toastCountdown?.cancel();
   toastCountdown = null;
-  if (document.activeElement === $('dismiss-toast')) $('scenario').focus();
+  if (document.activeElement === $('dismiss-toast')) $('mode').focus();
   $('toast').hidden = true;
   $('toast-message').textContent = '';
 }
@@ -51,7 +52,7 @@ function showToast(message) {
 }
 $('dismiss-toast').addEventListener('click', () => {
   dismissToast();
-  $('scenario').focus();
+  $(isDemo() ? 'scenario' : 'real-investigate').focus();
 });
 let infoId = 0;
 function info(label, text, symbol = 'i', className = 'info-button') {
@@ -287,6 +288,19 @@ function timeline(candidate, report) {
 function render(focusCandidate = false) {
   syncDecisionForm();
   const r = reports[active];
+  $('live-learning-result').replaceChildren(
+    !isDemo() && r
+      ? facts({
+          investigation_id: r.investigation_id,
+          hmem: r.historical_context.hmem,
+          limitations: r.historical_context.limitations,
+        })
+      : node(
+          'p',
+          'Run a live investigation or load a live report to inspect its memory status.',
+          'hint',
+        ),
+  );
   for (const button of document.querySelectorAll('[data-report]'))
     button.setAttribute(
       'aria-pressed',
@@ -298,7 +312,7 @@ function render(focusCandidate = false) {
   if (!r) {
     const empty = node('div', undefined, 'empty-report');
     const selected = $('scenario').value;
-    const live = $('source').value === 'aws';
+    const live = !isDemo();
     empty.append(
       node(
         'h2',
@@ -313,8 +327,8 @@ function render(focusCandidate = false) {
         live
           ? 'Run an investigation to load evidence for your AWS scope.'
           : selected
-            ? 'Run investigation to load this scenario’s evidence, verdict and steps.'
-            : 'No scenario is selected. Choose one above, open a preview, or load your own report.',
+            ? 'Waiting for this scenario preview. Restart the local server if it does not appear.'
+            : 'No scenario is selected. Choose one above or open an A/B preview.',
         'muted',
       ),
     );
@@ -442,12 +456,16 @@ function render(focusCandidate = false) {
       r.completion_status === 'complete' &&
       c.verdict === 'conditional_recommendation'
     ) {
-      const decide = node('button', 'Record your decision in Zetaris');
+      const decide = node(
+        'button',
+        isDemo()
+          ? 'Explore follow-through demo'
+          : 'Record your decision in Zetaris',
+      );
       decide.type = 'button';
       decide.addEventListener('click', () => {
-        setFollowupDemo(false);
         showView('followup');
-        $('decision-choice').focus();
+        if (!isDemo()) $('decision-choice').focus();
       });
       card.append(decide);
     }
@@ -745,13 +763,14 @@ function render(focusCandidate = false) {
   }
 }
 async function loadReport(file) {
-  if (!file || loading) return;
+  if (isDemo() || !file || loading) return;
   if (file.size > 2 * 1024 * 1024) {
     $('message').textContent =
       'Report exceeds 2 MiB. Your current report is unchanged.';
     return;
   }
   loading = true;
+  $('mode').disabled = true;
   $('load').disabled = true;
   $('message').textContent = 'Validating report…';
   try {
@@ -763,6 +782,11 @@ async function loadReport(file) {
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
+    if ((result.integration_mode === 'live') === isDemo()) {
+      $('message').textContent =
+        `Switch to ${result.integration_mode === 'live' ? 'Live' : 'Demo'} mode to load this report. Your current report is unchanged.`;
+      return;
+    }
     reports.loaded = result;
     dismissToast();
     $('loaded').textContent = 'Loaded report';
@@ -777,12 +801,15 @@ async function loadReport(file) {
       'Could not load report. Choose a valid single investigation JSON report. Your current report is unchanged.';
   } finally {
     loading = false;
+    $('mode').disabled = submitted || currentJob?.status === 'running';
     $('load').disabled = false;
     $('file').value = '';
   }
 }
 for (const button of document.querySelectorAll('[data-report]'))
   button.addEventListener('click', () => {
+    if (isDemo() === (button.dataset.report === 'loaded')) return;
+    if (isDemo()) return selectScenario(button.dataset.report);
     dismissToast();
     active = button.dataset.report;
     if (['A', 'B'].includes(active)) $('scenario').value = active;
@@ -790,11 +817,14 @@ for (const button of document.querySelectorAll('[data-report]'))
     candidateIndex = 0;
     render();
   });
-$('load').addEventListener('click', () => $('file').click());
+$('load').addEventListener('click', () => {
+  if (!isDemo()) $('file').click();
+});
 $('file').addEventListener('change', () => loadReport($('file').files[0]));
 document.addEventListener('dragover', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => {
   e.preventDefault();
+  if (isDemo()) return;
   if (e.dataTransfer.files.length !== 1) {
     $('message').textContent = 'Choose one report at a time.';
     return;
@@ -802,39 +832,45 @@ document.addEventListener('drop', (e) => {
   loadReport(e.dataTransfer.files[0]);
 });
 $('close-evidence').addEventListener('click', () => $('evidence').close());
-fetch('/api/demos', { signal: AbortSignal.timeout(10000) })
-  .then((r) => {
-    if (!r.ok) throw new Error();
-    return r.json();
-  })
-  .then((data) => {
-    Object.assign(reports, data);
-    render();
-    $('message').textContent = '';
-  })
-  .catch(() => {
-    $('report').setAttribute('aria-busy', 'false');
-    $('message').textContent =
-      'Could not load demonstrations. Restart the local server or load a report.';
-  });
-
 let currentJob = null;
 let submitted = false;
 let polling = null;
 let appliedJob = null;
-const runButtons = [
-  'run-investigate',
-  'run-learn',
-  'run-followup',
-  'save-decision',
-];
-$('scenario').addEventListener('change', () => {
+const runButtons = ['run-investigate', 'save-decision'];
+async function selectScenario(scenario) {
   dismissToast();
-  active = null;
+  if (!isDemo()) return;
+  $('scenario').value = scenario;
+  active = reports[scenario] ? scenario : null;
   candidateIndex = 0;
   $('message').textContent = '';
   render();
-});
+  if (!scenario || active) return;
+  $('report').setAttribute('aria-busy', 'true');
+  $('message').textContent = 'Preparing synthetic preview…';
+  try {
+    const response = await fetch(
+      `/api/demos?scenario=${encodeURIComponent(scenario)}`,
+      {
+        signal: AbortSignal.timeout(125000),
+      },
+    );
+    if (!response.ok) throw new Error();
+    Object.assign(reports, await response.json());
+    if (!isDemo() || $('scenario').value !== scenario) return;
+    active = scenario;
+    $('message').textContent = '';
+    render();
+  } catch {
+    if (!isDemo() || $('scenario').value !== scenario) return;
+    $('report').setAttribute('aria-busy', 'false');
+    $('message').textContent =
+      'Could not load preview. Select the scenario again to retry.';
+  }
+}
+$('scenario').addEventListener('change', () =>
+  selectScenario($('scenario').value),
+);
 function showView(view) {
   dismissToast();
   for (const name of ['investigate', 'learn', 'followup'])
@@ -844,15 +880,41 @@ function showView(view) {
 }
 for (const button of document.querySelectorAll('[data-view]'))
   button.addEventListener('click', () => showView(button.dataset.view));
-$('source').addEventListener('change', () => {
-  const aws = $('source').value === 'aws';
-  $('aws-scope').hidden = !aws;
-  $('scenario').disabled = aws;
+function setMode() {
+  const demo = isDemo();
+  for (const element of document.querySelectorAll('[data-demo-only]'))
+    element.hidden = !demo;
+  for (const element of document.querySelectorAll('[data-live-only]'))
+    element.hidden = demo;
+  $('aws-scope').hidden = demo;
+  $('live-services').open = !demo;
+  $('live-evidence').hidden = demo;
+  for (const id of [
+    'real-investigate',
+    'investigate-history',
+    'decision-ack',
+    'owner-evidence-enabled',
+  ])
+    $(id).checked = false;
+  $('owner-evidence-fields').hidden = true;
+  $('scenario').value = '';
+  $('planner').value = 'scripted';
+  $('loaded').hidden = true;
+  if ($('evidence').open) $('evidence').close();
+  $('message').textContent = '';
   dismissToast();
   active = null;
+  candidateIndex = 0;
+  showView('investigate');
   render();
-});
+  // Switching mode is not a request to open a prior completed result.
+  if (currentJob?.status === 'complete') appliedJob = currentJob.request_id;
+  paintJob(currentJob);
+  if (!demo) loadConfiguration();
+}
+$('mode').addEventListener('change', setMode);
 function showReport(report) {
+  if (isDemo() || report.integration_mode !== 'live') return;
   reports.loaded = report;
   $('loaded').textContent = 'Run result';
   active = 'loaded';
@@ -861,14 +923,8 @@ function showReport(report) {
   showView('investigate');
   render();
   $('message').textContent =
-    'Generated by this demonstration. Inspect evidence and trace below.';
+    'Investigation result. Inspect evidence and trace below.';
   $('report').scrollIntoView({ block: 'start' });
-}
-function inspectButton(report, label = 'Inspect report') {
-  const button = node('button', label);
-  button.type = 'button';
-  button.addEventListener('click', () => showReport(report));
-  return button;
 }
 function downloadButton(value, filename) {
   const button = node('button', 'Download JSON');
@@ -885,146 +941,9 @@ function downloadButton(value, filename) {
   });
   return button;
 }
-function checkList(checks) {
-  return disclosure('Verification checks', [
-    list(
-      Object.entries(checks).map(
-        ([key, passed]) => `${passed ? 'PASS' : 'FAIL'} · ${human(key)}`,
-      ),
-    ),
-  ]);
-}
-function renderLearning(result) {
-  const root = $('learning-result');
-  root.replaceChildren(
-    node(
-      'h3',
-      result.passed
-        ? 'Learning proof passed'
-        : 'Learning proof incomplete — inspect failed checks',
-    ),
-  );
-  root.append(
-    node(
-      'p',
-      `Synthetic evidence · Planner: ${result.planner_mode} · Real local H-MEM`,
-      'mode',
-    ),
-  );
-  const grid = node('div', undefined, 'phase-grid');
-  for (const { phase, report } of result.runs) {
-    const card = node('article', undefined, 'phase-card');
-    const checks = report.evidence
-      .filter((e) =>
-        ['get_ec2_operations', 'get_ec2_dependencies'].includes(e.tool),
-      )
-      .map((e) => human(e.tool.replace('get_ec2_', '')));
-    card.append(
-      node('h3', human(phase)),
-      node(
-        'p',
-        report.candidates[0]
-          ? labels[report.candidates[0].verdict]
-          : 'No conclusion',
-      ),
-      node(
-        'p',
-        `${report.budget.planner_calls} planner calls · ${report.budget.discovery_attempts + report.budget.candidate_attempts} tools · ${report.budget.elapsed_ms} ms`,
-        'hint',
-      ),
-      node('p', `Checks: ${checks.join(' → ') || 'None retrieved'}`, 'hint'),
-      inspectButton(report),
-    );
-    grid.append(card);
-  }
-  root.append(
-    grid,
-    node(
-      'p',
-      `Learned check: ${result.learned_lesson?.summary.lesson?.check ? human(result.learned_lesson.summary.lesson.check) : 'Not established'}`,
-    ),
-  );
-  if (result.comparison)
-    root.append(
-      node(
-        'p',
-        `Warm versus cold: ${result.comparison.tool_calls_saved} fewer tool calls; ${result.comparison.planner_calls_saved} fewer planner calls. Wall-clock improvement: ${result.comparison.faster_wall_clock ? 'yes' : 'no'}.`,
-      ),
-    );
-  root.append(
-    node(
-      'p',
-      'This designed example does not establish a general speedup. Every current verdict still requires fresh evidence.',
-      'hint',
-    ),
-    checkList(result.checks),
-    disclosure('Method and provenance', [
-      node('p', result.methodology),
-      downloadButton(result, 'learning-demo.json'),
-      node('p', result.cleanup),
-      facts({
-        learned_lesson: result.learned_lesson,
-        correction: result.correction,
-      }),
-    ]),
-  );
-}
-function renderFollowup(result) {
-  const root = $('followup-result');
-  root.replaceChildren(
-    node(
-      'h3',
-      result.passed
-        ? 'Follow-through proof passed'
-        : 'Follow-through proof incomplete',
-    ),
-  );
-  root.append(
-    node(
-      'p',
-      'Configured Zetaris append/readback · Synthetic evidence · Scripted planner · Fictional decisions',
-      'mode',
-    ),
-  );
-  const grid = node('div', undefined, 'phase-grid');
-  for (const [title, text, report] of [
-    [
-      'Deferred → Reviewed',
-      'A due decision is retrieved. New dependency evidence rejects the previously recommended window.',
-      result.reports[2],
-    ],
-    [
-      'Accepted → Outcome reported',
-      'A fictional operator-reported rollback is retained. It is not verified execution or measured savings.',
-      result.reports[1],
-    ],
-  ]) {
-    const card = node('article', undefined, 'phase-card');
-    card.append(node('h3', title), node('p', text), inspectButton(report));
-    grid.append(card);
-  }
-  root.append(
-    grid,
-    node('p', `Synthetic account: ${result.scope.account_id}`, 'hint'),
-    checkList(result.checks),
-    disclosure('Stored decisions and receipts', [
-      facts({ before: result.before, after: result.after }),
-    ]),
-    disclosure('Method and limits', [node('p', result.methodology)]),
-  );
-}
-function setFollowupDemo(demo) {
-  $('followup-demo-mode').checked = demo;
-  $('followup-investigation').hidden = demo;
-  $('followup-demo').hidden = !demo;
-  $('decision-ack').checked = false;
-  $('append-ack').checked = false;
-}
-$('followup-demo-mode').addEventListener('change', () => {
-  setFollowupDemo($('followup-demo-mode').checked);
-});
 function decisionTarget() {
   const report = reports[active];
+  if (isDemo() || report?.integration_mode !== 'live') return null;
   const candidate = report?.candidates[candidateIndex];
   return report?.completion_status === 'complete' &&
     candidate?.verdict === 'conditional_recommendation'
@@ -1187,7 +1106,16 @@ function renderEvents(events) {
   }
   root.replaceChildren(tree);
 }
+function jobMatchesMode(job) {
+  return (
+    !isDemo() &&
+    job.source_mode === 'live' &&
+    ['investigate', 'decision'].includes(job.kind)
+  );
+}
 function paintJob(job) {
+  $('mode').disabled =
+    loading || submitted || (!isDemo() && job?.status === 'running');
   if (!job) {
     currentJob = null;
     $('decision-fields').disabled = submitted || !decisionTarget();
@@ -1203,15 +1131,16 @@ function paintJob(job) {
     return;
   }
   currentJob = job;
-  $('run-state').hidden = false;
   const running = job.status === 'running';
+  $('run-state').hidden = !jobMatchesMode(job);
   $('decision-fields').disabled = running || submitted || !decisionTarget();
   runButtons.forEach((id) => {
     $(id).disabled =
       running || submitted || (id === 'save-decision' && !decisionTarget());
   });
-  $('cancel-run').hidden = !running;
-  $('view-last-result').hidden = job.status !== 'complete' || !job.result;
+  $('cancel-run').hidden = !running || !jobMatchesMode(job);
+  $('view-last-result').hidden =
+    job.status !== 'complete' || !job.result || !jobMatchesMode(job);
   const status = `${human(job.kind)} · ${job.status}${job.error ? ` — ${job.error}` : ''}${running ? ` · ${job.activity || job.events.at(-1) || 'Starting worker…'}` : ''}`;
   if ($('run-status').textContent !== status)
     $('run-status').textContent = status;
@@ -1222,20 +1151,13 @@ function paintJob(job) {
   if (
     job.status === 'complete' &&
     job.result &&
+    jobMatchesMode(job) &&
     appliedJob !== job.request_id
   ) {
     appliedJob = job.request_id;
     if (job.kind === 'investigate') showReport(job.result);
     else if (job.kind === 'decision') {
       renderDecisionReceipt(job.result);
-      setFollowupDemo(false);
-      showView('followup');
-    } else if (job.kind === 'learn') {
-      renderLearning(job.result);
-      showView('learn');
-    } else {
-      renderFollowup(job.result);
-      setFollowupDemo(true);
       showView('followup');
     }
     const complete =
@@ -1264,7 +1186,7 @@ async function pollJob() {
     paintJob(job);
     if (job?.status === 'running') polling = setTimeout(pollJob, 500);
   } catch {
-    $('run-state').hidden = false;
+    $('run-state').hidden = isDemo();
     $('run-status').textContent =
       'Connection lost. The run may still be active. Reconnecting without restarting it…';
     runButtons.forEach((id) => {
@@ -1274,47 +1196,23 @@ async function pollJob() {
   }
 }
 async function startRun(kind) {
-  if (submitted || currentJob?.status === 'running') return;
-  const real =
-    kind === 'followup'
-      ? $('append-ack').checked
-      : kind === 'learn'
-        ? $('learn-model').checked
-        : $('real-investigate').checked;
-  const planner =
-    kind === 'followup'
-      ? 'scripted'
-      : kind === 'learn'
-        ? $('learn-model').checked
-          ? 'model'
-          : 'scripted'
-        : $('planner').value;
-  const evidence = kind === 'investigate' ? $('source').value : 'mock';
-  if (kind === 'investigate' && evidence === 'mock' && !$('scenario').value) {
-    showToast('Choose a scenario before running an investigation.');
-    $('scenario').focus();
-    return;
-  }
   if (
-    (planner === 'model' ||
-      evidence === 'aws' ||
-      kind === 'followup' ||
-      (kind === 'investigate' && $('investigate-history').checked)) &&
-    !real
-  ) {
+    isDemo() ||
+    kind !== 'investigate' ||
+    submitted ||
+    currentJob?.status === 'running'
+  )
+    return;
+  if (!$('real-investigate').checked) {
     showToast(
       'Select the explicit real-service acknowledgment before running this action.',
     );
-    const acknowledgment = $(
-      kind === 'followup' ? 'append-ack' : 'real-investigate',
-    );
-    const details = acknowledgment.closest('details');
-    if (details) details.open = true;
-    acknowledgment.focus();
+    $('live-services').open = true;
+    $('real-investigate').focus();
     return;
   }
   let ownerEvidence;
-  if (kind === 'investigate' && $('owner-evidence-enabled').checked) {
+  if ($('owner-evidence-enabled').checked) {
     for (const input of $('owner-evidence-fields').querySelectorAll(
       'input, textarea',
     )) {
@@ -1333,8 +1231,8 @@ async function startRun(kind) {
     }
     ownerEvidence = [
       {
-        account_id: evidence === 'aws' ? $('account').value.trim() : 'demo',
-        region: evidence === 'aws' ? $('region').value.trim() : 'us-east-1',
+        account_id: $('account').value.trim(),
+        region: $('region').value.trim(),
         instance_id: $('owner-instance').value.trim(),
         owner: $('owner-name').value.trim(),
         topic: $('owner-topic').value,
@@ -1349,27 +1247,29 @@ async function startRun(kind) {
     request_id: crypto.randomUUID(),
     ...(ownerEvidence ? { owner_evidence: ownerEvidence } : {}),
     kind,
-    planner,
-    evidence,
-    // The existing transport requires this field; these other workflows ignore it.
-    scenario:
-      kind === 'investigate' && evidence === 'mock' ? $('scenario').value : 'A',
-    account: evidence === 'aws' ? $('account').value.trim() : 'demo',
-    region: evidence === 'aws' ? $('region').value.trim() : 'us-east-1',
-    max_candidates:
-      evidence === 'aws'
-        ? Number($('candidate-limit').value)
-        : kind === 'investigate' && $('scenario').value === 'mixed'
-          ? 3
-          : 1,
-    real_services: real,
-    allow_append: kind === 'followup' && $('append-ack').checked,
-    history: kind === 'investigate' && $('investigate-history').checked,
+    planner: $('planner').value,
+    evidence: 'aws',
+    // Required by the existing transport; ignored for AWS evidence.
+    scenario: 'A',
+    account: $('account').value.trim(),
+    region: $('region').value.trim(),
+    max_candidates: Number($('candidate-limit').value),
+    real_services: true,
+    allow_append: false,
+    history: $('investigate-history').checked,
   };
   await submitRun(body);
 }
 async function submitRun(body) {
+  if (
+    isDemo() ||
+    (body.kind !== 'investigate' && body.kind !== 'decision') ||
+    (body.kind === 'investigate' && body.evidence !== 'aws') ||
+    (body.kind === 'decision' && body.report?.integration_mode !== 'live')
+  )
+    return;
   submitted = true;
+  $('mode').disabled = true;
   runButtons.forEach((id) => {
     $(id).disabled = true;
   });
@@ -1401,6 +1301,7 @@ async function submitRun(body) {
     polling = setTimeout(pollJob, 500);
   } finally {
     submitted = false;
+    $('mode').disabled = loading || currentJob?.status === 'running';
     $('decision-fields').disabled =
       currentJob?.status === 'running' || !decisionTarget();
     runButtons.forEach((id) => {
@@ -1410,7 +1311,7 @@ async function submitRun(body) {
     });
   }
 }
-for (const id of ['account', 'region', 'source', 'scenario']) {
+for (const id of ['account', 'region', 'scenario']) {
   $(id).addEventListener('change', () => {
     $('owner-evidence-enabled').checked = false;
     $('owner-evidence-fields').hidden = true;
@@ -1419,15 +1320,14 @@ for (const id of ['account', 'region', 'source', 'scenario']) {
 $('owner-evidence-enabled').addEventListener('change', () => {
   $('owner-evidence-fields').hidden = !$('owner-evidence-enabled').checked;
 });
-for (const kind of ['investigate', 'learn', 'followup'])
-  $(`run-${kind}`).addEventListener('click', () => startRun(kind));
+$('run-investigate').addEventListener('click', () => startRun('investigate'));
 $('view-last-result').addEventListener('click', () => {
-  if (currentJob?.status !== 'complete') return;
+  if (currentJob?.status !== 'complete' || !jobMatchesMode(currentJob)) return;
   appliedJob = null;
   paintJob(currentJob);
 });
 $('cancel-run').addEventListener('click', async () => {
-  if (currentJob?.status !== 'running') return;
+  if (currentJob?.status !== 'running' || !jobMatchesMode(currentJob)) return;
   $('cancel-run').disabled = true;
   $('cancel-run').textContent = 'Stopping…';
   try {
@@ -1448,18 +1348,22 @@ $('cancel-run').addEventListener('click', async () => {
   }
   polling = setTimeout(pollJob, 500);
 });
-fetch('/api/config')
-  .then((r) => r.json())
-  .then((config) => {
-    $('service-status').textContent =
-      `Model configuration: ${config.model ? 'present, unverified' : 'missing or invalid'}. Zetaris history: ${config.zetaris ? 'configured, unverified' : 'missing'}. AWS uses the server credential chain; the account ID is a scope check.`;
-    $('followup-config').textContent =
-      config.zetaris && config.zetaris_append
-        ? 'Zetaris is configured for saving decisions. Connectivity is verified when you save.'
-        : 'Zetaris saving is unavailable: configure history credentials, history table and append opt-in in server .env, then restart.';
-  })
-  .catch(() => {
-    $('service-status').textContent = 'Could not read configuration status.';
-    $('followup-config').textContent = 'Configuration status unavailable.';
-  });
+async function loadConfiguration() {
+  fetch('/api/config')
+    .then((r) => r.json())
+    .then((config) => {
+      $('service-status').textContent =
+        `Model configuration: ${config.model ? 'present, unverified' : 'missing or invalid'}. Zetaris history: ${config.zetaris ? 'configured, unverified' : 'missing'}. AWS uses the server credential chain; the account ID is a scope check.`;
+      $('followup-config').textContent =
+        config.zetaris && config.zetaris_append
+          ? 'Zetaris is configured for saving decisions. Connectivity is verified when you save.'
+          : 'Zetaris saving is unavailable: configure history credentials, history table and append opt-in in server .env, then restart.';
+    })
+    .catch(() => {
+      $('service-status').textContent = 'Could not read configuration status.';
+      $('followup-config').textContent = 'Configuration status unavailable.';
+    });
+}
+$('mode').value = 'demo';
+setMode();
 pollJob();

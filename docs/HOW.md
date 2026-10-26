@@ -173,44 +173,52 @@ The intended user is an infrastructure/platform engineer deciding which proposed
 npm run demo:web
 ```
 
-Starts a loopback-only server on an available port and opens the browser. Initial
-A/B previews are generated from synthetic evidence with a scripted planner.
-No scenario or report is selected on startup. Choose a scenario and run it, or
-explicitly open an A/B preview. Changing scenarios clears the previous report.
-After this one startup command, the demo workflows run from browser buttons:
+Starts the shared Demo/Live web UI on a loopback-only server and opens the
+browser without running investigations. All three tabs exist in both modes. The top-center **Mode** select
+defaults to **Demo**, with no scenario or report selected.
 
-| Workflow | What to run and inspect |
-| --- | --- |
-| **Investigate** | Choose A (conditional opportunity), B (rejected window), C, missing evidence or three candidates, then **Run investigation**. Inspect current evidence, hypotheses, savings qualifications and human actions. |
-| **Learn** | **Run learning demonstration** executes cold, warm and changed-evidence investigations using real temporary local H-MEM. Compare check order, calls, timing and fresh verdicts; inspect each phase's report. |
-| **Follow through** | Explicitly select **Use real Zetaris and retain the seven demo records**, then run the configured service demonstration. Inspect the deferred/reviewed and accepted/outcome-reported paths and readback checks. All decisions are fictional; no AWS changes occur. |
+| Tab | Demo — preview only | Live — operations |
+| --- | --- | --- |
+| **Investigate** | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Configure AWS account, region, candidate limit and planner; acknowledge real services, then **Run investigation**. Optionally supply owner evidence or read Zetaris history. Load a live report for inspection. |
+| **Learn** | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes. | Inspect the selected live report's H-MEM status and limitations. Live recall/lesson storage are not enabled by this browser workflow; no synthetic demonstration is offered here. |
+| **Follow through** | Read illustrative defer/review and accept/outcome paths. No forms, service calls or retained records. | Accept or defer a completed conditional recommendation, with attributed reason and explicit Zetaris storage acknowledgment. Readback verifies the stored decision and linked recommendation. |
 
-Investigation and learning default to offline scripted runs. The server loads the
-project `.env`, preserving shell precedence, but does not contact services on
-startup. Configuration labels indicate presence, **not verified connectivity**.
-For real inference, select the configured model and explicitly enable real
-services (or select the model checkbox on Learn). The
-[model setup](CLI_GUIDE.md#model-configuration) stays server-side; model calls may
-incur usage. Live AWS is an explicit browser option with account, region and
-candidate limit; the [AWS setup](AWS_TOOLS.md#investigation-cli) and missing-source
-limits still apply. The account ID checks the authenticated AWS scope; it does not
-authenticate the browser. Configure the server's AWS SDK credential chain or
-`AWS_PROFILE` before starting it. Select **Read Zetaris decision history** to
-query prior records for discovered instances. This investigation control is
-read-only even if server append permission is enabled. History is historical
-context and never replaces live evidence. The normal
-investigation CLI still defaults to live AWS.
+Demo previews use synthetic evidence and a scripted planner generated locally
+on explicit scenario selection, then cached until server restart. The missing-evidence
+preview includes bounded retries; its wait never blocks startup or Live setup.
+Learn and Follow through illustrations are not executed proof.
+Selecting a scenario loads its preview without starting a worker. Demo cannot
+submit runs, owner statements or decisions, contact a model or write to Zetaris.
+The separate [H-MEM demonstration](evaluation/README.md) and
+[follow-through CLI](FOLLOW_UP.md#reproducible-proof) retain their existing
+explicit service/write requirements outside this preview UI.
 
-Follow-through requires [Zetaris setup](ZETARIS_SETUP.md), server-side
-`ZETARIS_HISTORY_ALLOW_APPEND=true`, and the browser write acknowledgment. It
-retains seven synthetic records under a unique account and never silently falls
-back to fixture storage. Restart after changing configuration. Real-service
-failures stay failures; the browser does not substitute scripted results.
+Switching modes clears the displayed report, scenario and service/write/owner
+acknowledgments, closes open evidence and never starts a run. Live mode is locked
+while a run is active. A page reopened in Demo can enter Live to manage an
+already active run. Prior completed results require **View last result** in Live;
+synthetic jobs and results are excluded from live operations.
+
+The server loads the project `.env`, preserving shell precedence, but does not
+contact services on startup. Live configuration labels indicate presence, **not
+verified connectivity**. In Live, select the configured planner and explicitly
+enable real services before running. [Model setup](CLI_GUIDE.md#model-configuration)
+stays server-side; model calls may incur usage. The [AWS setup](AWS_SETUP.md) and
+missing-source limits still apply. The account ID checks the authenticated AWS
+scope; it does not authenticate the browser. Configure the server's AWS SDK
+credential chain or `AWS_PROFILE` before starting it. **Read Zetaris decision
+history** queries prior records for discovered instances without appending.
+History never replaces live evidence. The normal CLI still defaults to live AWS.
+
+Live decision recording requires [Zetaris setup](ZETARIS_SETUP.md), server-side
+`ZETARIS_HISTORY_ALLOW_APPEND=true` and the browser write acknowledgment. It never
+falls back to fixture storage or executes an infrastructure change. Restart after
+changing configuration. Real-service failures stay failures.
 
 Only one run executes at a time. Actual progress and expandable events remain
 visible, including after a page refresh. **Stop run** terminates the local worker;
 external writes may already have completed. Do not blindly retry an interrupted
-write: retain the synthetic account shown in events and inspect its history.
+write: inspect the target recommendation and decision history before retrying.
 Refreshing or reconnecting only retrieves the latest job; it never resubmits it.
 An already completed job opens only when you select **View last result**.
 The server keeps only its latest job result in memory; a server restart loses
@@ -220,8 +228,9 @@ Use `npm run demo:web -- --no-open` on a headless machine and open the printed
 URL from a browser on that computer. If automatic opening fails, the server
 keeps running and prints the URL. Ctrl+C stops it.
 
-Choose **Load report**, or drop one JSON file, to inspect a generated single
-investigation report. **Run details & export → Download JSON** saves the selected report
+In **Live**, choose **Load report**, or drop one JSON file, to inspect a
+single live-source investigation report. Synthetic, fixture and stub imports are
+rejected without changing the current display. Demo uses its built-in previews. **Run details & export → Download JSON** saves the selected report
 from the browser. The 2 MiB upload limit applies to each file. Validation checks
 report consistency, citations and savings; it cannot authenticate user-supplied
 evidence. Evaluation summaries and multi-run demo bundles are not single report
@@ -229,7 +238,7 @@ files. Uploads go only to this local server for validation and are not saved to
 disk. Invalid files preserve the current display. Loaded files remain in the
 current page until replaced or refreshed; keep real-account reports private.
 
-**Owner evidence (optional)** captures one attributed statement for the next run:
+In **Live**, **Owner evidence (optional)** captures one attributed statement for the next run:
 instance ID, owner/team, topic, statement, ticket/document reference, and an
 applicable UTC date range (exclusive end, at most 90 days). Account and region
 come from the selected scope; submission records the assertion time. Changing

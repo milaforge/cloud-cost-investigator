@@ -11,6 +11,55 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Preview-only Demo across all tabs — 2026-10-26
+
+- **Gate/owner:** Days 3–4 demo usability, Milad. User clarified Demo is
+  preview-only. The earlier visibility-only split left shared live controls and
+  service-backed demonstrations reachable. All three tabs now have explicit
+  Demo/Live content. Demo has generated synthetic previews and labeled learning/
+  follow-through illustrations; no run, upload, owner-input, model or write
+  controls. Live owns AWS investigation and attributed decision recording.
+  Live Learn displays report memory status and explicitly states that live H-MEM
+  recall/storage are not enabled in this browser workflow.
+- **Verified:** `node --import tsx --test --test-isolation=none
+  tests/demo-web-ui.test.ts tests/demo-web.test.ts tests/demo-web-jobs.test.ts`
+  passed **11/11** with loopback access. Three shipped-HTML/DOM tests cover every
+  tab, ancestor visibility, direct handler rejection, live opt-in, mismatched
+  imports, preview failure/retry and late responses, and resumed/failed jobs.
+  Jobs retain validated source mode before results exist. `npm run typecheck`,
+  `npm run lint`, scoped Biome format, `node --check src/web/app.js` and
+  `git diff --check` passed; existing CSS specificity warning and probe style
+  info remain. Initial sandbox run hit four local `listen EPERM` blockers.
+- **Mode/limits/next:** synthetic/scripted and local HTTP fixtures only; no paid
+  inference, AWS access or remote Zetaris operations. DOM tests do not prove
+  rendered layout; browser inspection remains unavailable in this session.
+  Restart the web server to reload its cached assets. The earlier mixed-mode
+  browser receipt below is superseded; live integration/release gates stay open.
+
+
+### Browser Demo / Live separation — 2026-10-26
+
+- **Gate/owner:** Days 3–4 demo presentation, Milad. A top-center Mode select
+  defaults to Demo. Scenario/preview selection, Learn and fictional follow-through
+  appear only in Demo; Live binds investigations to read-only AWS and exposes
+  engineer decision recording. Mode changes clear selected results and opt-ins;
+  matching reports/last results require explicit selection. No service calls are
+  triggered by changing mode. HOW owns usage; memory records the rationale.
+- **Verification:** `node --import tsx --test --test-isolation=none
+  tests/demo-web.test.ts tests/demo-web-jobs.test.ts` passed **8/8** after enabling
+  loopback listening (initial sandbox attempt: four `listen EPERM` blockers).
+  `npm run typecheck`, `npm run lint`, scoped Biome format, `node --check
+  src/web/app.js` and `git diff --check` passed; existing CSS specificity warning
+  and historical-probe style info remain. A temporary Node VM/DOM harness
+  (`node /tmp/cci-mode-check.mjs`) exercised actual app handlers: startup,
+  demo/mock versus live/AWS requests, missing scenario/service acknowledgment,
+  visibility, opt-in/result clearing, active-run lock and return to Demo.
+- **Mode/limits/next:** synthetic/scripted and local HTTP fixtures only; no live
+  AWS, paid model or remote Zetaris access. No available browser (`iab` unavailable)
+  blocks rendered desktop/mobile inspection; perform that visual check before
+  the recording. This change does not close combined live or submission gates.
+
+
 ### Concise CLI and integrated result verification — 2026-10-26
 
 - **Gate/owner:** Days 3–4 CLI explainability, Milad. Default text now leads

@@ -71,6 +71,7 @@ test('isolated offline investigations and H-MEM learning return actual results w
   const jobs = new DemoJobs();
   try {
     const first = jobs.start(input);
+    assert.equal(first.source_mode, 'mock');
     assert.equal(jobs.start(input), first);
     assert.throws(() => jobs.start({ ...input, scenario: 'A' }), /conflict/);
     assert.throws(

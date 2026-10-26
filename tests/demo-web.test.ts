@@ -14,10 +14,39 @@ import { ScriptedPlanner } from '../src/investigation/planner.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
 
 test('local viewer generates fresh A/B, validates uploads and confines its HTTP surface', async () => {
+  const started = performance.now();
   const { server, url } = await startDemoServer();
   try {
+    assert.ok(
+      performance.now() - started < 2000,
+      'startup must not wait for investigations',
+    );
+    assert.equal((await fetch(url)).status, 200);
+    assert.equal(
+      (await fetch(`${url}/api/demos?scenario=unknown`)).status,
+      400,
+    );
+    const [first, duplicate] = await Promise.all([
+      fetch(`${url}/api/demos?scenario=A`).then((r) => r.json()),
+      fetch(`${url}/api/demos?scenario=A`).then((r) => r.json()),
+    ]);
+    assert.deepEqual(
+      Object.keys(first),
+      ['A'],
+      'generate only the requested preview',
+    );
+    assert.deepEqual(
+      first,
+      duplicate,
+      'concurrent requests share one investigation',
+    );
     const get = await fetch(`${url}/api/demos`);
     const demos = await get.json();
+    assert.deepEqual(
+      demos.A,
+      first.A,
+      'cache previews for the server lifetime',
+    );
     assert.equal(demos.A.candidates[0].verdict, 'conditional_recommendation');
     assert.equal(demos.B.candidates[0].verdict, 'not_recommended');
     assert.equal(demos.A.integration_mode, 'mock');
@@ -25,6 +54,16 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
     assert.equal(demos.A.historical_context.zetaris, 'not_configured');
     assert.equal(demos.A.historical_context.hmem, 'not_configured');
     assert.notEqual(demos.A.investigation_id, demos.B.investigation_id);
+    assert.deepEqual(Object.keys(demos).sort(), [
+      'A',
+      'B',
+      'C',
+      'missing',
+      'mixed',
+    ]);
+    assert.equal(demos.C.candidates[0].verdict, 'not_recommended');
+    assert.equal(demos.missing.candidates[0].verdict, 'needs_verification');
+    assert.equal(demos.mixed.candidates.length, 3);
     assert.deepEqual(await (await fetch(`${url}/api/demos`)).json(), demos);
     const page = await fetch(url);
     assert.match(

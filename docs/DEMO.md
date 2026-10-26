@@ -4,14 +4,15 @@
 
 Use the [adopted quality bar](../the_bar.md) to show working behavior and useful decisions. This is a recording storyboard and slide outline; actual artifacts and completion evidence belong in the [release checklist](EXECUTION_PLAN.md).
 
-Use the [guided browser demo](HOW.md#open-the-web-demo) for a recording without
-switching back to terminal commands after startup. In **Investigate**, run B,
-show actual events and resolve the operations citation. In **Learn**, execute
-cold/warm/changed evidence and compare check order with fresh verdicts. In
-**Follow through**, explicitly enable the configured Zetaris write demonstration
-and show retained decision/readback checks. Show source/planner labels throughout;
-offline runs prove deterministic behavior, not real-model collaboration. A real
-model is separately selectable with explicit service opt-in.
+Use the [browser preview](HOW.md#open-the-web-demo) to walk through labeled
+synthetic reports and illustrative learning/follow-through paths in **Demo**.
+Demo is preview-only; selecting B opens its generated report and citations
+without executing a new investigation. Learning/follow-through illustrations
+are not sponsor integration receipts. Use the separate CLI demonstrations below
+for actual execution proof. **Live** exposes AWS investigation and attributed
+Zetaris decision recording with explicit acknowledgments; it never offers the
+synthetic learning or remote-write demonstration. Label each separately recorded
+run and preserve source/planner labels throughout.
 
 ## A 3 minute 30 second recording
 

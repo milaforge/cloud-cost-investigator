@@ -11,32 +11,51 @@ import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
 
 export const MAX_REPORT_BYTES = 2 * 1024 * 1024;
-export async function generateDemoReports() {
+const DEMO_SCENARIOS = ['A', 'B', 'C', 'missing', 'mixed'] as const;
+type DemoScenario = (typeof DEMO_SCENARIOS)[number];
+async function generateDemoReport(scenario: DemoScenario) {
   const to = new Date();
   const request = {
     account_id: 'demo',
     region: 'us-east-1',
-    max_candidates: 1,
+    max_candidates: scenario === 'mixed' ? 3 : 1,
     window: {
       from: new Date(+to - 28 * 86400000).toISOString(),
       to: to.toISOString(),
     },
   };
-  const reports = {} as Record<'A' | 'B', ReturnType<typeof validateReport>>;
-  for (const scenario of ['A', 'B'] as const) {
-    reports[scenario] = validateReport(
-      await runInvestigation(request, {
-        provider: new MockProvider(scenario),
-        planner: new ScriptedPlanner(),
-        history: {},
-      }),
-    );
-  }
+  return validateReport(
+    await runInvestigation(request, {
+      provider: new MockProvider(scenario),
+      planner: new ScriptedPlanner(),
+      history: {},
+    }),
+  );
+}
+
+export async function generateDemoReports() {
+  const reports = {} as Record<DemoScenario, ReturnType<typeof validateReport>>;
+  for (const scenario of DEMO_SCENARIOS)
+    reports[scenario] = await generateDemoReport(scenario);
   return reports;
 }
 
 export async function startDemoServer(port = 0) {
-  const reports = await generateDemoReports();
+  const previews = new Map<
+    DemoScenario,
+    ReturnType<typeof generateDemoReport>
+  >();
+  const preview = (scenario: DemoScenario) => {
+    let pending = previews.get(scenario);
+    if (!pending) {
+      pending = generateDemoReport(scenario).catch((error) => {
+        previews.delete(scenario);
+        throw error;
+      });
+      previews.set(scenario, pending);
+    }
+    return pending;
+  };
   const jobs = new DemoJobs();
   const assets = new Map(
     await Promise.all(
@@ -75,8 +94,32 @@ export async function startDemoServer(port = 0) {
       reply(403, { error: 'Local access only.' });
       return;
     }
-    if (req.method === 'GET' && req.url === '/api/demos') {
-      reply(200, reports);
+    const route = URL.parse(req.url ?? '/', `http://${host}`);
+    if (req.method === 'GET' && route?.pathname === '/api/demos') {
+      const selected = route.searchParams.get('scenario');
+      if (
+        selected !== null &&
+        !DEMO_SCENARIOS.includes(selected as DemoScenario)
+      ) {
+        reply(400, { error: 'Unknown preview scenario.' });
+        return;
+      }
+      try {
+        const scenarios =
+          selected === null ? DEMO_SCENARIOS : [selected as DemoScenario];
+        const reports = await Promise.all(
+          scenarios.map(async (scenario) => [
+            scenario,
+            await preview(scenario),
+          ]),
+        );
+        reply(200, Object.fromEntries(reports));
+      } catch {
+        reply(500, {
+          error:
+            'Could not generate synthetic preview. Select the scenario again to retry.',
+        });
+      }
       return;
     }
     if (req.method === 'GET' && req.url === '/api/config') {
@@ -232,10 +275,10 @@ if (
   } else {
     try {
       loadProjectEnv();
-      console.log('Generating synthetic A/B investigations…');
+      console.log('Starting web UI…');
       const { server, url } = await startDemoServer();
       console.log(
-        `Demo viewer: ${url}\nOffline demos by default. Real services require explicit browser controls. Ctrl+C to stop.`,
+        `Web UI: ${url}\nOffline demos by default. Real services require explicit browser controls. Ctrl+C to stop.`,
       );
       for (const signal of ['SIGINT', 'SIGTERM'] as const)
         process.once(signal, () => {
@@ -245,7 +288,7 @@ if (
       if (!args.includes('--no-open') && !(await openBrowser(url)))
         console.log(`Browser could not be opened. Open ${url} manually.`);
     } catch {
-      console.error('Could not start demo viewer. No fallback was used.');
+      console.error('Could not start web UI. No fallback was used.');
       process.exitCode = 1;
     }
   }
