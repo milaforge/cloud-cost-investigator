@@ -1,0 +1,182 @@
+{
+  "started_at": "2026-10-26T12:07:32.356Z",
+  "finished_at": "2026-10-26T12:07:41.634Z",
+  "cli_exit": 2,
+  "profile_region_selection": "project .env overrides inherited profile/region, matching npm start",
+  "lookback_days": 14,
+  "max_candidates": 1,
+  "billing_opt_in": true,
+  "remote_appends": false,
+  "hmem": false,
+  "report_payload_retained": false,
+  "decision_policy": "reject_or_defer",
+  "completion_status": "partial",
+  "planner": {
+    "mode": "scripted",
+    "model": null
+  },
+  "budget": {
+    "discovery_attempts": 2,
+    "candidate_attempts": 3,
+    "planner_calls": 6,
+    "elapsed_ms": 9275
+  },
+  "citations": {
+    "valid": 4,
+    "total": 4
+  },
+  "checks": {
+    "report_validated": true,
+    "reject_or_defer": true,
+    "live_evidence": true,
+    "scripted_planner": true,
+    "scope_matches": true,
+    "allowed_verdicts": true,
+    "null_savings": true,
+    "all_five_checks_attempted": true,
+    "no_planner_failure": true
+  },
+  "evidence": [
+    {
+      "tool": "list_ec2_instances",
+      "status": "ok",
+      "integration_mode": "live",
+      "source": "aws-list_ec2_instances",
+      "collected_at": "2026-10-26T12:07:34.044Z",
+      "missing_fields": [],
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_billing",
+      "status": "partial",
+      "integration_mode": "live",
+      "source": "aws-get_ec2_billing",
+      "collected_at": "2026-10-26T12:07:36.419Z",
+      "missing_fields": [
+        "INCOMPLETE_COVERAGE:billing",
+        "billing_incomplete"
+      ],
+      "coverage": {
+        "complete": false,
+        "authoritative": false
+      },
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_metrics",
+      "status": "partial",
+      "integration_mode": "live",
+      "source": "aws-get_ec2_metrics",
+      "collected_at": "2026-10-26T12:07:38.546Z",
+      "missing_fields": [
+        "INCOMPLETE_COVERAGE:cpu_avg",
+        "INCOMPLETE_COVERAGE:cpu_max",
+        "INCOMPLETE_COVERAGE:network_in",
+        "INCOMPLETE_COVERAGE:network_out"
+      ],
+      "coverage": {
+        "complete": false,
+        "authoritative": false
+      },
+      "metric_coverage": [
+        {
+          "field": "cpu_avg",
+          "period_seconds": 300,
+          "expected_points": 4032,
+          "returned_points": 367,
+          "first_sample_at": "2026-10-24T17:25:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        },
+        {
+          "field": "cpu_max",
+          "period_seconds": 300,
+          "expected_points": 4032,
+          "returned_points": 367,
+          "first_sample_at": "2026-10-24T17:25:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        },
+        {
+          "field": "network_in",
+          "period_seconds": 300,
+          "expected_points": 4032,
+          "returned_points": 367,
+          "first_sample_at": "2026-10-24T17:25:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        },
+        {
+          "field": "network_out",
+          "period_seconds": 300,
+          "expected_points": 4032,
+          "returned_points": 367,
+          "first_sample_at": "2026-10-24T17:25:00.000Z",
+          "last_sample_at": "2026-10-25T23:55:00.000Z"
+        }
+      ],
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_operations",
+      "status": "partial",
+      "integration_mode": "live",
+      "source": "aws-ssm-maintenance-windows",
+      "collected_at": "2026-10-26T12:07:40.077Z",
+      "missing_fields": [
+        "JOBS_OUTSIDE_SSM_UNKNOWN",
+        "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+      ],
+      "coverage": {
+        "complete": false,
+        "authoritative": false
+      },
+      "data_present": true
+    },
+    {
+      "tool": "get_ec2_dependencies",
+      "status": "partial",
+      "integration_mode": "live",
+      "source": "aws-elbv2-target-health",
+      "collected_at": "2026-10-26T12:07:41.631Z",
+      "missing_fields": [
+        "DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN",
+        "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+      ],
+      "coverage": {
+        "complete": false,
+        "authoritative": false
+      },
+      "data_present": true
+    }
+  ],
+  "historical_context": {
+    "zetaris": "ok",
+    "hmem": "not_configured",
+    "context_count": 0,
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts.",
+      "Zetaris append disabled; no historical record written."
+    ]
+  },
+  "candidates": [
+    {
+      "verdict": "needs_verification",
+      "missing_checks": [
+        "get_ec2_metrics (partial; INCOMPLETE_COVERAGE:cpu_avg, INCOMPLETE_COVERAGE:cpu_max, INCOMPLETE_COVERAGE:network_in, INCOMPLETE_COVERAGE:network_out): Utilization coverage is incomplete for the requested period. Review the reported sample dates and counts; select a period with available history or collect more observations. Missing samples are unknown, not inactivity.",
+        "get_ec2_operations (partial; JOBS_OUTSIDE_SSM_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.",
+        "get_ec2_dependencies (partial; DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN, OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED): Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance."
+      ],
+      "estimated_monthly_savings": null,
+      "savings_calculation": null,
+      "next_human_actions": [
+        "Select a period with at least seven complete days of utilization history, or wait for enough observations, then rerun the investigation.",
+        "Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.",
+        "Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance.",
+        "Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change."
+      ]
+    }
+  ],
+  "failure_codes": []
+}

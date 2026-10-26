@@ -1,0 +1,98 @@
+{
+  "measured_at": "2026-10-26T12:04:07.401Z",
+  "evidence_mode": "mock",
+  "planner_mode": "live",
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "response_format": "text",
+  "thinking_disabled": false,
+  "methodology": "Three serial B/missing/C/A rounds through the actual CLI, fresh processes and evidence, no history, whole-run retries or fallback. Bounded in-run recovery and CLI pacing are unchanged. All twelve attempts remain in the denominator. This is a designed-fixture release gate, not a production reliability estimate. Earlier diagnostics are recorded separately.",
+  "passed": false,
+  "passed_runs": 0,
+  "total_runs": 12,
+  "rows": [
+    {
+      "round": 1,
+      "scenario": "B",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 1,
+      "scenario": "missing",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 1,
+      "scenario": "C",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 1,
+      "scenario": "A",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 2,
+      "scenario": "B",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 2,
+      "scenario": "missing",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 2,
+      "scenario": "C",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 2,
+      "scenario": "A",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 3,
+      "scenario": "B",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 3,
+      "scenario": "missing",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 3,
+      "scenario": "C",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    },
+    {
+      "round": 3,
+      "scenario": "A",
+      "exit_code": 2,
+      "passed": false,
+      "invalid_or_absent_report": true
+    }
+  ]
+}

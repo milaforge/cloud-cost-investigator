@@ -1,0 +1,21 @@
+{
+  "verified_at": "2026-10-26T12:19:57.182Z",
+  "verification_mode": "saved sanitized metadata consistency plus in-run full report validation; raw AWS report not retained",
+  "harness_checks_passed": 9,
+  "model_requests": 6,
+  "all_http_200": true,
+  "all_tls_verified": true,
+  "all_bodies_complete": true,
+  "request_elapsed_ms": {
+    "min": 1407,
+    "max": 44179
+  },
+  "current_citations": {
+    "valid": 4,
+    "total": 4
+  },
+  "within_call_and_total_deadlines": true,
+  "configured_secret_endpoint_account_profile_scan": "passed",
+  "investigation_result": "expected evidence-gap deferral",
+  "independent_complete_evidence_or_reliability_claim": false
+}

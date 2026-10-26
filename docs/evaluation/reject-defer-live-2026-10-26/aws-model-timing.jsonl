@@ -1,0 +1,6 @@
+{"event":"model_request_timing","request":1,"sent_ms":429,"tls_authorized":true,"body_sent_ms":430,"headers_ms":44177,"status":200,"outcome":"body_complete","elapsed_ms":44179}
+{"event":"model_request_timing","request":2,"sent_ms":1,"tls_authorized":true,"body_sent_ms":1,"headers_ms":3955,"status":200,"outcome":"body_complete","elapsed_ms":3956}
+{"event":"model_request_timing","request":3,"sent_ms":0,"tls_authorized":true,"body_sent_ms":0,"headers_ms":31654,"status":200,"outcome":"body_complete","elapsed_ms":31655}
+{"event":"model_request_timing","request":4,"sent_ms":580,"tls_authorized":true,"body_sent_ms":581,"headers_ms":4508,"status":200,"outcome":"body_complete","elapsed_ms":4508}
+{"event":"model_request_timing","request":5,"sent_ms":440,"tls_authorized":true,"body_sent_ms":440,"headers_ms":4334,"status":200,"outcome":"body_complete","elapsed_ms":4335}
+{"event":"model_request_timing","request":6,"sent_ms":1,"tls_authorized":true,"body_sent_ms":2,"headers_ms":1407,"status":200,"outcome":"body_complete","elapsed_ms":1407}

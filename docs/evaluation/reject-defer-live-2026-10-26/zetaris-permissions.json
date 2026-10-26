@@ -1,0 +1,21 @@
+{
+  "measured_at": "2026-10-26T12:06:27.157Z",
+  "mode": "live_read_only",
+  "owner_confirmation": "Existing account has fine-grained access (2026-10-26); previous non-admin/limited API confirmation retained.",
+  "schema_probe": "passed separately",
+  "effective_permission_gate": "unverified",
+  "overwrite_enforcement": "unverified; no destructive denial probe performed",
+  "writes_performed": false,
+  "rows": [
+    {
+      "check": "table_grants",
+      "status": "unavailable",
+      "code": "zetaris_http_400"
+    },
+    {
+      "check": "assigned_roles",
+      "status": "unavailable",
+      "code": "zetaris_http_400"
+    }
+  ]
+}

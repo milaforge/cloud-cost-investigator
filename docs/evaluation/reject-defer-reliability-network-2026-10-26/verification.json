@@ -1,0 +1,187 @@
+{
+  "verified_at": "2026-10-26T12:15:10.947Z",
+  "revision": "65f65ca146861a8c150fe5980170c3eada427f90",
+  "reports_validated": 12,
+  "policy_and_null_savings_passed": 12,
+  "gate_passed": 7,
+  "gate_total": 12,
+  "real_model_requests": 67,
+  "http_outcomes": {
+    "200": 60,
+    "500": 7
+  },
+  "all_tls_verified": true,
+  "all_bodies_complete": true,
+  "request_elapsed_ms": {
+    "min": 390,
+    "max": 57238
+  },
+  "failure_codes": {
+    "model_http_500": 7,
+    "model_invalid_choice": 1
+  },
+  "citations": {
+    "valid": 63,
+    "total": 63
+  },
+  "artifacts_scanned": 52,
+  "configured_secret_private_endpoint_account_scan": "passed",
+  "rows": [
+    {
+      "name": "round-1-B",
+      "gate_pass": true,
+      "failed_checks": [],
+      "verdict": "not_recommended",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-1-missing",
+      "gate_pass": false,
+      "failed_checks": [
+        "no_planner_failure",
+        "evidence_driven_revision"
+      ],
+      "verdict": "needs_verification",
+      "citations": {
+        "valid": 3,
+        "total": 3
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": false
+    },
+    {
+      "name": "round-1-C",
+      "gate_pass": false,
+      "failed_checks": [
+        "no_planner_failure"
+      ],
+      "verdict": "not_recommended",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-1-A",
+      "gate_pass": false,
+      "failed_checks": [
+        "no_planner_failure",
+        "evidence_driven_revision"
+      ],
+      "verdict": "needs_verification",
+      "citations": {
+        "valid": 4,
+        "total": 4
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": false
+    },
+    {
+      "name": "round-2-B",
+      "gate_pass": true,
+      "failed_checks": [],
+      "verdict": "not_recommended",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-2-missing",
+      "gate_pass": false,
+      "failed_checks": [
+        "no_planner_failure"
+      ],
+      "verdict": "needs_verification",
+      "citations": {
+        "valid": 4,
+        "total": 4
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-2-C",
+      "gate_pass": true,
+      "failed_checks": [],
+      "verdict": "not_recommended",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-2-A",
+      "gate_pass": true,
+      "failed_checks": [],
+      "verdict": "needs_verification",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-3-B",
+      "gate_pass": true,
+      "failed_checks": [],
+      "verdict": "not_recommended",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-3-missing",
+      "gate_pass": true,
+      "failed_checks": [],
+      "verdict": "needs_verification",
+      "citations": {
+        "valid": 4,
+        "total": 4
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-3-C",
+      "gate_pass": true,
+      "failed_checks": [],
+      "verdict": "not_recommended",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    },
+    {
+      "name": "round-3-A",
+      "gate_pass": false,
+      "failed_checks": [
+        "no_planner_failure"
+      ],
+      "verdict": "needs_verification",
+      "citations": {
+        "valid": 6,
+        "total": 6
+      },
+      "policy_and_null_savings_valid": true,
+      "all_five_checks_retrieved": true
+    }
+  ]
+}

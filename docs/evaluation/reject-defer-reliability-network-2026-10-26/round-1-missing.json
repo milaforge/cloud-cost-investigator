@@ -1,0 +1,427 @@
+{
+  "investigation_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+  "goal": "evaluate_ec2_off_hours_scheduling",
+  "decision_policy": "reject_or_defer",
+  "request": {
+    "account_id": "reliability-synthetic",
+    "region": "us-east-1",
+    "window": {
+      "from": "2026-09-28T12:04:55.774Z",
+      "to": "2026-10-26T12:04:55.774Z"
+    },
+    "max_candidates": 1
+  },
+  "started_at": "2026-10-26T12:04:55.775Z",
+  "finished_at": "2026-10-26T12:05:24.511Z",
+  "completion_status": "partial",
+  "integration_mode": "mock",
+  "planner": {
+    "mode": "live",
+    "model": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+  },
+  "discovery": {
+    "discovered_count": 2,
+    "candidate_limit": 1,
+    "gaps": []
+  },
+  "candidates": [
+    {
+      "instance_id": "i-mock-primary",
+      "selection_reason": "Selected from validated running inventory, ordered by available compute spend then instance ID. Missing billing is unknown, not zero spend.",
+      "selection_evidence_ids": [
+        "mock-ec2-evidence-a5ee560c-20ee-4e7f-8401-c55f97470ff7",
+        "mock-ec2-evidence-c02bc987-f90f-486f-a7de-90114097276a"
+      ],
+      "proposed_window": null,
+      "verdict": "needs_verification",
+      "explanation": "Decision deferred. get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history. No shutdown recommendation is issued. Observed CPU average 2.00%, peak 8.00%; complete coverage. Low CPU does not prove absence of jobs or dependencies.",
+      "supporting_evidence_ids": [
+        "mock-ec2-evidence-d68ab2a5-af76-46fb-bd5d-af817010fbad"
+      ],
+      "contradicting_evidence_ids": [],
+      "hypotheses": [],
+      "risks": [
+        "Stopping requires an authorized human decision."
+      ],
+      "missing_checks": [
+        "get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history.",
+        "get_ec2_operations (no validated observation; not queried): Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.",
+        "get_ec2_dependencies (no validated observation; not queried): Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance."
+      ],
+      "assumptions": [
+        "UTC daily same-day schedule only; exceptions are not inferred.",
+        "Savings eligibility, commitments and retained charges have not been established."
+      ],
+      "next_human_actions": [
+        "Ask the workload owner to supply an authoritative job schedule, including timezones and exceptions, for this instance and proposed window.",
+        "Ask service owners to verify upstream/downstream consumers and continuous-availability obligations for this instance.",
+        "Rerun the investigation with fresh evidence after resolving these checks; obtain authorized human approval before any infrastructure change."
+      ],
+      "estimated_monthly_savings": null,
+      "savings_calculation": null
+    }
+  ],
+  "evidence": [
+    {
+      "tool": "list_ec2_instances",
+      "status": "ok",
+      "source": "mock-ec2-instances",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1"
+      },
+      "observed_window": {
+        "from": "2026-09-28T12:04:55.774Z",
+        "to": "2026-10-26T12:04:55.774Z"
+      },
+      "collected_at": "2026-10-26T12:04:55.776Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "instances",
+      "evidence_id": "mock-ec2-evidence-a5ee560c-20ee-4e7f-8401-c55f97470ff7",
+      "data": {
+        "instances": [
+          {
+            "instance_id": "i-mock-primary",
+            "state": "running"
+          },
+          {
+            "instance_id": "i-mock-secondary",
+            "state": "running"
+          }
+        ]
+      }
+    },
+    {
+      "tool": "get_ec2_billing",
+      "status": "ok",
+      "source": "mock-ec2-billing",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1"
+      },
+      "observed_window": {
+        "from": "2026-09-28T12:04:55.774Z",
+        "to": "2026-10-26T12:04:55.774Z"
+      },
+      "collected_at": "2026-10-26T12:05:06.180Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "currency",
+      "evidence_id": "mock-ec2-evidence-c02bc987-f90f-486f-a7de-90114097276a",
+      "data": {
+        "costs": [
+          {
+            "instance_id": "i-mock-primary",
+            "compute_cost": 480
+          },
+          {
+            "instance_id": "i-mock-secondary",
+            "compute_cost": 80
+          }
+        ],
+        "currency": "USD",
+        "commitment_coverage_known": false
+      }
+    },
+    {
+      "tool": "get_ec2_metrics",
+      "status": "ok",
+      "source": "mock-ec2-metrics",
+      "integration_mode": "mock",
+      "scope": {
+        "account_id": "reliability-synthetic",
+        "region": "us-east-1",
+        "instance_id": "i-mock-primary"
+      },
+      "observed_window": {
+        "from": "2026-09-28T12:04:55.774Z",
+        "to": "2026-10-26T12:04:55.774Z"
+      },
+      "collected_at": "2026-10-26T12:05:15.695Z",
+      "coverage": {
+        "complete": true,
+        "authoritative": true
+      },
+      "missing_fields": [],
+      "units": "percent",
+      "evidence_id": "mock-ec2-evidence-d68ab2a5-af76-46fb-bd5d-af817010fbad",
+      "data": {
+        "average_cpu_percent": 2,
+        "peak_cpu_percent": 8,
+        "suggested_window": {
+          "start_hour_utc": 0,
+          "end_hour_utc": 6
+        },
+        "aggregation_minutes": 5
+      }
+    }
+  ],
+  "trace": [
+    {
+      "timestamp": "2026-10-26T12:04:55.775Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 1,
+      "phase": "evaluator",
+      "reason": "Required scoped EC2 discovery before the first planner call.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-28T12:04:55.774Z",
+            "to": "2026-10-26T12:04:55.774Z"
+          }
+        },
+        "reason": "Required scoped EC2 discovery before the first planner call."
+      }
+    },
+    {
+      "timestamp": "2026-10-26T12:04:55.776Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 2,
+      "phase": "tool",
+      "reason": "list_ec2_instances: ok; coverage complete, authoritative.",
+      "evidence_ids": [
+        "mock-ec2-evidence-a5ee560c-20ee-4e7f-8401-c55f97470ff7"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "list_ec2_instances",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-28T12:04:55.774Z",
+            "to": "2026-10-26T12:04:55.774Z"
+          }
+        },
+        "reason": "Required scoped EC2 discovery before the first planner call."
+      },
+      "status": "ok"
+    },
+    {
+      "timestamp": "2026-10-26T12:05:06.179Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 3,
+      "phase": "planner",
+      "reason": "Inventory is complete with two running instances; billing is the next required discovery step before inspecting metrics for a candidate.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_billing",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-28T12:04:55.774Z",
+            "to": "2026-10-26T12:04:55.774Z"
+          }
+        },
+        "reason": "Inventory is complete with two running instances; billing is the next required discovery step before inspecting metrics for a candidate."
+      }
+    },
+    {
+      "timestamp": "2026-10-26T12:05:06.180Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 4,
+      "phase": "tool",
+      "reason": "get_ec2_billing: ok; coverage complete, authoritative.",
+      "evidence_ids": [
+        "mock-ec2-evidence-c02bc987-f90f-486f-a7de-90114097276a"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_billing",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-28T12:04:55.774Z",
+            "to": "2026-10-26T12:04:55.774Z"
+          }
+        },
+        "reason": "Inventory is complete with two running instances; billing is the next required discovery step before inspecting metrics for a candidate."
+      },
+      "status": "ok"
+    },
+    {
+      "timestamp": "2026-10-26T12:05:06.180Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 5,
+      "phase": "evaluator",
+      "reason": "Selected from validated running inventory, ordered by available compute spend then instance ID. Missing billing is unknown, not zero spend.",
+      "evidence_ids": [
+        "mock-ec2-evidence-a5ee560c-20ee-4e7f-8401-c55f97470ff7",
+        "mock-ec2-evidence-c02bc987-f90f-486f-a7de-90114097276a"
+      ]
+    },
+    {
+      "timestamp": "2026-10-26T12:05:15.695Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 6,
+      "phase": "planner",
+      "reason": "Inspect metrics for candidate i-mock-primary to identify a suggested window after completing inventory and billing.",
+      "evidence_ids": [],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_metrics",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-28T12:04:55.774Z",
+            "to": "2026-10-26T12:04:55.774Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Inspect metrics for candidate i-mock-primary to identify a suggested window after completing inventory and billing."
+      }
+    },
+    {
+      "timestamp": "2026-10-26T12:05:15.696Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "supported",
+      "retry_count": 0,
+      "step": 7,
+      "phase": "tool",
+      "reason": "get_ec2_metrics: ok; coverage complete, authoritative.",
+      "evidence_ids": [
+        "mock-ec2-evidence-d68ab2a5-af76-46fb-bd5d-af817010fbad"
+      ],
+      "action": {
+        "type": "tool",
+        "tool": "get_ec2_metrics",
+        "args": {
+          "account_id": "reliability-synthetic",
+          "region": "us-east-1",
+          "window": {
+            "from": "2026-09-28T12:04:55.774Z",
+            "to": "2026-10-26T12:04:55.774Z"
+          },
+          "instance_id": "i-mock-primary"
+        },
+        "reason": "Inspect metrics for candidate i-mock-primary to identify a suggested window after completing inventory and billing."
+      },
+      "status": "ok"
+    },
+    {
+      "timestamp": "2026-10-26T12:05:16.539Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "insufficient",
+      "retry_count": 0,
+      "step": 8,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "model_http_500",
+      "provider_error": {
+        "body": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}",
+        "truncated": false
+      }
+    },
+    {
+      "timestamp": "2026-10-26T12:05:19.221Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "insufficient",
+      "retry_count": 1,
+      "step": 9,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "model_http_500",
+      "provider_error": {
+        "body": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}",
+        "truncated": false
+      }
+    },
+    {
+      "timestamp": "2026-10-26T12:05:24.509Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "insufficient",
+      "retry_count": 2,
+      "step": 10,
+      "phase": "planner",
+      "reason": "Planner failed, timed out, or returned an invalid action.",
+      "evidence_ids": [],
+      "failure_code": "model_http_500",
+      "provider_error": {
+        "body": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}",
+        "truncated": false
+      }
+    },
+    {
+      "timestamp": "2026-10-26T12:05:24.509Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 11,
+      "phase": "evaluator",
+      "reason": "Planner stopped: retry or call budget exhausted. Retaining completed evidence; unresolved safety remains unknown.",
+      "evidence_ids": []
+    },
+    {
+      "timestamp": "2026-10-26T12:05:24.510Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 12,
+      "phase": "evaluator",
+      "reason": "Decision deferred. get_ec2_metrics: The agent could not establish a supported UTC window from the available utilization history. No shutdown recommendation is issued. Observed CPU average 2.00%, peak 8.00%; complete coverage. Low CPU does not prove absence of jobs or dependencies.",
+      "evidence_ids": []
+    },
+    {
+      "timestamp": "2026-10-26T12:05:24.510Z",
+      "trace_id": "427e5026-257b-4e9f-aebc-d321a3ca32fa",
+      "confidence": "unassessed",
+      "retry_count": 0,
+      "step": 13,
+      "phase": "finish",
+      "reason": "planner_unavailable_or_invalid",
+      "evidence_ids": []
+    }
+  ],
+  "historical_context": {
+    "zetaris": "not_configured",
+    "hmem": "not_configured",
+    "comparisons": [],
+    "context_ids": [],
+    "limitations": [
+      "Historical context can prioritize fresh checks; it cannot establish current facts."
+    ]
+  },
+  "budget": {
+    "discovery_attempts": 2,
+    "candidate_attempts": 1,
+    "planner_calls": 5,
+    "elapsed_ms": 28736
+  },
+  "limitations": [
+    "CCI only rejects or defers the evaluated window. No found conflict is not approval; any infrastructure change requires an external authorized human decision. New savings are not produced.",
+    "The configured live model is not independently verified as event-approved."
+  ],
+  "stop_reason": "planner_unavailable_or_invalid"
+}
