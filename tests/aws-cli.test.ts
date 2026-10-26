@@ -8,6 +8,12 @@ import {
   type AwsTransport,
 } from '../src/tools/aws.ts';
 import { validateReport } from '../src/investigation/report.ts';
+import {
+  CloudWatchClient,
+  type GetMetricDataCommand,
+} from '@aws-sdk/client-cloudwatch';
+import { STSClient } from '@aws-sdk/client-sts';
+import { validateObservation } from '../src/contracts.ts';
 
 const args = [
   'investigate',
@@ -51,6 +57,99 @@ test('AWS CLI defaults to live evidence, uses complete UTC days and rejects inco
       'aws',
     ]),
   );
+});
+
+test('investigation requests five-minute metrics and retains two-day gaps in a seven-day window', async (t) => {
+  // Intercept SDK sends before credentials/network resolution. This exercises
+  // the real CLI provider factory and collector, not a replacement provider.
+  t.mock.method(STSClient.prototype, 'send', async () => ({
+    Account: '123456789012',
+    $metadata: {},
+  }));
+  let availableDays = 7;
+  let expectedPeriod = 300;
+  t.mock.method(
+    CloudWatchClient.prototype,
+    'send',
+    async (command: GetMetricDataCommand) => {
+      const input = command.input;
+      assert.ok(input.StartTime && input.EndTime);
+      assert.equal(input.MetricDataQueries?.length, METRICS.length);
+      for (const query of input.MetricDataQueries ?? []) {
+        assert.equal(query.MetricStat?.Period, expectedPeriod);
+        assert.deepEqual(query.MetricStat?.Metric?.Dimensions, [
+          { Name: 'InstanceId', Value: 'i-0123456789abcdef0' },
+        ]);
+      }
+      const count = (availableDays * 86400) / expectedPeriod;
+      return {
+        MetricDataResults: METRICS.map((metric) => ({
+          Id: metric.id,
+          StatusCode: 'Complete',
+          Timestamps: Array.from(
+            { length: count },
+            (_, i) =>
+              new Date(
+                Number(input.EndTime) - (count - i) * expectedPeriod * 1000,
+              ),
+          ),
+          Values: Array(count).fill(1),
+        })),
+        $metadata: {},
+      };
+    },
+  );
+  const options = parseArgs([...args, '--lookback-days', '7']);
+  assert.notEqual(options, 'help');
+  if (options === 'help') return;
+  for (const source of ['cli', 'standalone', 'two_days', 'explicit_hourly']) {
+    availableDays = source === 'two_days' ? 2 : 7;
+    expectedPeriod = source === 'explicit_hourly' ? 3600 : 300;
+    const provider =
+      source === 'cli' || source === 'two_days'
+        ? createEvidenceProvider(options)
+        : createAwsEvidenceProvider({
+            ...(source === 'explicit_hourly'
+              ? { config: { periodSeconds: 3600 } }
+              : {}),
+          });
+    const input = {
+      type: 'tool' as const,
+      tool: 'get_ec2_metrics' as const,
+      reason: 'Verify metric resolution and honest coverage.',
+      args: {
+        account_id: options.request.account_id,
+        region: options.request.region,
+        window: options.request.window,
+        instance_id: 'i-0123456789abcdef0',
+      },
+    };
+    const started_at = new Date().toISOString();
+    const result = validateObservation(
+      await provider.call(input, new AbortController().signal),
+      input,
+      { mode: 'live', started_at, now: new Date().toISOString() },
+    );
+    assert.equal(result.status, source === 'two_days' ? 'partial' : 'ok');
+    assert.equal(result.coverage.complete, source !== 'two_days');
+    assert.equal(result.coverage.authoritative, source !== 'two_days');
+    assert.ok(result.data && 'aggregation_minutes' in result.data);
+    assert.equal(result.data.aggregation_minutes, expectedPeriod / 60);
+    assert.equal(result.metric_coverage?.length, METRICS.length);
+    for (const series of result.metric_coverage ?? []) {
+      assert.equal(series.expected_points, (7 * 86400) / expectedPeriod);
+      assert.equal(
+        series.returned_points,
+        (availableDays * 86400) / expectedPeriod,
+      );
+      assert.equal(series.period_seconds, expectedPeriod);
+    }
+    if (source === 'two_days')
+      for (const metric of METRICS)
+        assert.ok(
+          result.missing_fields.includes(`INCOMPLETE_COVERAGE:${metric.id}`),
+        );
+  }
 });
 
 test('AWS CLI routes through collector and evaluator: empty, denied, missing billing and unknown safety', async () => {

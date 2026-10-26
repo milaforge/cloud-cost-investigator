@@ -1,0 +1,116 @@
+{
+  "mode": "live",
+  "profile": "cci",
+  "region": "eu-west-3",
+  "scope": "Existing dedicated CCI identity; account/resource identifiers omitted.",
+  "network": {
+    "sandbox_attempt": "NETWORK_UNAVAILABLE before inventory; no downstream reads",
+    "authorized_network_retry": "passed"
+  },
+  "access_check": {
+    "command": "AWS_PROFILE=cci AWS_REGION=eu-west-3 AWS_ENABLE_COST_EXPLORER=true NODE_TLS_REJECT_UNAUTHORIZED=1 npm run integration:cloud",
+    "exit_code": 0,
+    "passed": 6,
+    "failed": 0,
+    "count_includes_parent": true,
+    "observation_days": 14,
+    "sources": [
+      {
+        "tool": "list_ec2_instances",
+        "status": "ok",
+        "missing_fields": []
+      },
+      {
+        "tool": "get_ec2_billing",
+        "status": "partial",
+        "missing_fields": [
+          "INCOMPLETE_COVERAGE:billing",
+          "billing_incomplete"
+        ]
+      },
+      {
+        "tool": "get_ec2_metrics",
+        "status": "partial",
+        "missing_fields": [
+          "INCOMPLETE_COVERAGE:cpu_avg",
+          "INCOMPLETE_COVERAGE:cpu_max",
+          "INCOMPLETE_COVERAGE:network_in",
+          "INCOMPLETE_COVERAGE:network_out"
+        ]
+      },
+      {
+        "tool": "get_ec2_operations",
+        "status": "partial",
+        "missing_fields": [
+          "JOBS_OUTSIDE_SSM_UNKNOWN",
+          "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+        ]
+      },
+      {
+        "tool": "get_ec2_dependencies",
+        "status": "partial",
+        "missing_fields": [
+          "DEPENDENCIES_OUTSIDE_ELBV2_UNKNOWN",
+          "OWNER_CALENDAR_RECOVERY_CLEARANCE_REQUIRED"
+        ]
+      }
+    ]
+  },
+  "integrated_cli": {
+    "execution": "Loaded project .env preserving shell precedence; selected the profile/region above. STS supplied the account argument in memory. Invoked cli.ts main with --evidence aws --planner scripted --lookback-days 7 --json, history disabled. Printed only sanitized coverage; no full account report retained.",
+    "exit_code": 2,
+    "completion_status": "partial",
+    "stop_reason": "metrics_evidence_incomplete",
+    "verdict": "needs_verification",
+    "estimated_monthly_savings": null,
+    "inventory": "ok",
+    "billing": "partial",
+    "metrics": "partial",
+    "metric_coverage": [
+      {
+        "field": "cpu_avg",
+        "period_seconds": 300,
+        "expected_points": 2016,
+        "returned_points": 367,
+        "first_sample_at": "2026-10-24T17:25:00.000Z",
+        "last_sample_at": "2026-10-25T23:55:00.000Z"
+      },
+      {
+        "field": "cpu_max",
+        "period_seconds": 300,
+        "expected_points": 2016,
+        "returned_points": 367,
+        "first_sample_at": "2026-10-24T17:25:00.000Z",
+        "last_sample_at": "2026-10-25T23:55:00.000Z"
+      },
+      {
+        "field": "network_in",
+        "period_seconds": 300,
+        "expected_points": 2016,
+        "returned_points": 367,
+        "first_sample_at": "2026-10-24T17:25:00.000Z",
+        "last_sample_at": "2026-10-25T23:55:00.000Z"
+      },
+      {
+        "field": "network_out",
+        "period_seconds": 300,
+        "expected_points": 2016,
+        "returned_points": 367,
+        "first_sample_at": "2026-10-24T17:25:00.000Z",
+        "last_sample_at": "2026-10-25T23:55:00.000Z"
+      }
+    ],
+    "operations_and_dependencies": "Not reached in this CLI run because metric evidence was incomplete; access verified separately above.",
+    "history": {
+      "zetaris": "not_configured",
+      "hmem": "not_configured"
+    }
+  },
+  "model_calls": 0,
+  "history_calls": 0,
+  "infrastructure_writes": 0,
+  "limitations": [
+    "Access checks accept usable partial observations; passing is not complete telemetry or clearance.",
+    "Live pricing and commitments remain unverified; no numeric live savings demonstrated."
+  ]
+}

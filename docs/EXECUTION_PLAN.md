@@ -11,6 +11,58 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### Five-minute AWS investigations and account setup — 2026-10-26
+
+- **Gate/owner:** Days 3–4 live evidence, Milad; operational source ownership
+  remains Zayan/account owner. The investigation provider now defaults to
+  `periodSeconds: 300`, including normal CLI/standalone provider calls. Explicit
+  overrides and the low-level collector's hourly default remain compatible.
+- **Account/demo decision:** user confirms the live instance has only two days
+  of history. Reuse explicit `--evidence mock --lookback-days 7` for complete
+  synthetic flows; no backdated AWS data, filled gaps or silent fallback.
+  [AWS setup](AWS_SETUP.md) is the canonical access/permissions and account
+  assumptions guide, linked from HOW/tools; previous HOW anchors still resolve.
+  Existing SSM/ELBv2 adapters are reused, not replaced with invented authority.
+- **Local proof:** `node --import tsx --test --test-isolation=none
+  tests/aws-cli.test.ts` passed **3/3**; the SDK-send regression exercises the
+  actual CLI provider factory, complete five-minute retrieval, two-day gaps in a
+  seven-day request and explicit hourly compatibility without network access.
+  The same runner with `tests/aws-agent.test.ts`, `tests/aws-operational.test.ts`,
+  `tests/broader-scenarios.test.ts`, `tests/recommendation-boundary.test.ts`
+  passed **82/82**, including missing/expired authority, native conflicts,
+  unsupported pricing and the added two-day policy boundary. No full suite run.
+- **CLI proof:** ran A/B/C/missing with `node --import tsx cli.ts investigate
+  --evidence mock --planner scripted --account demo --region us-east-1
+  --lookback-days 7 --scenario SCENARIO --json`, clearing history configuration.
+  A returned conditional recommendation and **synthetic USD 72.50** for its
+  November estimate; B/C rejected and missing deferred. Exits **0/0/0/2**;
+  no AWS, model or remote history calls in these four runs.
+- **Live proof:** `AWS_PROFILE=cci AWS_REGION=eu-west-3
+  AWS_ENABLE_COST_EXPLORER=true NODE_TLS_REJECT_UNAUTHORIZED=1 npm run integration:cloud`
+  passed **6/6** including the parent. All five direct tools are accessible;
+  inventory is `ok`, billing/metrics/SSM/ELBv2 remain `partial`. The sandbox
+  attempt failed `NETWORK_UNAVAILABLE` before inventory; the authorized network
+  retry passed. [Sanitized receipt](history/aws-investigation-2026-10-26.json).
+- **Integrated live CLI:** an in-process `cli.ts` invocation used the authenticated
+  account from STS, the same profile/region, `--evidence aws --planner scripted
+  --lookback-days 7 --json` and disabled histories. It requested 300-second
+  samples and returned **367/2016** points for each of four metric series,
+  from Oct 24 17:25 through Oct 25 23:55 UTC. Result: exit **2**, partial,
+  `metrics_evidence_incomplete`, `needs_verification`, savings `null`.
+  Operations/dependencies were not reached in that run; separate access proof
+  above is not relabeled as integrated safety proof. No model/history calls or
+  infrastructure writes; raw account/resource reports were not retained.
+- **Other checks:** both TypeScript checks, `npm run lint`, scoped Biome format,
+  local documentation links/anchors and `git diff --check` passed. Lint retains
+  pre-existing CSS specificity warning/history-probe style info. An optional
+  Biome `check` also flags pre-existing import ordering; canonical lint passes.
+- **Limits/next:** no combined live safety/savings gate advanced. The live adapter
+  still lacks verified prospective pricing/commitment inputs, so live numeric
+  savings stay unknown. Native reads disclose jobs outside SSM, dependencies
+  outside ELBv2 and owner/calendar/recovery clearance as unknown. Next: collect
+  sufficient real history and identify verified workload/pricing authority;
+  continue using labeled mocks for complete positive/negative demo flows.
+
 ### README sponsor explanation — 2026-10-26
 
 - **Gate/owner:** submission documentation, Milad. Added the requested collapsed

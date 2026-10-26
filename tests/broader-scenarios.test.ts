@@ -389,7 +389,7 @@ test('aggregate deadline does not restart for later candidates', async () => {
 });
 
 test('policy boundary is seven days, not the agreed fourteen-day scenario window', async () => {
-  for (const days of [6, 7, 13, 14]) {
+  for (const days of [2, 6, 7, 13, 14]) {
     const r = await run('A', undefined, {
       ...request,
       window: {

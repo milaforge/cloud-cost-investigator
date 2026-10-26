@@ -1,5 +1,27 @@
 # Project Memory
 
+## Five-minute investigations and short-lived AWS account (2026-10-26)
+
+- The user confirms the live instance has only two days of history. Use the
+  existing explicitly selected mock provider for complete seven-day demos;
+  never backdate AWS samples, fill absent days or mix synthetic facts into a
+  live observation. Keep the seven-day safety minimum and live default.
+- The investigation provider owns its 300-second metric default because its
+  evaluator rejects hourly aggregation. Preserve explicit provider overrides
+  and the standalone collector's existing 3600-second default.
+- AWS authentication, permissions and account/data prerequisites now live in
+  `docs/AWS_SETUP.md`, linked from HOW and the tools reference. Keep one canonical
+  setup guide; old HOW headings remain forwarding links.
+- Reuse existing read-only SSM maintenance and ELBv2 registration adapters.
+  Successful native reads cannot attest jobs/consumers outside those sources or
+  owner/calendar/recovery clearance. No new operational system was identified;
+  do not manufacture a supposedly authoritative file or escalate to guest commands.
+- Live billing provides ranking costs, not prospective marginal prices. Do not
+  mark commitments known or derive future rates from historical spend merely to
+  unlock savings. The existing mock pricing/calculator already proves numeric
+  behavior; a verified live pricing source and broader operational authority
+  remain necessary for positive live proof.
+
 ## Cost Explorer denial interpretation (2026-10-25)
 
 - Service `AccessDeniedException` can represent disabled Cost Explorer or

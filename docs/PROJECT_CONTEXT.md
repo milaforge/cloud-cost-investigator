@@ -32,7 +32,7 @@ clarification does not expand the current MVP, tool permissions or safety policy
 | Failure             | Agreed                           | Status-specific bounded degradation and explicit uncertainty                                                                                                                      |
 | Source architecture | Agreed                           | Current evidence: Zayan's direct TypeScript tools/API adapters, mocked initially; Zetaris: structured historical investigation records; Meterless H-MEM: reasoning memory         |
 | Historical writes | Agreed | Narrow schema-validated history append through Zetaris; no arbitrary SQL or AWS writes. Deployment proof is tracked separately. |
-| Observation period  | Agreed AWS MVP                   | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. Mock mode has a separate 28-day default.             |
+| Observation period  | Agreed AWS MVP                   | 14 complete UTC days (Milad confirmed Oct 24); aligned metrics/billing windows required. Investigation metrics default to five-minute aggregation. Mock mode has a separate 28-day default; explicit seven-day mocks cover the minimum safety window without fabricating live history. |
 | Candidate ranking   | Implemented policy                         | Descending positive matching compute spend, ties by instance ID; explain incomplete coverage                                                                       |
 | Report shape        | Runtime-validated contract | Described in §8; implementation names may evolve if behavior stays testable                                                                                                       |
 

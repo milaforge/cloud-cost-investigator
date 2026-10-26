@@ -197,6 +197,9 @@ export function createAwsEvidenceProvider(
           if (!options.tools)
             owned = createAwsTools({
               ...options.config,
+              // Investigation policy requires five-minute or finer evidence.
+              // Keep the standalone collector's coarser default independent.
+              periodSeconds: options.config?.periodSeconds ?? 300,
               region: args.region,
               expectedAccountId: args.account_id,
               window: args.window,

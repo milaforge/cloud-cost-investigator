@@ -48,9 +48,10 @@ AWS SDK v3 clients use the default Node credential chain, including local profil
 SSO, environment credentials or workload roles. Do not pass credentials through
 tool arguments. Select a profile with `AWS_PROFILE` if needed and provide region
 through SDK configuration or `AWS_REGION`. Do not commit credentials or exports.
-`AWS_EXPECTED_ACCOUNT_ID` optionally guards the CLI against using the wrong account.
+`AWS_EXPECTED_ACCOUNT_ID` optionally guards the standalone smoke probe; the
+investigation uses its required `--account` argument as the account guard.
 
-Follow [Authenticate to AWS](HOW.md#authenticate-to-aws) for profile/environment
+Follow [AWS setup and account requirements](AWS_SETUP.md) for profile/environment
 setup, identity and region checks, permissions and common failures.
 
 ```sh
@@ -66,14 +67,8 @@ that the operational probe did not run. Output contains status, counts and issue
 codes, never instance/account IDs, ARNs or tags. No CloudWatch or Cost Explorer
 query is performed by either demo command.
 
-Required permissions for the corresponding features:
-- `ec2:DescribeInstances`
-- `cloudwatch:GetMetricData`
-- `ce:GetCostAndUsageWithResources`
-- `ssm:DescribeMaintenanceWindowSchedule`
-- `ssm:GetMaintenanceWindow`
-- `elasticloadbalancing:DescribeTargetGroups`
-- `elasticloadbalancing:DescribeTargetHealth`
+The [required read permissions](AWS_SETUP.md#authenticate-to-aws) cover inventory,
+metrics, resource-level billing, SSM maintenance and ELBv2 target health.
 
 The tools also call `sts:GetCallerIdentity` to resolve/verify account scope. No
 infrastructure mutations, billing-feature enablement, IAM changes or new resources
@@ -136,7 +131,9 @@ source identifier and a content-derived `evidence_id`. Collector-only fields are
 not appended to the exact shared wire shape. No shared verdict is changed.
 
 The collector accepts at most 14 days, hour-aligned metrics (or five minutes
-when configured), and UTC-day-aligned billing. AWS CLI mode defaults to 14 complete
+when configured), and UTC-day-aligned billing. The investigation provider defaults
+to five-minute metrics; the standalone collector retains its hourly default.
+AWS CLI mode defaults to 14 complete
 UTC days ending at midnight today; `--lookback-days` accepts 1–14. Mock mode
 retains its 28-day default. Unsupported AWS CLI periods and mock scenario flags
 are rejected before retrieval. Current populated-resource verification is tracked in the [execution plan](EXECUTION_PLAN.md).

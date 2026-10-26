@@ -263,7 +263,7 @@ Copy [.env.example](../.env.example) to `.env` **only if `.env` does not exist**
 
 | Choose | Continue here |
 | --- | --- |
-| Live AWS evidence and permissions | [AWS authentication](AWS_TOOLS.md#authentication-and-live-smoke-check) |
+| Live AWS evidence and permissions | [AWS setup and account requirements](AWS_SETUP.md) |
 | A real model, including NVIDIA | [Model configuration](CLI_GUIDE.md#model-configuration) |
 | Persistent investigation lessons | [H-MEM configuration](MEMORY.md#configuration) |
 | Historical recommendations and decisions | [Zetaris setup](ZETARIS_SETUP.md) |
@@ -278,132 +278,16 @@ The [team-adopted quality bar](../the_bar.md) guides reproducibility, visible de
 
 ## Authenticate to AWS
 
-Offline synthetic scenarios need no AWS credentials. For a live investigation,
-use an existing authorized read-only identity and the account/region containing
-the intended EC2 instances. Do not create resources just to reproduce the demo.
-The AWS CLI is useful for login and identity checks; the application itself uses
-AWS SDK v3, not an AWS CLI subprocess.
-
-The actual loader in [aws.ts](../src/tools/aws.ts) constructs SDK clients without
-explicit credentials, using the [default Node credential chain](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html).
-It supports configured shared profiles/SSO, environment credentials and workload
-roles. Choose a single intended credential source and check for stale shell
-credentials before relying on a profile. The application preserves existing
-shell-variable precedence when loading local .env configuration.
-
-For an existing IAM Identity Center profile, refresh its session:
-
-```bash
-aws sso login --profile cci-readonly
-aws sts get-caller-identity --profile cci-readonly --region us-east-1
-aws configure get region --profile cci-readonly
-```
-
-Replace the example profile and region with your own. If no profile exists,
-follow your team's approved AWS CLI setup (for SSO, `aws configure sso --profile
-cci-readonly`; for an approved key-based profile, `aws configure --profile
-cci-readonly`). Enter credentials locally, never in chat, source files or a demo
-recording. Check the returned Account and Arn locally against the expected
-12-digit account and role. STS identity does not report or verify your EC2 region;
-compare the configured region with the region containing your instances and pass
-that region explicitly below. [GetCallerIdentity](https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html)
-requires no explicit IAM permission, but a successful identity call does not
-prove EC2, CloudWatch or billing access.
-
-Select that profile for the Node process and verify its identity in the same shell:
-
-```bash
-export AWS_PROFILE=cci-readonly
-export AWS_REGION=us-east-1
-export AWS_EXPECTED_ACCOUNT_ID=YOUR_12_DIGIT_ACCOUNT_ID
-aws sts get-caller-identity --region "$AWS_REGION"
-npm run investigate -- --evidence aws --account "$AWS_EXPECTED_ACCOUNT_ID" --region "$AWS_REGION"
-```
-
-PowerShell equivalent:
-
-```powershell
-$env:AWS_PROFILE = 'cci-readonly'
-$env:AWS_REGION = 'us-east-1'
-$env:AWS_EXPECTED_ACCOUNT_ID = 'YOUR_12_DIGIT_ACCOUNT_ID'
-aws sts get-caller-identity --region $env:AWS_REGION
-npm run investigate -- --evidence aws --account $env:AWS_EXPECTED_ACCOUNT_ID --region $env:AWS_REGION
-```
-
-The investigation requires both `--account` and `--region`; its explicit region
-overrides the SDK region default, and the account argument is checked against
-STS. An account ID is a scope guard, not a credential. The optional
-`AWS_EXPECTED_ACCOUNT_ID` is consumed directly by the standalone
-`npm run demo:aws -- --live` smoke script; the investigation instead derives its
-guard from `--account`. By default the smoke script checks only STS and inventory;
-`--live --operations` additionally probes SSM and ELBv2 for one retrieved running
-instance. Neither smoke mode queries CloudWatch or Cost Explorer.
-
-Alternatively, supply `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` through
-your approved local environment; temporary credentials also require
-`AWS_SESSION_TOKEN`. Supply `AWS_REGION` for the SDK/smoke script. Do not mix
-expired environment credentials with a different intended profile. The AWS CLI
-does not load this project's .env; shell/profile credentials must be available to
-both tools for the identity check to represent the application. **Never commit
-credentials, .env, private AWS exports or screenshots containing them.**
-
-Minimum read operations used by the five evidence tools:
-
-| Evidence tool          | Read permission / current capability                                                                                |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `list_ec2_instances`   | `ec2:DescribeInstances`; STS account check                                                                          |
-| `get_ec2_metrics`      | `cloudwatch:GetMetricData`; STS account check                                                                       |
-| `get_ec2_billing`      | `ec2:DescribeInstances` plus `ce:GetCostAndUsageWithResources`; STS account check                                   |
-| `get_ec2_operations`   | `ssm:DescribeMaintenanceWindowSchedule`, `ssm:GetMaintenanceWindow`; incomplete native facts                        |
-| `get_ec2_dependencies` | `elasticloadbalancing:DescribeTargetGroups`, `elasticloadbalancing:DescribeTargetHealth`; incomplete consumer facts |
-
-Profile assumption/SSO login may require separate organizational permissions.
-Do not grant administrator access, infrastructure-write actions, SSH or SSM
-command execution to make these collectors work. Only the listed SSM reads are used. Cost Explorer uses its us-east-1 endpoint while
-resource queries remain scoped to the requested region. Billing requests require
-explicit `AWS_ENABLE_COST_EXPLORER=true` in the shell or local .env; the app does
-not enable billing features. Resource-level Cost Explorer data must already be
-opted in and available. Queries can incur API charges. See the
-[resource-level API requirements](https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_GetCostAndUsageWithResources.html).
-
-Common failures:
-- Missing/expired credentials or SSO session: refresh the approved login and
-  repeat the identity check; the collector reports `MISSING_CREDENTIALS`.
-- `SCOPE_MISMATCH`: wrong authenticated account; correct the profile/account.
-  `MISSING_REGION` or empty inventory: verify region configuration and scope;
-  an empty result alone does not prove authentication failure.
-- `ACCESS_DENIED`: ask the account owner to verify the specific read actions,
-  permission boundaries/SCPs and billing access. STS success is insufficient.
-- `COST_EXPLORER_DISABLED`: the app opt-in flag is absent. `SOURCE_UNAVAILABLE`
-  can mean unavailable/not-enabled resource-level data. Missing billing can
-  prevent candidate selection; it is not zero cost.
-- Recent usage may not yet appear. Cost Explorer refreshes at least daily, and
-  upstream billing data can arrive later than 24 hours; do not promise immediate
-  spend visibility. [AWS refresh guidance](https://docs.aws.amazon.com/cost-management/latest/userguide/ce-what-is.html).
-- Network/DNS errors, timeouts or throttling remain explicit retrieval failures;
-  do not disable TLS or substitute synthetic results for a failed live call.
+Follow [AWS setup and account requirements](AWS_SETUP.md) for credential/profile
+selection, exact read permissions, Cost Explorer configuration, metric-history
+requirements and the missing workload/pricing sources. It also provides an
+explicit seven-day mock command for accounts with only a few days of telemetry.
 
 ## What synthetic and live runs prove
 
-The [six scenarios](SCENARIOS.md) prove supported, unsafe and uncertain outcomes
-with labeled synthetic evidence. Live AWS runs can prove authentication,
-inventory and the metrics/billing evidence actually returned, subject to coverage
-and permissions. Native SSM maintenance executions can contradict a window;
-ELBv2 registrations identify consumers needing owner/draining review, not an
-automatic continuous-operation requirement. These sources do not establish
-complete owner, calendar and recovery clearance. Empty scans and missing sources
-must stay unknown. See [native collection limits](AWS_TOOLS.md).
-
-A newly launched instance cannot provide 14 days of historical metrics. The live
-CLI requests the preceding 14 complete UTC days by default; unavailable periods
-are not zero utilization. An in-instance cron job is not an authoritative
-operations source for the current collector, which does not inspect guest jobs.
-Its CPU activity may lead to `needs_verification` if metrics are collected and
-prevent a supported window; it cannot establish the job's purpose, criticality
-or exact overlap. The authoritative unsafe job-overlap demonstration remains
-synthetic. Recent costs may also be absent until Cost Explorer updates. Do not
-launch instances or generate load merely to claim the synthetic safety proofs
-have become live integrations.
+See [the evidence distinction](AWS_SETUP.md#what-synthetic-and-live-runs-prove).
+Synthetic scenarios prove policy behavior; live results establish only the
+facts actually retrieved and their reported coverage.
 
 ## Go deeper
 
