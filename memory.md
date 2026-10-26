@@ -1154,3 +1154,14 @@
 - Preserve the concurrently developed all-checks collection policy, web AWS selection, preview loading and operator-action behavior. Both operational checks remain attempted within the aggregate budget after a conflict. H-MEM changes order, not freshness requirements or verdict authority.
 - Review requests now cover rejected and deferred results, including partial investigations, using existing append-only validated Zetaris records and readback. Acceptance and outcome learning remain legacy-only. No infrastructure authority or additional remote write permission is introduced.
 - The six-case exports describe the current policy; dated model/sponsor receipts retain their original policy and modes. The exporter synchronizes the root handoff copy and canonical docs JSONL to prevent drift. Current proof belongs in the execution plan.
+
+
+## Compact README source diagram (2026-10-26)
+
+- User requested a small numbered overview centered on the initiating engineer,
+  one agent, scattered AWS sources, Meterless H-MEM and Zetaris. Keep this
+  overview visible and preserve the existing detailed investigation diagram in
+  a collapsed `<details>` section beneath it, as clarified by the user.
+- Name the five actual AWS adapters separately so fragmented evidence is visible;
+  distinguish fresh reads, scoped lessons and historical decision follow-through.
+  Number the main flow without implying a fixed check order or automatic writes.

@@ -82,6 +82,10 @@ Begin the root `README.md` with the project name and mandatory hackathon partici
 
 ## Submission quality bar
 
+Keep the README’s compact numbered source overview visible and preserve its
+detailed investigation diagram in a collapsed `<details>` section beneath it.
+
+
 Visitor-facing agent diagrams should foreground dynamic choices and feedback
 with explicit decision notation. Show Zetaris through its useful decision
 follow-through and validated outcome-learning scenarios; describing it only as
