@@ -2,12 +2,12 @@
 
 [What](../README.md) · [How](HOW.md)
 
-Use the [adopted quality bar](../the_bar.md) to show working behavior and useful decisions. This page owns the recording storyboard; the [eight-slide Markdown deck](../slides.md) owns slide content. Completion evidence belongs in the [release checklist](EXECUTION_PLAN.md).
+Show working behavior and useful decisions against the [recorded requirements](RULES.md). This page owns the recording storyboard; the [eight-slide Markdown deck](../slides.md) owns slide content. Completion evidence belongs in the [release checklist](EXECUTION_PLAN.md).
 
 Use the [browser preview](HOW.md#open-the-web-demo) to walk through labeled
 synthetic reports and illustrative learning/follow-through paths in **Demo**.
 Demo is preview-only; selecting B opens its generated report and citations
-without executing a new investigation. Learning/follow-through illustrations
+by executing the local scripted investigator on explicit selection; it makes no live-service calls. The missing-evidence preview reuses a labeled recorded report. Learning/follow-through illustrations
 are not sponsor integration receipts. Use the separate CLI demonstrations below
 for actual execution proof. **Live** exposes AWS investigation and attributed
 Zetaris decision recording with explicit acknowledgments; it never offers the
@@ -18,7 +18,7 @@ run and preserve source/planner labels throughout.
 
 | Time | Show | Explain |
 | --- | --- | --- |
-| 0:00–0:20 | Project name and Track 02; engineer's decision | “Low average CPU can hide a critical overnight job. We investigate which EC2 shutdown windows deserve human review, rejection or further verification.” |
+| 0:00–0:20 | Project name and Track 02; engineer's decision | “Low average CPU can hide a critical overnight job. We identify a specific reason to reject a shutdown window, or name the missing evidence and defer.” |
 | 0:20–0:50 | [Architecture diagram](components.md) | Planner chooses checks; trusted execution validates evidence; the evaluator can reject a proposal or demand more checks. Identify shared state and the feedback edge. |
 | 0:50–1:35 | Execute the [B capture command](CLI_GUIDE.md#capture-and-read-the-decision-trace), display its own report | Keep `MOCK` and `scripted` labels visible. Explain inventory/cost selection, the proposed window, and why a plausible window still needs a challenge. For a model demonstration, select the configured real model explicitly and show its actual decisions and timing. |
 | 1:35–2:10 | Proposal, evaluator challenge, retrieved operations evidence and rejection | Resolve the contradiction citation against this run's evidence. The critical job disproves the proposed window; the system never stops the instance. |

@@ -1,5 +1,11 @@
 # Project Memory
 
+## Coherent conflict-first presentation (2026-10-26)
+
+- The user defined CCI's useful answer as a specific reason to reject a shutdown window, or exact missing evidence and a deferred decision. Lead README, diagrams, scenarios and slides with that purpose.
+- Keep current conditional-clearance examples honestly labeled as broader existing behavior until runtime semantics are resolved; do not rewrite historical traces or pretend complete evidence is missing.
+- Show inventory before the first planner call, explicit conflict/gap branches, and accurate preview-only Demo behavior. Scenario B and missing evidence lead the presentation.
+
 ## Run-time configuration feedback without a Live settings panel (2026-10-26)
 
 - User correction: remove the entire Live configuration section, including its

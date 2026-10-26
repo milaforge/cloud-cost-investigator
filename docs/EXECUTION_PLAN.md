@@ -1,5 +1,11 @@
 # Cloud Cost Investigator — Execution Plan (Milad + Zayan)
 
+## Coherence slice 1 — narrative and scenario presentation (2026-10-26)
+
+- **Gate/owner:** Days 3–4 product coherence, Milad. README, diagrams, scenario runbook, historical trace ordering, demo narrative and slides now lead with a cited rejection or actionable evidence gap. Current broader conditional-clearance behavior remains labeled honestly. Historical trace payloads remain unchanged.
+- **Proof:** `git diff --check` passed. `npm run export:scenarios` and `node --import tsx --test --test-isolation=none tests/scenario-export.test.ts` were executed but failed because EC2-2 currently fails in the concurrently edited runtime. No generated export was published and no scenario pass is claimed for this slice.
+- **Mode/blocker/next:** documentation-only changes; no service calls. Resolve runtime changes and outcome semantics in slice 2, rerun scenario proof, then regenerate the current export. Existing live/release gates remain open.
+
 [What](../README.md) · [How](HOW.md)
 
 > **Sole execution tracker.** Event requirements are recorded in [`RULES.md`](RULES.md); approved product and safety contracts are in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md); agent workflow in [`../AGENTS.md`](../AGENTS.md). A task is complete only with executed evidence. Preserve the distinction between team decisions, planned work, mocks and verified live integrations.

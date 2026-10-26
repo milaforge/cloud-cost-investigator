@@ -9,12 +9,12 @@ Track 02 — The Agent That Can Explain Why
 
 Cost, utilization, scheduled jobs and dependencies live in separate places. A quiet instance may still run a critical overnight task.
 
-> The useful decision: which shutdown windows deserve human approval, rejection or more investigation?
+> Identify a specific reason to reject a shutdown window, or say exactly what evidence is missing and defer the decision.
 
 <details>
 <summary>Speaker notes and source</summary>
 
-Lead with the engineer's decision. The MVP investigates EC2 scheduling within a supplied account and region; it does not require a previous investigation. Broader cost optimization is the longer-term direction.
+Lead with the engineer's decision. The MVP investigates EC2 scheduling within a supplied account and region; it does not require a previous investigation. Keep the story focused on a cited conflict or an actionable evidence gap.
 
 [Product and users](docs/PROJECT_CONTEXT.md#1-product-and-user-decision)
 
@@ -24,17 +24,16 @@ Lead with the engineer's decision. The MVP investigates EC2 scheduling within a 
 
 # 02 · The solution
 
-## EC2 scheduling advice with evidence for every verdict
+## A reason to reject, or the evidence needed to decide
 
 **Discover candidates → propose a window → challenge it with fresh evidence.**
 
 | Outcome | What the engineer receives |
 | --- | --- |
-| 🟢 Conditional recommendation | A supported window, stated assumptions and required human approval |
 | 🔴 Not recommended | A specific window rejected because retrieved evidence contradicts it |
 | 🟠 Needs verification | Missing evidence and the next checks needed to decide |
 
-Up to **three candidates per investigation**. Savings remain **unknown** when pricing, commitments or safety assumptions are unsupported.
+Up to **three candidates per investigation**. The existing complete-clearance synthetic A case remains a broader conditional-recommendation boundary test; it does not demonstrate live clearance.
 
 **AWS access is read-only. Infrastructure changes require an authorized human.**
 
@@ -55,15 +54,17 @@ A rejected window does not establish that an instance must run at all other time
 
 ```mermaid
 flowchart TD
-    U[Engineer: account and region] --> D[Discover inventory and billing]
+    U[Engineer: account and region] --> D[Executor: required inventory discovery]
     D --> P{Planner: next check or proposal?}
     P --> X[Executor: apply proposal or retrieve validated evidence]
     X --> S[Shared state: evidence IDs, hypothesis, attempts]
     S --> E{Deterministic safety evaluator}
     E -->|More checks needed; budget remains| P
-    E -->|Supported, contradicted, or unresolved at limit| R[Validated report and human next action]
+    E -->|Retrieved conflict| R[Reject this window with cited reason]
+    E -->|Evidence missing; no useful checks remain| F[Defer with exact gaps and next checks]
+    E -->|Existing complete-clearance path| C[Conditional recommendation; human approval required]
     H[H-MEM: scoped lessons] -. Prioritize fresh checks .-> P
-    R -. Authorized record append .-> Z[Zetaris: decisions, reviews, outcomes]
+    C -. Authorized record append .-> Z[Zetaris: decisions, reviews, outcomes]
     Z -. Validated linked outcome learning .-> H
 ```
 
@@ -113,7 +114,7 @@ The offline scripted planner exercises the same policy without inference. NVIDIA
 ## Decisions become lessons; lessons guide fresh investigation
 
 **Zetaris — follow the decision through**\
-Retain a recommendation, the operator's Accept/Defer decision, due reviews and attributed outcomes. Authorized appends are schema-validated and checked by readback.
+Retain investigation history for later comparison. The existing Accept/Defer, review and outcome workflow currently requires a completed conditional recommendation; it does not yet accept rejected or evidence-deferred results. Authorized appends are schema-validated and checked by readback.
 
 **Meterless H-MEM — remember what to investigate**\
 Store and retrieve scoped lessons such as “check this workload's dependency first.” A validated, linked rollback outcome can teach a future check priority.
@@ -188,7 +189,7 @@ Savings: unknown
 
 **Coverage: 4/5 checks (80%)** in that recorded trace. Completeness is not the probability that shutdown is safe.
 
-The browser demo exposes **Investigate · Learn · Follow through**, with expandable evidence, execution events and decision records.
+The browser exposes **Investigate · Learn · Follow through**. Demo previews are synthetic; learning and follow-through are illustrations. Live operations and separately captured sponsor proofs remain clearly labeled.
 
 <details>
 <summary>Speaker notes and sources</summary>
@@ -209,20 +210,20 @@ The full output also labels MOCK mode, scope, observation window, stop reason an
 
 # 08 · Future enhancements
 
-## Grow from EC2 scheduling into a cost optimization specialist
+## Make conflicts more specific and evidence gaps actionable
 
 **Next: complete operational evidence**\
-Collect sufficient live metric history; verify workload ownership, jobs, dependencies and prospective pricing/commitment inputs.
+Identify named jobs and dependency obligations, preserve their time windows and coverage, and explain precisely which sources are still missing.
 
 **Then: stronger decision follow-through**\
-Add scheduled review reminders and change alerts around recorded decisions, supported by fresh investigations.
+Support review of rejected windows and resolution of evidence gaps, with fresh investigations before reassessment.
 
-**Then: measured learning and broader opportunities**\
-Evaluate more workloads against strong fixed baselines before expanding reusable lessons or optimization scope.
+**Then: measure explanation quality and learning**\
+Verify named conflicts, exact missing evidence and useful next checks. Compare learned check order with strong fixed baselines, including teaching cost and changed evidence.
 
 **Current live boundary:** AWS retrieval is demonstrated; incomplete telemetry and operational authority still defer scheduling advice. Live savings remain unknown.
 
-> Every recommendation should explain why this window is supported, contradicted or still unresolved.
+> Every result should make the conflict or the missing evidence understandable without reading raw tool output.
 
 <details>
 <summary>Speaker notes and sources</summary>

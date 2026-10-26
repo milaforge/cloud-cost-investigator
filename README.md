@@ -9,7 +9,9 @@
 
 Infrastructure and backend engineers can see idle EC2 capacity, but low average CPU does not tell them whether an instance can safely stop. Overnight jobs, traffic peaks and dependencies can turn an attractive saving into an outage.
 
-CCI finds **AWS EC2 off-hours scheduling opportunities** within an account and region, then challenges each proposed shutdown window with fresh evidence. It returns a **conditional recommendation**, an evidence-backed **rejection of that window**, or **needs verification**. CCI never changes infrastructure; an authorized human decides what to do (L2).
+CCI investigates EC2 shutdown windows to **identify a specific reason to reject a window, or explain exactly what evidence is missing and defer the decision**. It discovers candidates within an AWS account and region, proposes a window and challenges it with fresh operational evidence. CCI never changes infrastructure.
+
+The current engine also retains a complete-clearance `conditional_recommendation` path, exercised by synthetic scenario A. That broader behavior is distinct from the core reject-or-defer workflow; it is not live scheduling approval.
 
 ## 2. Agents and responsibilities
 
@@ -32,20 +34,22 @@ Required EC2 discovery runs first. Its validated result feeds one bounded planne
 
 ```mermaid
 flowchart TD
-    U[Engineer: account and region] --> D[Executor: required EC2 discovery]
-    D -->|Validated inventory| P{Which check next?}
-    D -->|Empty or failed discovery| R
-    M[(Meterless H-MEM: scoped lessons)] -->|Prioritize fresh checks| P
-    P --> X[Executor: read-only AWS evidence]
-    X --> E{Does evidence support the window?}
-    E -->|More checks needed, within budget| P
-    E -->|Conditional / reject / defer| R[Validated report and citations]
-    R --> H[Human review: infrastructure authority]
-    R -.->|Explicitly enabled append and readback| Z[(Zetaris: recommendations, decisions, outcomes)]
-    H -.->|Record decisions and reported outcomes| Z
-    Z -.->|Historical comparisons only| R
-    Z -.->|Validated outcome lessons| M
+    U[Engineer: account and region] --> D[Executor: required EC2 inventory]
+    D -->|Validated inventory| P{Next useful check or window proposal?}
+    D -->|Empty or failed| N[No candidate verdict; explain discovery result]
+    P --> X[Executor: read-only evidence with scope and coverage]
+    X --> E{Retrieved conflict with this window?}
+    E -->|Yes| R[Reject this window: cite the conflict]
+    E -->|No| G{Further useful checks within budget?}
+    G -->|Yes| P
+    G -->|No; evidence or authority missing| F[Defer: name gaps and next checks]
+    G -->|Complete clearance: existing broader path| C[Conditional recommendation; human approval required]
+    M[(H-MEM: scoped lessons)] -. Prioritize fresh checks .-> P
+    Z[(Zetaris: historical records)] -. Historical comparison only .-> F
+    C -. Authorized decision append and readback .-> Z
+    Z -. Validated linked outcome lesson .-> M
 ```
+
 
 [Architecture and authority boundaries](docs/components.md).
 
@@ -133,13 +137,13 @@ npm run --silent investigate -- --account YOUR_12_DIGIT_ACCOUNT_ID --region us-e
 
 | Scenario                          | What it demonstrates                                 | Expected result / exit                                    |
 | --------------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
-| `A`                               | Explicit synthetic operational clearance and pricing | `conditional_recommendation` / 0; human approval required |
 | `B`                               | A critical job contradicts the initial window        | `not_recommended` / 0                                     |
 | `C`                               | A dependency requires continuous operation           | `not_recommended` / 0                                     |
 | `missing`                         | Critical authority is unavailable                    | `needs_verification`, partial / 2                         |
+| `A`                               | Broader complete-clearance boundary case; synthetic only | `conditional_recommendation` / 0; human approval required |
 | `mixed` with `--max-candidates 3` | Three ranked candidates with different outcomes      | Per-candidate verdicts / 0                                |
 
-The browser also provides **Learn** for cold/warm/changed-evidence runs with real temporary local H-MEM. **Follow through** requires configured Zetaris and explicit acknowledgment before retaining synthetic decision records. [Browser workflows](docs/HOW.md#open-the-web-demo).
+In **Demo**, Learn and Follow through are illustrations only: no model calls, memory storage or remote writes. In **Live**, Learn displays the selected report’s memory status, while Follow through records decisions for eligible conditional recommendations with explicit Zetaris acknowledgment. Actual H-MEM learning and synthetic Zetaris round-trip proofs use separate CLI commands. [Browser workflows](docs/HOW.md#open-the-web-demo).
 
 ```bash
 npm test
@@ -174,7 +178,7 @@ The project [`package.json`](package.json) declares **Apache-2.0**. The vendored
 ## 10. Limitations
 
 - AWS EC2 scheduling only, at most three candidates; daily same-day UTC windows. No resizing, multi-cloud or automated remediation.
-- Live positive scheduling proof remains limited by metric history, billing and authoritative operational coverage. Native SSM/ELBv2 reads do not establish all jobs, dependencies or owner clearance.
+- Native live evidence can identify dated SSM maintenance overlapping a proposed window. ELBv2 registrations are context, not proof of a continuous-operation obligation. Jobs outside SSM, dependencies outside ELBv2 and owner/calendar/recovery clearance remain unknown; synthetic job/dependency examples do not prove those live integrations.
 - Low CPU, a `dev` tag or an empty query cannot establish safety. Unsupported pricing, commitment or retained-resource assumptions keep savings `null`.
 - Historical decisions and H-MEM lessons are not current facts. Sponsor integrations with synthetic evidence do not prove live AWS safety or realized savings.
 

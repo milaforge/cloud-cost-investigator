@@ -10,6 +10,12 @@ rolling 28-day windows. Use `demo:scenarios` below for the exact fixed 14-day
 six-case proof. Loaded single reports show historical comparisons, but their
 Zetaris status comes from the report and is not a new live connectivity check.
 
+## What to show first
+
+Start with **EC2-2 / B**: a critical 02:00–03:00 UTC job conflicts with the proposed 00:00–06:00 window. Then show **EC2-3**: unavailable operations or dependency evidence means defer, with the missing source and next check. EC2-4 shows that unexplained activity is uncertainty, not an invented job conflict.
+
+EC2-5/6 test fresh evidence overturning historical conclusions. EC2-1 / A and the positive result in EC2-6 exercise the existing broader complete-clearance contract; they are synthetic boundary cases, not the core promise or live approval. Preserve their actual outcomes until the runtime contract changes. A missing blocker alone does not establish safety.
+
 ## Reproduce from a clean checkout
 
 Use Node.js 24+ and npm, and a submission revision containing this change.
@@ -169,7 +175,9 @@ cases when presenting. These commands need no network or saved local history:
 ```bash
 # Contradiction-first opening:
 node --import tsx --test --test-isolation=none --test-reporter=spec "--test-name-pattern=^EC2 2:" tests/investigation.test.ts
-# Both historical reversals:
+# Evidence-gap deferral:
+node --import tsx --test --test-isolation=none --test-reporter=spec "--test-name-pattern=^EC2 3:" tests/investigation.test.ts
+# Both historical reversals (broader contract regression):
 node --import tsx --test --test-isolation=none --test-reporter=spec "--test-name-pattern=^EC2 [56]:" tests/warm.test.ts
 ```
 
@@ -177,7 +185,7 @@ node --import tsx --test --test-isolation=none --test-reporter=spec "--test-name
 | --------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0:00–0:20 | Scope and synthetic-mode label                              | “We investigate EC2 off-hours scheduling. Every conclusion needs current evidence; nothing changes infrastructure.”                                                      |
 | 0:20–1:05 | Case 2's low CPU, proposed → contradicted, job and citation | “The attractive window fails because a required batch overlaps it. We reject that window.”                                                                               |
-| 1:05–1:35 | Cases 1, 3 and 4 in the complete demo output                | “Matching authority supports conditional approval. Missing authority or unexplained peaks produce verification requests. Low CPU is insufficient.”                       |
+| 1:05–1:35 | Cases 3 and 4 in the complete demo output                | “Missing authority or unexplained peaks require specific follow-up evidence. No operational cause is invented.”                       |
 | 1:35–2:30 | Cases 5/6 historical comparisons and fresh citations        | “A previous approval is overturned by a new uptime dependency. A previous rejection can be cleared only by fresh matching evidence. Old records are labeled historical.” |
 | 2:30–3:00 | Test totals and explicit limitations                        | “Six cases, seven focused checks. Current data and this Zetaris transport are synthetic. Live operational coverage and human approval remain separate requirements.”     |
 
@@ -188,8 +196,8 @@ demo depends on provider availability and should not replace the dependable repl
 
 ## Slide-ready findings
 
-- **Decision quality:** recommend only with matching current clearances; reject a
-  confirmed conflict; defer missing evidence or unexplained utilization peaks.
+- **Decision quality:** reject a confirmed conflict; defer with explicit missing
+  evidence and next checks. Complete-clearance cases retain their broader contract labels.
 - **Explain why:** the trace connects the proposed shutdown to the retrieved
   contradiction. Citations resolve to this run's evidence and resource.
 - **History is revisable:** both approval → rejection and rejection → approval
@@ -207,9 +215,8 @@ After scenario verification, inspection and existing regressions confirmed:
   runtime, and preserves completed candidates when later work fails. No loop
   redesign was needed.
 - The high-peak case stops before operational queries. Its final explanation is
-  generic; the metrics and planner trace carry the peak reason. The demo prints
-  the registered metric and missing checks. Improving that explanation is optional
-  follow-up, not a reason to claim the peak's cause is known.
+  based on observed activity; the metrics and planner trace carry the peak reason.
+  Explain unresolved evidence explicitly, without claiming the peak’s cause is known.
 - Zetaris comparisons stay outside planner hints. H-MEM alone prioritizes learned
   checks; scope/mode/time filtering and fresh revalidation remain tested.
 - H-MEM's existing eight-workload comparison ties the strongest fixed order on
