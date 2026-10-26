@@ -11,6 +11,16 @@
 
 ## Current status and next actions — reconciled 2026-10-25
 
+### README sponsor explanation — 2026-10-26
+
+- **Gate/owner:** submission documentation, Milad. Added the requested collapsed
+  sponsor section covering actual roles, combined value and a link to canonical
+  receipts. Cursor activity remains unverified; no integration gate advanced.
+- **Verification:** local Python assertions confirmed all four explanation
+  labels and the linked sponsor heading; `git diff --check` passed. Documentation
+  only; no runtime tests or service calls. Next: team supplies factual Cursor
+  development attribution for the remaining submission claim.
+
 ### PR #1 documentation review — 2026-10-26
 
 - **Gate/owner:** Task 2 review, Zayan. Restored the upstream AWS credential-chain

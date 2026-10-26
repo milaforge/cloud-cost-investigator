@@ -886,3 +886,19 @@
 - User correction: examples should expose timestamps, explicit actions, input summaries, concise decision rationales, factual outputs and status. Record timestamps at runtime and derive a reusable readable JSONL view from validated reports; do not fabricate historical timing or replace concise rationale with hidden thinking. `--trace-jsonl` is a final export, mutually exclusive with full-report JSON.
 - User chose measured coverage rather than model self-ratings. Numeric JSONL `confidence` is distinct complete authoritative gap-free checks retrieved so far / five required evidence checks for the current candidate. Retain the categorical report confidence under JSONL `evidence_support`. This is completeness, never a safety probability or verdict threshold; failed attempts and future/other-instance checks cannot inflate it. Historical untimed traces export null measurements.
 - The user requested the actual demo UI account ID rather than an obvious synthetic scope and explicitly authorized forwarding it to the configured public NVIDIA endpoint. New captures use that scope with synthetic resources/telemetry, preserve mock provenance and leave older receipts unchanged.
+
+## README sponsor explanation (2026-10-26)
+
+- Keep sponsor entries concise like the supplied sample; link to detailed proof.
+- Lead each sponsor entry with the user outcome it enables, then explain the
+  technology's contribution. Avoid capability or benefit claims without evidence.
+- Keep the sponsor explanation collapsed by default in a native Markdown HTML
+  details disclosure, as requested by the user.
+- The user explicitly requested a substantive Sponsor Technology section in the
+  root README. Keep that requested explanation visible there despite the earlier
+  short-README guideline; detailed integration contracts and receipts remain
+  canonical in `docs/components.md`.
+- Explain actual roles: Zetaris decision follow-through, Meterless H-MEM scoped
+  lessons, and direct NVIDIA model planning. Do not copy the illustrative model
+  routing, multi-agent or Cursor claims. Real sponsor calls with synthetic AWS
+  evidence do not prove live scheduling safety or a general memory speedup.

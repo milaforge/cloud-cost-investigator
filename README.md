@@ -20,6 +20,30 @@ Current five evidence categories:
 - job schedules
 - and dependencies.
 
+<details>
+<summary>Sponsor Technology</summary>
+
+**Zetaris (decision follow-through).** Enables revisiting a recommendation,
+seeing who accepted or deferred it, and tracking its review and reported outcome.
+Zetaris preserves that trail across investigations.
+
+**Meterless H-MEM (learning across runs).** A later investigation can check a
+previously discovered risk first, such as an overnight batch job. H-MEM recalls
+scoped lessons so the planner can prioritize those checks using fresh evidence.
+
+**NVIDIA (adaptive investigation).** The investigation can change its next check
+as evidence arrives. NVIDIA-hosted Nemotron selects checks and proposes shutdown
+windows; a deterministic evaluator rejects contradictions and defers unknowns.
+
+**What is unique.** An engineer's reported outcome can improve the next
+investigation: validated Zetaris feedback teaches H-MEM which risks to check
+first. Every recommendation still requires fresh AWS evidence and human review.
+
+[Integration details and recorded proof](docs/components.md#sponsor-technology-explanation).
+Sponsor receipts use synthetic AWS evidence; the default demo uses scripted planning.
+
+</details>
+
 ## Components - 1
 
 ```mermaid
