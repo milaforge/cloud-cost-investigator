@@ -7,11 +7,11 @@
 
 ## 1. Problem
 
-Infrastructure and backend engineers can see idle EC2 capacity, but low average CPU does not tell them whether an instance can safely stop. Overnight jobs, traffic peaks and dependencies can turn an attractive saving into an outage.
+__Cloud Cost Investigator (CCI)__ helps AWS engineers find EC2 instances that could safely shut down off-hours—cutting waste and carbon footprint.
 
-CCI investigates EC2 shutdown windows to **identify a specific reason to reject a window, or explain exactly what evidence is missing and defer the decision**. It discovers candidates within an AWS account and region, proposes a window and challenges it with fresh operational evidence. CCI never changes infrastructure.
+Scheduling those shutdowns manually is tedious. CCI automates it: pulling metrics, dependencies, and other evidence to propose candidate windows, then validating each one. The verdict is always __"Don't shutdown"__ or __"Needs more evidence"__—because the missing context (like "we run biweekly batch jobs") lives with the human operator, not in the metrics.
 
-New runs only reject or defer. Older conditional-recommendation reports remain readable, but CCI no longer emits recommendations or savings. If technical checks find no conflict, CCI explicitly defers the authorized shutdown decision to the human change process.
+Zetaris is used to capture that organizational knowledge so CCI learns your team's real constraints over time.
 
 ## 2. Agents and responsibilities
 
