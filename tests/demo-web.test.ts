@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { request } from 'node:http';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import test from 'node:test';
 import {
-  startDemoServer,
   MAX_REPORT_BYTES,
   openBrowser,
+  startDemoServer,
 } from '../scripts/demo-web.ts';
+import { validateReport } from '../src/investigation/report.ts';
 
 test('local viewer generates fresh A/B, validates uploads and confines its HTTP surface', async () => {
   const started = performance.now();
@@ -43,7 +44,7 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
     ).json();
     assert.ok(
       performance.now() - previewStarted < 2000,
-      'recorded missing-evidence preview must not wait through retries',
+      'partial-data missing-evidence preview must not wait through retries',
     );
     assert.deepEqual(Object.keys(missingPreview), ['missing']);
     assert.equal(missingPreview.missing.completion_status, 'partial');
@@ -63,18 +64,54 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
     assert.equal(demos.B.candidates[0].verdict, 'not_recommended');
     assert.equal(demos.A.integration_mode, 'mock');
     assert.equal(demos.A.planner.mode, 'scripted');
-    assert.equal(demos.A.historical_context.zetaris, 'not_configured');
-    assert.equal(demos.A.historical_context.hmem, 'not_configured');
+    for (const [scenario, value] of Object.entries(demos)) {
+      const report = validateReport(value);
+      assert.equal(report.historical_context.zetaris, 'ok', scenario);
+      assert.equal(report.historical_context.hmem, 'ok', scenario);
+      assert.equal(
+        report.historical_context.comparisons?.length,
+        scenario === 'cold' ? 0 : report.candidates.length,
+        scenario,
+      );
+      assert.equal(
+        report.historical_context.limitations.some((line) =>
+          line.includes('synthetic prior decision'),
+        ),
+        scenario !== 'cold',
+        scenario,
+      );
+      assert.equal(
+        report.historical_context.limitations.some((line) =>
+          line.includes('synthetic scoped H-MEM hint prioritizes'),
+        ),
+        scenario !== 'cold',
+        scenario,
+      );
+      assert.ok(
+        report.historical_context.limitations.some((line: string) =>
+          line.includes('Synthetic mock H-MEM summary held in this preview'),
+        ),
+        scenario,
+      );
+    }
     assert.notEqual(demos.A.investigation_id, demos.B.investigation_id);
     assert.deepEqual(Object.keys(demos).sort(), [
       'A',
       'B',
       'C',
+      'changed',
+      'cold',
       'missing',
       'mixed',
     ]);
     assert.equal(demos.C.candidates[0].verdict, 'not_recommended');
     assert.equal(demos.missing.candidates[0].verdict, 'needs_verification');
+    assert.equal(
+      demos.missing.evidence.find(
+        (item: { tool: string }) => item.tool === 'get_ec2_operations',
+      )?.status,
+      'partial',
+    );
     assert.equal(demos.mixed.candidates.length, 3);
     assert.deepEqual(await (await fetch(`${url}/api/demos`)).json(), demos);
     const page = await fetch(url);

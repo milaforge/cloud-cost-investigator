@@ -248,24 +248,88 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   p.tab('learn');
   assert.equal(p.get('learn-demo').visible, true);
   p.tab('investigate');
-  for (const scenario of ['A', 'B', 'C', 'missing', 'mixed']) {
+  for (const scenario of [
+    'A',
+    'B',
+    'C',
+    'missing',
+    'mixed',
+    'cold',
+    'changed',
+  ]) {
     p.get('scenario').value = scenario;
     p.get('scenario').listeners.change();
     assert.equal(p.run('active'), scenario);
     assert.ok(p.get('report').children.length);
-    const flow = p
-      .get('report')
-      .querySelectorAll('summary')
-      .find((summary) =>
-        summary.textContent.includes('flow · preview only'),
-      )?.parent;
-    assert.ok(flow, `${scenario} has an illustrative sponsor flow`);
-    const steps = flow.querySelectorAll('li').map((item) => item.textContent);
-    assert.equal(steps.length, 4);
-    assert.match(steps[0], /Zetaris read/);
-    assert.match(steps[1], /Meterless H-MEM read/);
-    assert.match(steps[2], /Meterless H-MEM store/);
-    assert.match(steps[3], /Zetaris store.*Investigation append is disabled/);
+    const steps = p.get('report').querySelectorAll('.journey-step');
+    const titles = steps.map(
+      (item) => item.querySelectorAll('h3')[0]?.textContent,
+    );
+    const zetaris = titles.indexOf('Zetaris · prior recommendations');
+    const hmem = titles.indexOf('Meterless H-MEM · learned checks');
+    const hmemStore = titles.indexOf('Meterless H-MEM · save reasoning');
+    assert.ok(zetaris > 0, `${scenario} shows Zetaris after billing`);
+    assert.equal(hmem, zetaris + 1, `${scenario} shows Meterless next`);
+    assert.equal(titles[zetaris - 1], 'Check compute spend');
+    assert.match(
+      treeText(steps[zetaris]),
+      /Synthetic mock · no external service call/,
+    );
+    if (scenario === 'cold') {
+      assert.match(treeText(steps[zetaris]), /No matching prior decision/);
+      assert.match(treeText(steps[hmem]), /No applicable prior check hint/);
+    } else {
+      assert.match(
+        treeText(steps[zetaris]),
+        scenario === 'changed'
+          ? /Prior 00:00–06:00 UTC: not recommended.*Current: needs verification/
+          : /Prior 00:00–06:00 UTC: needs verification/,
+      );
+      assert.match(
+        treeText(steps[zetaris]),
+        /separate Live Follow through action/,
+      );
+      assert.match(treeText(steps[hmem]), /planner requested fresh evidence/i);
+      assert.match(
+        treeText(steps[hmem]),
+        ['C', 'changed'].includes(scenario)
+          ? /check dependencies/i
+          : /check scheduled jobs/i,
+      );
+    }
+    assert.match(treeText(p.get('demo-learning-context')), /Selected result/);
+    assert.match(
+      treeText(p.get('demo-followup-context')),
+      /No request has been saved/,
+    );
+    if (scenario === 'changed')
+      assert.match(
+        treeText(p.get('demo-learning-context')),
+        /not_observed by fresh evidence/,
+      );
+    if (scenario === 'C')
+      assert.ok(
+        titles.indexOf('Check dependencies') <
+          titles.indexOf('Check scheduled jobs'),
+        'C uses its H-MEM hint to check dependencies first',
+      );
+    assert.ok(hmemStore > hmem, `${scenario} stores a summary after checks`);
+    assert.equal(hmemStore, steps.length - 2);
+    assert.match(treeText(steps[hmemStore]), /validated reasoning summary/);
+  }
+  p.get('scenario').value = 'mixed';
+  p.get('scenario').listeners.change();
+  p.run('candidateIndex = 1; render()');
+  assert.match(treeText(p.get('demo-followup-context')), /i-mock-secondary/);
+  assert.doesNotMatch(
+    treeText(p.get('demo-followup-context')),
+    /i-mock-primary/,
+  );
+  p.get('scenario').value = '';
+  p.get('scenario').listeners.change();
+  for (const id of ['demo-learning-context', 'demo-followup-context']) {
+    assert.match(treeText(p.get(id)), /Choose a scenario/);
+    assert.doesNotMatch(treeText(p.get(id)), /i-mock-secondary/);
   }
   await p.run("startRun('investigate')");
   await p.run("submitRun({kind:'decision',report:{integration_mode:'live'}})");
@@ -368,7 +432,9 @@ test('history status explains blocked TLS verification and same-instance matchin
     .map((el) => el.textContent);
   assert.ok(
     text.some((item) =>
-      item.includes('Zetaris history: unavailable (TLS verification disabled)'),
+      item.includes(
+        'Zetaris history (mock): unavailable (TLS verification disabled)',
+      ),
     ),
   );
   assert.ok(text.some((item) => item.includes('discovered instance ID')));
@@ -793,7 +859,7 @@ test('history events use accessible status icons for empty and unavailable reads
   const p = page();
   p.mode('live');
   p.run(
-    "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:['Zetaris read · no_match · 0 matching prior recommendation records for this instance and source mode','Meterless H-MEM read · unavailable · no historical claim made']})",
+    "paintJob({request_id:'live',kind:'investigate',source_mode:'live',status:'running',events:['Zetaris read · no_match · 0 matching prior recommendations; historical audit only, not current evidence or Planner input','Meterless H-MEM read · unavailable · no historical claim made']})",
   );
   const icons = p.get('run-events').querySelectorAll('.event-result');
   assert.deepEqual(
@@ -827,7 +893,7 @@ test('planner exchanges use literal text disclosures and retain open state acros
   assert.equal(details().length, 3);
   assert.equal(
     treeText(details()[0].querySelectorAll('summary')[0]),
-    'Planner context · 1 H-MEM hints',
+    'Planner context',
   );
   assert.equal(details()[0].open, false);
   assert.equal(details()[0].querySelectorAll('p')[0].textContent, context);
@@ -874,7 +940,7 @@ test('history and retry events show short summaries with full details folded', (
   const p = page();
   p.mode('live');
   const events = [
-    'Zetaris read · ok · 2 matching prior recommendation records for this instance and source mode (needs_verification, needs_verification); audit comparison only: prior verdicts are not current evidence or validated lessons, so none passed to Planner',
+    'Zetaris read · ok · 2 matching prior recommendations (needs_verification, needs_verification); historical audit only, not current evidence or Planner input',
     'Meterless H-MEM read · ok · 1 eligible reasoning summaries selected; no learned check; fresh evidence still required',
     'Planner call 1 started',
     'Planner call 1 unavailable (model_http_500); retry 2/3 in 2.3 seconds',

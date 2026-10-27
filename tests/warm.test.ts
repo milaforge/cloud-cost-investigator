@@ -248,7 +248,13 @@ test('history progress shows exact source roles, matched reads and verified stor
   assert.ok(
     warm.some((line) => line.includes('Zetaris read · ok · 1 matching')),
   );
-  assert.ok(warm.some((line) => line.includes('none passed to Planner')));
+  assert.ok(
+    warm.some((line) =>
+      line.includes(
+        'historical audit only, not current evidence or Planner input',
+      ),
+    ),
+  );
   assert.ok(
     warm.some((line) =>
       line.includes('Meterless H-MEM read · ok · 1 eligible'),
