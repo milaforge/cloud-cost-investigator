@@ -1,0 +1,31 @@
+{
+  "measured_at": "2026-10-27T06:23:38.781Z",
+  "passed": true,
+  "evidence_mode": "mock",
+  "planner_mode": "scripted",
+  "memory_engine": "vendor/hmem",
+  "checks": {
+    "three_valid_runs": true,
+    "no_planner_failures": true,
+    "hmem_only": true,
+    "cold_has_no_history": true,
+    "learned_from_cold_evidence": true,
+    "warm_recalls_cold": true,
+    "cold_checks_jobs_then_dependencies": true,
+    "warm_checks_dependency_first": true,
+    "same_correct_rejection": true,
+    "warm_collects_all_checks": true,
+    "fresh_disjoint_evidence": true,
+    "warm_verifies_lesson": true,
+    "changed_recalls_then_rechecks": true,
+    "changed_abandons_rejection": true,
+    "correction_persisted": true
+  },
+  "comparison": {
+    "planner_calls_saved": 0,
+    "tool_calls_saved": 0,
+    "elapsed_ms_saved": 2,
+    "faster_wall_clock": true
+  },
+  "methodology": "One sequential cold C, warm C and changed A investigation. Real H-MEM is reopened between runs; Zetaris is disabled to isolate memory contribution. Same model and runner throughout. Memory prioritizes the learned check; all available checks still run. Total call differences and wall time are measured, not assumed to improve. All current conclusions pass report validation with fresh evidence. This designed demonstration does not establish production accuracy or live AWS integration."
+}

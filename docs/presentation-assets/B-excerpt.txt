@@ -1,0 +1,10 @@
+NOT RECOMMENDED — i-mock-primary
+Window: 00:00–06:00 UTC daily
+Why: Critical job mock-critical-daily-batch runs 02:00–03:00 UTC, overlapping proposed shutdown
+  00:00–06:00 UTC; reject this window.
+Evidence: get_ec2_operations (ok) [mock-ec2-evidence-7c2c000d-7982-4d95-b901-e5fc28ffe9f3]
+Next: Keep the proposed window rejected; review the cited conflict with the resource owner.
+Missing / next check: Other shutdown windows have not been evaluated.
+
+Mode: MOCK (synthetic data; no AWS calls); planner: scripted
+Read-only. Any infrastructure change requires human review and approval.

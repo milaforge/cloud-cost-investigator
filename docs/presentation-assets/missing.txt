@@ -1,0 +1,27 @@
+Cloud Cost Investigator — partial
+
+NEEDS VERIFICATION — i-mock-primary
+Window: 00:00–06:00 UTC daily
+Why: Decision deferred. get_ec2_operations (partial; job_schedule): Ask the workload owner to
+  supply an authoritative job schedule, including timezones and exceptions, for this instance
+  and proposed window. No shutdown recommendation is issued. Observed CPU average 2.00%, peak
+  8.00%; complete coverage. Low CPU does not prove absence of jobs or dependencies.
+Evidence: get_ec2_metrics (ok) [mock-ec2-evidence-a25c0969-4b75-49ff-bc7d-8f6326b9003f];
+  get_ec2_operations (partial) [mock-ec2-evidence-a2ac0169-e521-47f7-9b62-1e019502a110];
+  get_ec2_dependencies (ok) [mock-ec2-evidence-46d7e4b1-bd7a-4e21-8af8-974e1a7ee477]
+Next: Ask the workload owner to supply an authoritative job schedule, including timezones and
+  exceptions, for this instance and proposed window.
+Missing / next check: get_ec2_operations (partial; job_schedule): Ask the workload owner to
+  supply an authoritative job schedule, including timezones and exceptions, for this instance
+  and proposed window.
+Missing / next check: get_ec2_dependencies: Obtain owner, calendar and recovery clearance for
+  the proposed UTC window and estimate month.
+
+Mode: MOCK (synthetic data; no AWS calls); planner: scripted
+Scope: account=demo region=us-east-1
+Observed: 2026-09-29T06:23:38.747Z → 2026-10-27T06:23:38.747Z
+Stopped: planner_finished
+Historical context: Zetaris ok; H-MEM ok (not current evidence)
+Read-only. Any infrastructure change requires human review and approval.
+Use --verbose for full evidence and trace, or --json for report data.
+
