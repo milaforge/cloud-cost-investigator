@@ -72,6 +72,8 @@ These flows share **one bounded investigation engine**, not separate agents:
 
 Additional required failure proof: unavailable/partial/invalid direct source, history-store failure, memory unavailable, model error, repeated action, or budget exhaustion should be bounded and correctly labeled. First run must work with empty Zetaris history and empty H-MEM memory.
 
+Browser presets A–G have a separate [coverage map](SCENARIOS.md#browser-coverage-ag); their D/E labels mean missing evidence/three candidates. Product flow D above remains the cross-run reinvestigation acceptance gate.
+
 [CLI flags and synthetic scenario selection](CLI_GUIDE.md#run) are documented separately.
 
 ## 4. Evidence source architecture

@@ -35,16 +35,17 @@ contract. Failed calls retain their prompt and existing failure event without
 inventing an assistant response. Scripted previews do not fabricate model messages.
 
 `scripts/demo-web.ts` owns the dependency-free local HTTP surface and cached, on-demand
-synthetic A/B/C/missing/mixed previews. Startup only serves the UI. Explicit
+synthetic A–G previews (the [coverage map](SCENARIOS.md#browser-coverage-ag) defines their roles). Startup only serves the UI. Explicit
 selection generates a preview; concurrent requests share its pending result,
-and failed generation can be retried. Missing evidence reuses the validated
-recorded operations-outage report in `docs/ec2-scenarios.jsonl`; it is labeled
-as a recorded preview and preserves capture times without rerunning retries.
+and failed generation can be retried. All seven previews use isolated synthetic Zetaris/H-MEM history. A–E seed a dated prior mock deferral and scoped check hint; F returns empty history; G seeds a dependency rejection and typed lesson, then challenges it with fresh A evidence. Each uses an in-memory reasoning-summary store. Zetaris supplies an audit comparison;
+H-MEM can prioritize a fresh operational query. No sponsor service or persistent store is
+contacted. Missing evidence uses a fresh partial-coverage mock observation so
+its preview remains fast without changing the CLI's unavailable-source retries.
 `src/web/` separates preview-only Demo
 content from Live investigation and decision recording across all
 three tabs. Demo handlers reject run, decision and upload submissions. Live Learn
-only displays the selected report's memory status; this web investigation path
-does not enable live H-MEM recall/storage. Setup and interactions live in [How](HOW.md#open-the-web-demo).
+only displays the selected report's memory status; Live investigations use the
+server-owned H-MEM path described above. Setup and interactions live in [How](HOW.md#open-the-web-demo).
 
 `scripts/demo-web-jobs.ts` validates the allowlisted action, mode, scope and
 service/write transport choices; it permits one isolated child worker at a time.

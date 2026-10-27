@@ -1,8 +1,22 @@
 # Project Memory
 
+## Seeded, scoped Demo history (2026-10-27)
+
+- Every preview begins with a dated synthetic Zetaris deferral for its candidate and a separate scoped H-MEM check hint. The mock Zetaris record provides a prior-versus-current audit comparison; only H-MEM changes the planner's check selection. B asks for fresh jobs and rejects the window when the current mock job overlaps it; C asks for fresh dependencies first. A, missing and mixed use the same history boundary without changing their evidence-backed verdicts. All previews remain isolated, scripted and free of external service calls or retained writes.
+- The timeline derives its sponsor descriptions from the validated comparison and actual planner trace, so it can only credit H-MEM when the planner used a hint. The prior context IDs never serve as current-evidence citations. This supersedes the empty-first-run Demo decision below; it does not change Live or the standalone CLI scenarios.
+
+## Mock sponsor history in every Demo preview (2026-10-27)
+
+- Every selected Demo scenario runs a separate in-memory history session: mock Zetaris lookup, mock H-MEM recall and validated mock H-MEM summary store. This exercises the investigation's history boundary without contacting sponsors or retaining records. The seeded-history decision above supersedes the initial empty lookup. Separate warm/follow-through demonstrations remain the proof of real integration.
+- The missing-evidence preview now generates a fresh partial-coverage mock report so it stays fast while participating in the same history flow. The recorded `ec2-3` export remains a separate reproducible outage fixture. Live and CLI retry behavior is unchanged. This supersedes the recorded-browser-preview decision below.
+
+## Demo sponsor steps in the investigation timeline (2026-10-27)
+
+- Put Zetaris and H-MEM roles directly in the Demo's vertical explanation after candidate ranking, where history is recalled. The newer mock-history decision above means those steps now describe actual synthetic adapter operations; label them as mock and keep them out of the current-evidence trace. Zetaris history is audit context; H-MEM hints still require fresh evidence. Zetaris decision saving stays a separate Live Follow through action.
+
 ## Demo sponsor flow notation (2026-10-26)
 
-- Show Zetaris and H-MEM read/store roles beside each selected synthetic preview as an illustrative disclosure. Keep the validated preview report and execution trace unchanged: no Demo service call or persisted record is implied. Zetaris decision storage belongs to the separate Live Follow through Save action.
+- The illustrative sponsor flow began as a disclosure beside each selected synthetic preview; the newer timeline decision above supersedes that placement. Keep the validated preview report and execution trace unchanged: no Demo service call or persisted record is implied. Zetaris decision storage belongs to the separate Live Follow through Save action.
 
 ## Live H-MEM participation (2026-10-26)
 
@@ -1213,3 +1227,17 @@ Compose fixes the previously incidental `npm start` port at 36335. Per the user'
 
 - Emit bounded source outcomes at the history boundary, where validated matching and verified writes are known. Zetaris prior verdict/window records are audit comparisons and never model inputs; H-MEM supplies only scoped check hints, subject to the proposed-window filter. Report the applicable hint count at each planner call so a retrieved lesson is not mistaken for one actually supplied to the model.
 - Describe stored field categories and categorical results in UI events, not raw operator prose, historical record bodies, AWS identifiers, credentials or provider errors. The separate warm-learning harness uses real temporary local H-MEM; the web Demo Learn tab is illustrative. The earlier absence of Live H-MEM storage was superseded by the Live H-MEM participation decision above; Zetaris remains read-only during investigation until a separate Save decision action.
+
+
+## Product-complete browser scenario coverage (2026-10-27)
+
+- Preserve the seeded A–E previews and add F (empty history) and G (fresh evidence overturns a seeded rejection), reusing the existing investigator and isolated DemoHistory. D/E are presentation labels for existing missing/mixed IDs, not new CLI scenario contracts. The older product acceptance flow D still means reinvestigation.
+- A history lookup alone does not represent sponsor value: Learn follows the selected candidate and its actual recheck; Follow through names its concrete review tasks and explains linked request/readback/due review. Keep legacy acceptance/outcome learning folded and explicitly legacy-only.
+- Browser mock persistence is ephemeral; seeded G is not a real multi-run receipt. Real H-MEM reopening/correction and authorized remote Zetaris append/readback remain separate proofs. No extra service calls, write controls or dependencies are needed to present the complete journey.
+
+
+## Submission deck evidence and sponsor roles (2026-10-27)
+
+- Follow the requested eight-topic outline with our actual component ownership: Zetaris decision follow-through, Meterless H-MEM investigation lessons, NVIDIA planning, trusted-code verdicts. Include storing findings and recalling lessons in the feedback diagram; due reviews are operator-initiated, not a delivered autonomous scheduler.
+- Keep the deck concise by putting source boundaries and historical compatibility in speaker notes. Use retained measurements with denominators: current-policy NVIDIA 7/12, separate live evidence-gap deferral with 4/4 citations; neither proves general reliability or complete workload coverage. Browser D is partial coverage; unavailable-source retries are separate tests.
+- Product visuals must be traceable to actual output. The current PNG renders an exact excerpt of a validated synthetic CLI result and retains citation/mode/authority labels; it is not a browser screenshot. Markdown content validation does not close PDF/PPTX render or portal submission gates.

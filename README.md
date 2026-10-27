@@ -201,7 +201,7 @@ npm run --silent investigate -- --account YOUR_12_DIGIT_ACCOUNT_ID --region us-e
 | `A`                               | Technical checks find no conflict; human decision remains external | `needs_verification`, partial / 2   |
 | `mixed` with `--max-candidates 3` | Three ranked candidates with different outcomes                    | Per-candidate verdicts; partial / 2 |
 
-In **Demo**, Learn and Follow through are illustrations only: no model calls, memory storage or remote writes. In **Live**, Learn displays the selected report’s memory status, while **Save decision to Zetaris** records review requests for rejected or deferred results. Actual H-MEM learning and synthetic Zetaris round-trip proofs use separate CLI commands. [Browser workflows](docs/HOW.md#open-the-web-demo).
+In **Demo**, Investigate compares a dated mock Zetaris decision and uses a scoped mock H-MEM hint to prioritize a fresh check, then holds a temporary reasoning summary. Learn and Follow through are illustrations only. There are no model calls, sponsor service calls or retained writes. In **Live**, Learn displays the selected report’s memory status, while **Save decision to Zetaris** records review requests for rejected or deferred results. Actual H-MEM learning and synthetic Zetaris round-trip proofs use separate CLI commands. [Browser workflows](docs/HOW.md#open-the-web-demo).
 
 ```bash
 npm test

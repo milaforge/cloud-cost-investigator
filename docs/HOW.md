@@ -183,19 +183,22 @@ defaults to **Demo**, with no scenario or report selected.
 
 | Tab                | Demo — preview only                                                                                                                                                                                   | Live — operations                                                                                                                                                                                                                                                      |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Investigate**    | Select A, B, C, missing evidence or three candidates to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Click **Run investigation** to validate server configuration and start. Missing or invalid settings prompt `.env` fixes and a restart of `npm start`. Uses the configured model and reads configured Zetaris history automatically. Load a live report for inspection. |
-| **Learn**          | Read the illustrative cold/warm/changed-evidence flow. No learning execution, model calls or memory writes.                                                                                           | Inspect the selected live report's H-MEM status and limitations. The investigation reads and stores local memory; this tab does not launch a separate learning run.                                                                                      |
-| **Follow through** | Read illustrative defer/review and accept/outcome paths. No forms, service calls or retained records.                                                                                                 | Schedule a review of a rejected or deferred investigation result; **Save decision to Zetaris** stores it with the linked investigation. Readback verifies both records.                                                                 |
+| **Investigate**    | Select A–G: human decision, job conflict, dependency conflict, missing evidence, three candidates, first investigation or changed evidence to open a generated synthetic/scripted report. A/B preview buttons are shortcuts. No run button, service settings, owner input or report upload. | Click **Run investigation** to validate server configuration and start. Missing or invalid settings prompt `.env` fixes and a restart of `npm start`. Uses the configured model and reads configured Zetaris history automatically. Load a live report for inspection. |
+| **Learn**          | Inspect the selected candidate and its lesson recheck, plus the illustrative cold/warm/changed flow. No separate learning execution or persistent memory writes.                                                                                           | Inspect the selected live report's H-MEM status and limitations. The investigation reads and stores local memory; this tab does not launch a separate learning run.                                                                                      |
+| **Follow through** | Inspect the selected result and review tasks. Read the linked request/due-review flow; legacy outcome learning is folded separately. No forms, service calls or retained records.                                                                                                 | Schedule a review of a rejected or deferred investigation result; **Save decision to Zetaris** stores it with the linked investigation. Readback verifies both records.                                                                 |
 
 Demo previews use synthetic evidence and a scripted planner generated locally
 on explicit scenario selection, then cached until server restart. **Missing evidence**
-loads the recorded unavailable-operations example from `docs/ec2-scenarios.jsonl`,
-retaining its original timestamps instead of replaying retry delays. A visible,
+uses a fresh partial-coverage mock observation instead of waiting through
+unavailable-source retry delays. A visible,
 accessible loading indicator covers pending preview requests.
-Each selected preview has a collapsed Zetaris/Meterless flow note showing where
-Live reads history, reads and stores H-MEM summaries, and separately saves
-Zetaris decisions. The note is illustrative; preview reports have no history
-store activity or sponsor service calls.
+Each selected preview runs isolated mock Zetaris/H-MEM history reads and an
+in-memory mock H-MEM summary store. The vertical investigation steps label
+the dated prior decision, the H-MEM hint used by the planner, and the temporary
+summary. In B, the hint prioritizes a fresh job check; in C, it moves the
+dependency check first. F reads empty history and needs no baseline; G rechecks a seeded dependency rejection and withdraws it from fresh evidence. Current evidence alone determines each verdict. No
+sponsor service or retained record is involved.
+Zetaris decision saving remains a separate Live Follow through action.
 Learn and Follow through illustrations are not executed proof.
 Selecting a scenario loads its preview without starting a worker. Demo cannot
 submit runs, owner statements or decisions, contact a model or write to Zetaris.
@@ -275,9 +278,9 @@ action buttons show a spinner and loading label until that action finishes.
 Motion respects the system reduced-motion preference. Architecture and
 execution bounds live in [components](components.md#local-report-viewer).
 
-## Six-scenario evidence proof
+## Scenario coverage and evidence proof
 
-[Task 2 scenario proofs and October 26 demo runbook](SCENARIOS.md):
+[Browser A–G coverage and six-case evidence runbook](SCENARIOS.md):
 `npm run demo:scenarios` replays six cases (seven variants) offline, and
 `npm run export:scenarios` produces the validated synthetic JSONL handoff.
 These use 14 complete UTC days; the policy still enforces a seven-day minimum.

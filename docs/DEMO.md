@@ -7,8 +7,7 @@ Show working behavior and useful decisions against the [recorded requirements](R
 Use the [browser preview](HOW.md#open-the-web-demo) to walk through labeled
 synthetic reports and illustrative learning/follow-through paths in **Demo**.
 Demo is preview-only; selecting B opens its generated report and citations
-by executing the local scripted investigator on explicit selection; it makes no live-service calls. The missing-evidence preview reuses a labeled recorded report. Learning/follow-through illustrations
-are not sponsor integration receipts. Use the separate CLI demonstrations below
+by executing the local scripted investigator on explicit selection; it makes no live-service calls. The missing-evidence preview uses fast partial mock coverage. A–E use isolated, dated mock Zetaris/H-MEM history. F starts with empty history; G rechecks a seeded prior dependency rejection and withdraws it from fresh evidence. Zetaris supplies audit comparisons, while H-MEM prioritizes a fresh check. See the [A–G coverage map](SCENARIOS.md#browser-coverage-ag). The vertical steps label both as synthetic; these are not sponsor integration receipts. Learn and Follow through now show the selected candidate and its review tasks. Their illustrated persistence/review steps are not sponsor integration receipts. Use the separate CLI demonstrations below
 for actual execution proof. **Live** exposes AWS investigation and attributed
 Zetaris decision recording through an explicit Save decision action; it never offers the
 synthetic learning or remote-write demonstration. Label each separately recorded
@@ -31,7 +30,15 @@ Pre-run slower service-dependent demonstrations and retain their full reports; l
 
 The [eight-slide Markdown deck](../slides.md) follows the required sequence:
 problem/users, solution, agent workflow, technical stack, sponsor roles,
-distinctive behavior, product output and future enhancements. Horizontal rules
-separate slides; links point to source contracts and recorded evidence.
+distinctive behavior, product visuals and future enhancements. Horizontal rules
+separate the eight slides; HTML comments hold speaker notes and source context.
+The product visual renders an actual synthetic CLI capture with its citation,
+not a browser screenshot. [Capture provenance](presentation-assets/README.md)
+links the validated report, exact text and local H-MEM measurement.
+
+When exporting, preserve the Mermaid decision/feedback diagram, embedded PNG,
+readable evidence table and source links. Keep synthetic/live labels visible.
+Inspect all eight rendered slides at presentation size; a valid Markdown file
+or successful export alone does not establish readable slide layout.
 
 Credit the inherited notebook and vendored H-MEM in the [reused-component declaration](components.md#reused-components). Confirm build-window attribution, actual Cursor activity and portal requirements with the team. Illustrative examples do not establish these facts. Store final deck/video links and their verified checks in the execution plan rather than maintaining another status list here.
