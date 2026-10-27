@@ -1006,17 +1006,14 @@ async function loadReport(file) {
     $('file').value = '';
   }
 }
-for (const button of document.querySelectorAll('[data-report]'))
-  button.addEventListener('click', () => {
-    if (isDemo() === (button.dataset.report === 'loaded')) return;
-    if (isDemo()) return selectScenario(button.dataset.report);
-    dismissToast();
-    active = button.dataset.report;
-    if (['A', 'B'].includes(active)) $('scenario').value = active;
-    updateText('message', '');
-    candidateIndex = 0;
-    render();
-  });
+$('loaded').addEventListener('click', () => {
+  if (isDemo()) return;
+  dismissToast();
+  active = 'loaded';
+  updateText('message', '');
+  candidateIndex = 0;
+  render();
+});
 $('load').addEventListener('click', () => {
   if (!isDemo()) $('file').click();
 });
@@ -1051,25 +1048,15 @@ function syncRunButtonLoading() {
       : 'Investigating…';
   buttonBusy($('save-decision'), kind === 'decision', 'Saving decision…');
 }
-function previewButtonsBusy(scenario = null) {
-  for (const button of document.querySelectorAll('[data-report]')) {
-    if (button.dataset.report === 'loaded') continue;
-    const busy = button.dataset.report === scenario;
-    buttonBusy(button, busy, 'Loading preview…');
-    button.disabled = busy;
-  }
-}
 async function selectScenario(scenario) {
   dismissToast();
   if (!isDemo()) return;
   $('scenario').value = scenario;
-  previewButtonsBusy();
   active = reports[scenario] ? scenario : null;
   candidateIndex = 0;
   updateText('message', '');
   render();
   if (!scenario || active) return;
-  previewButtonsBusy(scenario);
   $('report').setAttribute('aria-busy', 'true');
   const indicator = node('div', undefined, 'empty-report preview-loading');
   const spinner = node('span', undefined, 'preview-spinner');
@@ -1098,7 +1085,9 @@ async function selectScenario(scenario) {
       'Could not load preview. Select the scenario again to retry.',
     );
   } finally {
-    if (isDemo() && $('scenario').value === scenario) previewButtonsBusy();
+    if (isDemo() && $('scenario').value === scenario) {
+      // No preview buttons to reset
+    }
   }
 }
 $('scenario').addEventListener('change', () =>
@@ -1123,7 +1112,6 @@ for (const button of document.querySelectorAll('[data-view]'))
   button.addEventListener('click', () => showView(button.dataset.view));
 function setMode() {
   const demo = isDemo();
-  previewButtonsBusy();
   for (const element of document.querySelectorAll('[data-demo-only]'))
     element.hidden = !demo;
   for (const element of document.querySelectorAll('[data-live-only]'))

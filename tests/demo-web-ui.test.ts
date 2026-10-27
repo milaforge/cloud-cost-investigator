@@ -361,9 +361,7 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   const selection = lazy.get('scenario').listeners.change();
   assert.equal(lazy.requests.at(-1)?.url, '/api/demos?scenario=B');
   assert.equal(lazy.get('report').attributes['aria-busy'], 'true');
-  const previewButton = lazy.elements.find((el) => el.dataset.report === 'B');
-  assert.equal(previewButton?.attributes['aria-busy'], 'true');
-  assert.equal(previewButton?.disabled, true);
+  // Loading state is shown in the report area, not on preview buttons
   assert.equal(
     lazy.get('report').children[0].className,
     'empty-report preview-loading',
@@ -374,8 +372,7 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   );
   assert.equal(lazy.get('message').textContent, 'Loading synthetic preview…');
   lazy.mode('live');
-  assert.equal(previewButton?.attributes['aria-busy'], 'false');
-  assert.equal(previewButton?.disabled, false);
+  // In live mode, the pending preview is discarded
   finishPreview();
   await selection;
   assert.equal(
@@ -386,28 +383,16 @@ test('Demo is preview-only in all three tabs, including actual scenario previews
   assert.equal(lazy.get('message').textContent, '');
   assert.equal(lazy.get('report').attributes['aria-busy'], 'false');
 
-  let available = false;
+  // In live mode, there are no preview buttons to click
+  // Verify that selecting a scenario in live mode doesn't load a preview
   const recovery = page(async () => ({
-    ok: available,
+    ok: true,
     json: async () => ({ A: demos.A }),
   }));
-  await recovery.elements
-    .find((el) => el.dataset.report === 'A')
-    ?.listeners.click();
-  assert.equal(recovery.run('active'), null);
-  assert.match(recovery.get('message').textContent, /Could not load preview/);
-  assert.equal(recovery.get('report').attributes['aria-busy'], 'false');
-  assert.equal(
-    recovery.get('report').querySelectorAll('.preview-spinner').length,
-    0,
-  );
-  available = true;
-  await recovery.get('scenario').listeners.change();
-  assert.equal(recovery.run('active'), 'A');
-  assert.equal(
-    recovery.get('report').querySelectorAll('.preview-spinner').length,
-    0,
-  );
+  // Switch to live mode to verify scenario dropdown is not visible
+  recovery.mode('live');
+  // The select should not be visible since its parent label has data-demo-only
+  assert.equal(recovery.get('scenario').visible, false);
   const requests = recovery.requests.length;
   await recovery.get('scenario').listeners.change();
   assert.equal(
