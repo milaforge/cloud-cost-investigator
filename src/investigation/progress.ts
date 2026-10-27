@@ -10,7 +10,7 @@ export function progressText(event: InvestigationProgress): string {
       if (event.status === 'unavailable')
         return `${source} ${event.operation} · unavailable · ${event.failure_code ?? 'history_source_failed'}; no historical claim made`;
       if (event.source === 'zetaris' && event.operation === 'read')
-        return `Zetaris read · ${event.status} · ${event.count ?? 0} matching prior recommendation records for this instance and source mode${event.verdicts?.length ? ` (${event.verdicts.join(', ')})` : ''}; audit comparison only: prior verdicts are not current evidence or validated lessons, so none passed to Planner`;
+        return `Zetaris read · ${event.status} · ${event.count ?? 0} matching prior recommendations${event.verdicts?.length ? ` (${event.verdicts.join(', ')})` : ''}; historical audit only, not current evidence or Planner input`;
       if (event.source === 'hmem' && event.operation === 'read')
         return `Meterless H-MEM read · ${event.status} · ${event.count ?? 0} eligible reasoning summaries selected${event.lesson ? `; learned check ${event.lesson} requires a matching proposed window` : '; no learned check'}; fresh evidence still required`;
       if (event.source === 'zetaris')

@@ -1,18 +1,25 @@
 import { randomUUID } from 'node:crypto';
-import { estimatePeriod } from './policy.ts';
 import {
-  validateAction,
   type Mode,
   type Observation,
   type ToolAction,
+  validateAction,
 } from '../contracts.ts';
+import { estimatePeriod } from './policy.ts';
 
 export interface CurrentEvidenceProvider {
   readonly mode: Mode;
   call(action: ToolAction, signal: AbortSignal): Promise<unknown>;
 }
 
-export type MockScenario = 'A' | 'B' | 'C' | 'mixed' | 'clear' | 'missing';
+export type MockScenario =
+  | 'A'
+  | 'B'
+  | 'C'
+  | 'mixed'
+  | 'clear'
+  | 'missing'
+  | 'missing_preview';
 
 /** Synthetic direct-source observations; this provider never contacts AWS. */
 export class MockProvider implements CurrentEvidenceProvider {
@@ -134,10 +141,13 @@ export class MockProvider implements CurrentEvidenceProvider {
       case 'get_ec2_operations':
         observation.units = 'UTC-hours';
         // Simplified daily UTC fixture semantics, not a real AWS scheduling API.
-        if (scenario === 'missing') {
-          observation.status = 'unavailable';
+        if (scenario === 'missing' || scenario === 'missing_preview') {
+          // The browser preview preserves an evidence gap without retry delays.
+          observation.status =
+            scenario === 'missing_preview' ? 'partial' : 'unavailable';
           observation.coverage = { complete: false, authoritative: false };
           observation.missing_fields = ['job_schedule'];
+          if (scenario === 'missing_preview') observation.data = { jobs: [] };
         } else if (
           scenario === 'clear' ||
           scenario === 'C' ||
