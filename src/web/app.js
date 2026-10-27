@@ -338,6 +338,65 @@ function timeline(candidate, report) {
   section.append(svg, axis);
   return section;
 }
+function renderDemoContext(report) {
+  const learning = $('demo-learning-context');
+  const followup = $('demo-followup-context');
+  learning.replaceChildren();
+  followup.replaceChildren();
+  const candidate = report?.candidates[candidateIndex];
+  if (!candidate) {
+    for (const root of [learning, followup])
+      root.append(
+        node(
+          'p',
+          'Choose a scenario in Investigate to see its learning and review context.',
+          'hint',
+        ),
+      );
+    return;
+  }
+  const prior = report.historical_context.comparisons?.find(
+    (item) => item.instance_id === candidate.instance_id,
+  );
+  const recheck = report.trace.find(
+    (entry) =>
+      entry.reason.startsWith('Historical lesson ') &&
+      entry.evidence_ids.some((id) =>
+        report.evidence.some(
+          (evidence) =>
+            evidence.evidence_id === id &&
+            evidence.scope.instance_id === candidate.instance_id,
+        ),
+      ),
+  );
+  learning.append(
+    node('h3', `Selected result · ${candidate.instance_id}`),
+    node(
+      'p',
+      prior
+        ? `Seeded historical verdict: ${human(prior.verdict)}. Fresh verdict: ${human(candidate.verdict)}.`
+        : `Empty history: this investigation reached ${human(candidate.verdict)} using fresh checks alone.`,
+    ),
+    node(
+      'p',
+      recheck?.reason ??
+        'Inspect the investigation timeline for the mock check hint and its fresh operational evidence. The summary is held only in this preview; it is not a real Meterless persistence receipt.',
+    ),
+  );
+  followup.append(
+    node('h3', `Review this result · ${candidate.instance_id}`),
+    node('p', candidate.explanation),
+    disclosure('Evidence to bring to the review', [
+      list(candidate.next_human_actions),
+    ]),
+    node(
+      'p',
+      'Illustrative next step: an engineer records their identity, reason and future UTC review date. Zetaris links that request to this investigation and verifies readback. No request has been saved in this preview.',
+      'hint',
+    ),
+  );
+}
+
 function render(focusCandidate = false) {
   syncDecisionForm();
   for (const button of document.querySelectorAll('[data-view]')) {
@@ -347,6 +406,7 @@ function render(focusCandidate = false) {
       : '';
   }
   const r = reports[active];
+  renderDemoContext(isDemo() ? r : null);
   $('live-learning-result').replaceChildren(
     !isDemo() && r
       ? facts({
@@ -399,7 +459,7 @@ function render(focusCandidate = false) {
   const meta = node('div', undefined, 'report-meta');
   const mode = node(
     'span',
-    `${modes[r.integration_mode]} · ${r.planner.mode === 'scripted' ? 'Scripted planner' : 'Model planner'}${isDemo() && active === 'missing' ? ' · Recorded preview' : ''}`,
+    `${modes[r.integration_mode]} · ${r.planner.mode === 'scripted' ? 'Scripted planner' : 'Model planner'}`,
     'mode',
   );
   mode.append(
@@ -421,13 +481,13 @@ function render(focusCandidate = false) {
   );
   const historyStatus = node(
     'span',
-    `Zetaris history: ${human(zetaris)}${tlsBlocked ? ' (TLS verification disabled)' : ''}`,
+    `Zetaris history${isDemo() ? ' (mock)' : ''}: ${human(zetaris)}${tlsBlocked ? ' (TLS verification disabled)' : ''}`,
     'mode',
   );
   historyStatus.append(
     info(
       'Zetaris history status',
-      `Historical decision records are queried by account, region and discovered instance ID, then filtered to the same source mode. No matching records is a successful read. Prior verdicts are audit comparisons; only validated H-MEM lessons may prioritize fresh checks. Neither source replaces current evidence. Browser investigations do not append records.${tlsBlocked ? ' Enable TLS verification in the server environment and restart npm start.' : ''}`,
+      `${isDemo() ? 'This preview used an isolated in-memory mock; no sponsor service was contacted. ' : ''}Historical decision records are queried by account, region and discovered instance ID, then filtered to the same source mode. No matching records is a successful read. Prior verdicts are audit comparisons; only validated H-MEM lessons may prioritize fresh checks. Neither source replaces current evidence. Browser investigations do not append Zetaris records.${tlsBlocked ? ' Enable TLS verification in the server environment and restart npm start.' : ''}`,
     ),
   );
   meta.append(mode, historyStatus, runTime);
@@ -644,7 +704,50 @@ function render(focusCandidate = false) {
         t.evidence_ids.some((id) => c?.contradicting_evidence_ids.includes(id)))
     );
   });
-  relevant.forEach((t, index) => {
+  const historyIndex = relevant.findIndex(
+    (t) => t.action?.tool === 'get_ec2_billing',
+  );
+  const priorDecision = r.historical_context?.comparisons?.find(
+    (item) => item.instance_id === c?.instance_id,
+  );
+  const hintedCheck = r.trace.find(
+    (t) =>
+      t.phase === 'planner' &&
+      t.action?.args?.instance_id === c?.instance_id &&
+      t.reason?.startsWith('Historical operational checks prioritize'),
+  );
+  const checkName = toolTitles[hintedCheck?.action?.tool]?.toLowerCase();
+  const sponsorSteps = isDemo()
+    ? [
+        {
+          title: 'Zetaris · prior recommendations',
+          summary: priorDecision
+            ? `Prior ${schedule(priorDecision.proposed_window)}: ${human(priorDecision.verdict)}. Current: ${human(c?.verdict)}. Audit context only; decision saving is a separate Live Follow through action.`
+            : 'No matching prior decision. Historical audit only.',
+        },
+        {
+          title: 'Meterless H-MEM · learned checks',
+          summary: hintedCheck
+            ? `Prior hint prioritized ${checkName}; the planner requested fresh evidence. The current check, not the hint, decides the verdict.`
+            : 'No applicable prior check hint. Fresh evidence decides the verdict.',
+        },
+      ]
+    : [];
+  const journeyItems = [
+    ...relevant.slice(0, historyIndex + 1),
+    ...sponsorSteps,
+    ...relevant.slice(historyIndex + 1),
+    ...(isDemo() && c
+      ? [
+          {
+            title: 'Meterless H-MEM · save reasoning',
+            summary:
+              'After evaluation, an in-memory mock held a validated reasoning summary for this preview only.',
+          },
+        ]
+      : []),
+  ];
+  journeyItems.forEach((t, index) => {
     const step = node('li', undefined, 'journey-step');
     const number = node(
       'span',
@@ -652,6 +755,16 @@ function render(focusCandidate = false) {
       'step-number',
     );
     const body = node('div', undefined, 'step-body');
+    if (t.title) {
+      body.append(
+        node('h3', t.title),
+        node('div', 'Synthetic mock · no external service call', 'step-time'),
+        node('p', t.summary, 'step-summary'),
+      );
+      step.append(number, body);
+      steps.append(step);
+      return;
+    }
     const isConflict = t.phase === 'evaluator';
     const isProposal = t.action?.type === 'propose';
     const heading = node(
@@ -724,22 +837,6 @@ function render(focusCandidate = false) {
   journey.append(steps);
   layout.append(journey);
   root.append(layout);
-  if (isDemo())
-    root.append(
-      disclosure('Zetaris and Meterless flow · preview only', [
-        node(
-          'p',
-          'This synthetic preview made no Zetaris or H-MEM calls and stored no records. These steps show where Live investigations use them.',
-        ),
-        list([
-          'Zetaris read · Compare prior recommendations for the selected instance and source mode; past verdicts stay audit context.',
-          'Meterless H-MEM read · Recall scoped summaries and eligible check hints; verify every hint with fresh evidence.',
-          'Meterless H-MEM store · After evaluation, attempt to save a validated reasoning summary for a later run.',
-          'Zetaris store · Investigation append is disabled. A separate Live Follow through Save action records a decision with readback.',
-        ]),
-      ]),
-    );
-
   const details = node('section', undefined, 'report-details');
   if (c) {
     details.append(
@@ -1269,12 +1366,10 @@ function renderEvents(events) {
         ],
         'model-message',
       );
-    const plannerContext = /^Planner context: (\d+) applicable/.exec(entry);
-    if (plannerContext)
-      return eventDisclosure(
-        `Planner context · ${plannerContext[1]} H-MEM hints`,
-        [node('p', entry, 'event-detail-text')],
-      );
+    if (entry.startsWith('Planner context: '))
+      return eventDisclosure('Planner context', [
+        node('p', entry, 'event-detail-text'),
+      ]);
     const history = /^(Zetaris|Meterless H-MEM) (read|store) · (.*)$/.exec(
       entry,
     );

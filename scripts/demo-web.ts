@@ -1,34 +1,31 @@
-import { loadProjectEnv } from '../src/config.ts';
-import {
-  DemoJobs,
-  demoConfiguration,
-  liveInvestigationFromEnv,
-} from './demo-web-jobs.ts';
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { pathToFileURL } from 'node:url';
+import { loadProjectEnv } from '../src/config.ts';
 import { MockProvider } from '../src/investigation/mock.ts';
 import { ScriptedPlanner } from '../src/investigation/planner.ts';
 import { validateReport } from '../src/investigation/report.ts';
 import { runInvestigation } from '../src/investigation/run.ts';
-import { validateScenarioJsonl } from './export-scenarios.ts';
+import { DemoHistory, type DemoScenario } from './demo-history.ts';
+import {
+  DemoJobs,
+  demoConfiguration,
+  liveInvestigationFromEnv,
+} from './demo-web-jobs.ts';
 
 export const MAX_REPORT_BYTES = 2 * 1024 * 1024;
-const DEMO_SCENARIOS = ['A', 'B', 'C', 'missing', 'mixed'] as const;
-type DemoScenario = (typeof DEMO_SCENARIOS)[number];
+const DEMO_SCENARIOS = [
+  'A',
+  'B',
+  'C',
+  'missing',
+  'mixed',
+  'cold',
+  'changed',
+] as const;
 async function generateDemoReport(scenario: DemoScenario) {
-  if (scenario === 'missing') {
-    const recorded = validateScenarioJsonl(
-      await readFile(
-        new URL('../docs/ec2-scenarios.jsonl', import.meta.url),
-        'utf8',
-      ),
-    );
-    const missing = recorded.find((row) => row.scenario_id === 'ec2-3');
-    return validateReport(missing?.variants[0].current_investigation);
-  }
   const to = new Date();
   const request = {
     account_id: 'demo',
@@ -41,9 +38,23 @@ async function generateDemoReport(scenario: DemoScenario) {
   };
   return validateReport(
     await runInvestigation(request, {
-      provider: new MockProvider(scenario),
+      provider: new MockProvider(
+        scenario === 'missing'
+          ? 'missing_preview'
+          : scenario === 'cold'
+            ? 'B'
+            : scenario === 'changed'
+              ? 'A'
+              : scenario,
+      ),
       planner: new ScriptedPlanner(),
-      history: {},
+      historySession: new DemoHistory(
+        {
+          account_id: request.account_id,
+          region: request.region,
+        },
+        scenario,
+      ),
     }),
   );
 }
