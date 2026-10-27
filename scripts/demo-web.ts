@@ -88,6 +88,7 @@ export async function startDemoServer(port = 0, bindAddress = '127.0.0.1') {
       [
         ['/', 'index.html', 'text/html'],
         ['/app.js', 'app.js', 'text/javascript'],
+        ['/theme.js', 'theme.js', 'text/javascript'],
         ['/style.css', 'style.css', 'text/css'],
       ].map(
         async ([route, file, type]) =>

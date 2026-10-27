@@ -121,7 +121,7 @@ test('local viewer generates fresh A/B, validates uploads and confines its HTTP 
     );
     assert.equal(page.headers.get('cache-control'), 'no-store');
     assert.match(await page.text(), /Load report/);
-    for (const path of ['/app.js', '/style.css'])
+    for (const path of ['/app.js', '/style.css', '/theme.js'])
       assert.equal((await fetch(url + path)).status, 200);
     for (const path of ['/.env', '/package.json', '/api/rerun'])
       assert.equal((await fetch(url + path)).status, 404);
