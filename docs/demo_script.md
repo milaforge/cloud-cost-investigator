@@ -23,7 +23,7 @@ A 3 minute 30 second narration companion to the [canonical recording guide](docs
 
 Show the [README diagrams](README.md#3-what-makes-this-an-agent-system): first the scattered sources, then role interactions. Keep the detailed investigation diagram collapsed unless needed.
 
-> "The engineer starts an investigation across EC2 inventory, billing, CloudWatch metrics, SSM maintenance windows and load balancer dependencies. One engine has four roles: the Planner chooses checks, the Executor fetches and validates evidence, the Safety evaluator challenges the window, and the Report validator and renderer checks and explains the result. Findings feed back into planning."
+> "The engineer starts an investigation across EC2 inventory, billing, CloudWatch metrics, SSM maintenance windows and load balancer dependencies. One engine has four roles: the Planner chooses checks, the Executor fetches and validates evidence, the Safety evaluator challenges the window, findings feed back into planning, and the Report validator and renderer checks and explains the result. "
 
 ### 0:50–1:40 — Investigation
 
