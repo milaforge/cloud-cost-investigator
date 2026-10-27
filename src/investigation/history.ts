@@ -25,6 +25,17 @@ export interface HistoryOptions {
   zetaris?: boolean;
   zetaris_append?: boolean;
 }
+/** History participates in planning and finalization, but never supplies current evidence. */
+export interface HistorySession {
+  result: InvestigationReport['historical_context'];
+  recall(
+    instance: string,
+    startedAt: string,
+    signal: AbortSignal,
+    mode?: Mode,
+  ): Promise<HistoryHint[]>;
+  persist(report: InvestigationReport, signal: AbortSignal): Promise<void>;
+}
 export interface HistoryHint {
   context_id: string;
   recorded_at: string;
@@ -46,7 +57,7 @@ export interface HistoryProgress {
 }
 
 /** History is advisory data only. No prior evidence IDs or free-form text reach the planner. */
-export class InvestigationHistory {
+export class InvestigationHistory implements HistorySession {
   readonly result: InvestigationReport['historical_context'] = {
     zetaris: 'not_configured',
     hmem: 'not_configured',

@@ -23,6 +23,7 @@ import {
   type HistoryHint,
   type HistoryOptions,
   type HistoryProgress,
+  type HistorySession,
   InvestigationHistory,
 } from './history.ts';
 import {
@@ -60,6 +61,8 @@ export interface RunOptions {
   planner: Planner;
   provider: CurrentEvidenceProvider;
   history?: HistoryOptions;
+  /** Internal preview/test history adapter; browser requests cannot select it. */
+  historySession?: HistorySession;
   owner_evidence?: OwnerEvidence[];
   /** Safe metadata only: no model text, source payloads, scope or credentials. */
   onProgress?: (event: InvestigationProgress) => void;
@@ -185,6 +188,11 @@ export async function runInvestigation(
   options: RunOptions,
 ): Promise<InvestigationReport> {
   const request = validateRequest(input);
+  if (
+    options.historySession &&
+    (options.provider.mode !== 'mock' || options.history !== undefined)
+  )
+    throw new Error('Mock history session requires isolated mock evidence');
   const investigation_id = randomUUID();
   const start = Date.now();
   const started_at = new Date(start).toISOString();
@@ -222,14 +230,13 @@ export async function runInvestigation(
     start +
     total -
     Math.min(REPORT_FINALIZATION_RESERVE_MS, Math.floor(total / 10));
-  const history = new InvestigationHistory(
-    options.history ?? {},
-    {
-      account_id: request.account_id,
-      region: request.region,
-    },
-    (event) => options.onProgress?.({ event: 'history', ...event }),
-  );
+  const history =
+    options.historySession ??
+    new InvestigationHistory(
+      options.history ?? {},
+      { account_id: request.account_id, region: request.region },
+      (event) => options.onProgress?.({ event: 'history', ...event }),
+    );
   let historicalHints: HistoryHint[] = [];
   const evidence: Observation[] = [];
   const trace: TraceEntry[] = [];
